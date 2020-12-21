@@ -11,3 +11,6 @@ spreadsheet = client.open("Octopath WOTV")
 
 df_cotc = pd.DataFrame(spreadsheet.worksheet('COTC_owned').get_all_records())
 df_cotc = df_cotc.set_index('トラベラー')
+
+df_wotv = pd.DataFrame(spreadsheet.worksheet('WOTV_matlist').get_all_records())
+df_wotv = df_wotv.set_index('EQ Name')
