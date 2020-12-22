@@ -1,11 +1,11 @@
 from gsheet_handler import df_wotv
 
 wotv_emotes_raw = {
-    'wotv_weapon': '790388262254542868',
-    'wotv_armor': '790388261976670228',
-    'wotv_accessory': '790388261902221333',
-    'wotv_ur': '790388261906022401',
-    'wotv_ssr': '790388261830524960'
+    'weapon': '790521500788064306',
+    'armor': '790521500548857867',
+    'accessory': '790521500658171925',
+    'ur': '790521500821749808',
+    'ssr': '790521500829876244'
 }
 
 def get_wotv_sets():
@@ -21,18 +21,18 @@ def get_wotv_sets():
             mat_rare_set.add(row['Rare'])
         for a in list(row['Crystal']):
             mat_crystal_set.add(a)
-
-    return {
+    wotv_sets = {
         'Type': type_set,
         'Common': mat_common_set,
         'Rare': mat_rare_set,
         'Crystal': mat_crystal_set
     }
+    return wotv_sets
 
 def get_wotv_emotes():
     wotv_emotes = dict()
     for k, v in wotv_emotes_raw.items():
-        wotv_emotes[k.replace('wotv_', '')] = f"<:{k}:{v}>"
+        wotv_emotes[k] = f"<:wotv_{k}:{v}>"
     return wotv_emotes
 
 def wotv_type_convert(type_str):

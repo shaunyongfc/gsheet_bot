@@ -1,8 +1,9 @@
 import discord
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import df_wotv
+from gsheet_handler import df_wotv, df_cotc
 from wotv_processing import wotv_sets, wotv_emotes, wotv_type_convert
+from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df
 
 bot = commands.Bot(command_prefix='=')
 
@@ -82,6 +83,49 @@ async def wotveq(ctx, *arg):
     else:
         await ctx.send('Error! Please try again!')
         return
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['cr'])
+async def cotcrank(ctx, *arg):
+    embed = discord.Embed()
+    embed.set_author(
+        name = 'オクトパストラベラー 大陸の覇者',
+        icon_url = 'https://caelum.s-ul.eu/iNkqSeQ7.png'
+    )
+    argstr_col = ''
+    argstr_jp = ''
+    argstr_en = ''
+    for col in cotc_dicts['cols'].keys():
+        for k, v in cotc_dicts[col].items():
+            if arg[0] in v or arg[0] == k:
+                argstr_jp = k
+                argstr_en = v[0]
+                argstr_col = col
+                break
+        else:
+            continue
+        break
+    df = df_cotc[df_cotc[argstr_col] == argstr_jp]
+    if argstr_col == '影響力':
+        embed.title = f"List of {argstr_en} travelers:"
+        desc_text = []
+        for index, row in df.iterrows():
+            desc_text.append(get_cotc_label(row))
+        embed.description = '\n'.join(desc_text)
+    else:
+        if argstr_col == '属性':
+            embed.title = f"Ranking of {argstr_en} attacks:"
+            embed.colour = cotc_dicts['colours'][argstr_en]
+        else:
+            embed.title = f"Ranking of {cotc_dicts[argstr_col][argstr_jp][1]} attacks:"
+            embed.colour = 0x999999
+        hits_ranked, power_ranked = get_sorted_df(df, argstr_col)
+        field_name = "Shield breaking:"
+        field_value = '\n'.join([f"{a} - {b}" for a, b in hits_ranked])
+        embed.add_field(name=field_name, value=field_value, inline=False)
+        field_name = "Damage mod:"
+        field_value = '\n'.join([f"{a} - {b}" for a, b in power_ranked])
+        embed.add_field(name=field_name, value=field_value, inline=False)
     await ctx.send(embed = embed)
 
 fp = open(f"token.txt")
