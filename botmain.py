@@ -113,13 +113,19 @@ async def cotcrank(ctx, *arg):
             desc_text.append(get_cotc_label(row))
         embed.description = '\n'.join(desc_text)
     else:
+        aoe = 0
+        aoestr = ''
+        if len(arg) > 1:
+            if arg[1].lower() in ['aoe', '全体', '全']:
+                aoe = 1
+                aoestr = 'AoE '
         if argstr_col == '属性':
-            embed.title = f"Ranking of {argstr_en} attacks:"
+            embed.title = f"Ranking of {aoestr}{argstr_en} attacks:"
             embed.colour = cotc_dicts['colours'][argstr_en]
         else:
-            embed.title = f"Ranking of {cotc_dicts[argstr_col][argstr_jp][1]} attacks:"
+            embed.title = f"Ranking of {aoestr}{cotc_dicts[argstr_col][argstr_jp][1]} attacks:"
             embed.colour = 0x999999
-        hits_ranked, power_ranked = get_sorted_df(df, argstr_col)
+        hits_ranked, power_ranked = get_sorted_df(df, argstr_col, aoe=aoe)
         field_name = "Shield breaking:"
         field_value = '\n'.join([f"{a} - {b}" for a, b in hits_ranked])
         embed.add_field(name=field_name, value=field_value, inline=False)

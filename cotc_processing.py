@@ -93,17 +93,11 @@ def int_hits(hits):
     else:
         return cotc_dicts['hits'][str(hits)]
 
-'''def compare_hits(hits_1, hits_2):
-    return int_hits(hits_1) - int_hits(hits_2)'''
-
 def int_power(power):
     if power == '':
         return 0
     else:
         return int(str(power).replace('会心', ''))
-
-'''def compare_power(power_1, power_2):
-    return int_power(power_1) - int_power(power_2)'''
 
 def get_sorted_df(df, col, aoe=0):
     hits_ranked = []
@@ -112,12 +106,15 @@ def get_sorted_df(df, col, aoe=0):
         label = get_cotc_label(row)
         if aoe:
             hits = row[cotc_dicts['cols'][col][2]]
-            power = row[cotc_dicts['cols'][col][3]]
+            if hits != '':
+                power = row[cotc_dicts['cols'][col][3]]
+                hits_ranked.append((label, hits))
+                power_ranked.append((label, power))
         else:
             hits = max(row[cotc_dicts['cols'][col][0]], row[cotc_dicts['cols'][col][2]], key=int_hits)
             power = max(row[cotc_dicts['cols'][col][1]], row[cotc_dicts['cols'][col][3]], key=int_power)
-        hits_ranked.append((label, hits))
-        power_ranked.append((label, power))
+            hits_ranked.append((label, hits))
+            power_ranked.append((label, power))
     hits_ranked.sort(key=lambda k: int_hits(k[1]), reverse=True)
     power_ranked.sort(key=lambda k: int_power(k[1]), reverse=True)
     return hits_ranked, power_ranked
