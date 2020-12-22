@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 # Not needed to upload
+.DS_Store
 bot_images
 heroku_upload/
 

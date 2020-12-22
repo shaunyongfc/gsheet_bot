@@ -68,6 +68,12 @@ cotc_dicts = {
         '属性': ['属', '属威', '属全', '属全威'],
         '影響力': ['影響力']
     },
+    'support': {
+        '弱点以外': ['universal'],
+        '回復': ['heal'],
+        'バフ': ['buff'],
+        'デバフ': ['debuff']
+    },
     'hits': {
         '4': 4,
         '乱４': 3.5,
@@ -76,6 +82,32 @@ cotc_dicts = {
         '2': 2,
         '乱２': 1.5,
         '1': 1
+    },
+    'traveler': {
+        'Passive Abilities': {
+            'サポートアビ１': '-',
+            'サポートアビ２': '-'
+        },
+        'Physical Attacks': {
+            '物': 'Max ST/RT hits',
+            '物威': 'Max ST/RT mod',
+            '物全': 'Max AoE hits',
+            '物全威': 'Max AoE mod'
+        },
+        'Elemental Attacks': {
+            '属': 'Max ST/RT hits',
+            '属威': 'Max ST/RT mod',
+            '属全': 'Max AoE hits',
+            '属全威': 'Max AoE mod'
+        },
+        'Supportive Abilities': {
+            '弱点以外': 'Universal breaking',
+            '回復': 'Heals',
+            '解除': 'Effect removal',
+            'バフ': 'Buffs',
+            'デバフ': 'Debuffs'
+        }
+
     },
     'emotes': get_cotc_emotes()
 }
@@ -118,3 +150,15 @@ def get_sorted_df(df, col, aoe=0):
     hits_ranked.sort(key=lambda k: int_hits(k[1]), reverse=True)
     power_ranked.sort(key=lambda k: int_power(k[1]), reverse=True)
     return hits_ranked, power_ranked
+
+def get_support_df(df, col, aoe=0, kw=''):
+    char_list = []
+    for index, row in df.iterrows():
+        if aoe:
+            eff_separated = row[col].split('、')
+            for eff in eff_separated:
+                if kw in eff and '全体' in eff:
+                    char_list.append(f"{get_cotc_label(row)} - {eff}")
+        elif kw in row[col]:
+            char_list.append(f"{get_cotc_label(row)} - {row[col]}")
+    return '\n'.join(char_list)
