@@ -21,7 +21,9 @@ def get_cotc_emotes():
         'dark': '790521500960686080',
         'heal': '790521500901441587',
         'buff': '790521500770893864',
-        'debuff': '790521500846915594'
+        'debuff': '790521500846915594',
+        'passive': '791087444975943721',
+        'universal': '791087444895203389'
     }
     cotc_emotes = dict()
     for k, v in cotc_emotes_raw.items():
@@ -89,25 +91,24 @@ cotc_dicts = {
             'サポートアビ２': '-'
         },
         'Physical Attacks': {
-            '物': 'Max ST/RT hits',
-            '物威': 'Max ST/RT mod',
+            '物': 'Max ST hits',
+            '物威': 'Max ST mod',
             '物全': 'Max AoE hits',
             '物全威': 'Max AoE mod'
         },
         'Elemental Attacks': {
-            '属': 'Max ST/RT hits',
-            '属威': 'Max ST/RT mod',
+            '属': 'Max ST hits',
+            '属威': 'Max ST mod',
             '属全': 'Max AoE hits',
             '属全威': 'Max AoE mod'
-        },
-        'Supportive Abilities': {
-            '弱点以外': 'Universal breaking',
-            '回復': 'Heals',
-            '解除': 'Effect removal',
-            'バフ': 'Buffs',
-            'デバフ': 'Debuffs'
         }
-
+    },
+    'Supportive Abilities': {
+        '弱点以外': ('Universal breaking', 'universal'),
+        '回復': ('Heals', 'heal'),
+        '解除': ('Effect removal', 'heal'),
+        'バフ': ('Buffs', 'buff'),
+        'デバフ': ('Debuffs', 'debuff')
     },
     'emotes': get_cotc_emotes()
 }
@@ -143,6 +144,7 @@ def get_sorted_df(df, col, aoe=0):
                 hits_ranked.append((label, hits))
                 power_ranked.append((label, power))
         else:
+            # WIP need to account for difference in mod boosting
             hits = max(row[cotc_dicts['cols'][col][0]], row[cotc_dicts['cols'][col][2]], key=int_hits)
             power = max(row[cotc_dicts['cols'][col][1]], row[cotc_dicts['cols'][col][3]], key=int_power)
             hits_ranked.append((label, hits))

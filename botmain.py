@@ -185,14 +185,26 @@ async def cotctraveler(ctx, *arg):
     row = df_cotc.loc[arg[0]]
     embed.title = get_cotc_label(row)
     embed.colour = cotc_dicts['colours'][cotc_dicts['属性'][row['属性']][0]]
+    field_name_icons = {
+        'Passive Abilities': cotc_dicts['emotes']['passive'],
+        'Physical Attacks': cotc_dicts['emotes'][cotc_dicts['ジョブ'][row['ジョブ']][0]],
+        'Elemental Attacks': cotc_dicts['emotes'][cotc_dicts['属性'][row['属性']][0]]
+    }
     for k, v in cotc_dicts['traveler'].items():
-        field_name = k
+        field_name = f"{field_name_icons[k]} {k}"
         field_list = []
         for v_k, v_v in v.items():
             if row[v_k] != '':
                 field_list.append(f"{v_v}: {row[v_k]}")
         field_value = '\n'.join(field_list)
         embed.add_field(name=field_name, value=field_value, inline=True)
+    field_name = 'Supportive Abilities'
+    field_list = []
+    for k, v in cotc_dicts['Supportive Abilities'].items():
+        if row[k] != '':
+            field_list.append(f"{cotc_dicts['emotes'][v[1]]} {v[0]}: {row[k]}")
+    field_value = '\n'.join(field_list)
+    embed.add_field(name=field_name, value=field_value, inline=True)
     await ctx.send(embed = embed)
 
 fp = open(f"token.txt")
