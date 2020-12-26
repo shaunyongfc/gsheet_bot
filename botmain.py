@@ -122,6 +122,7 @@ async def wotvvcsearch(ctx, *arg):
             field_name = k
             field_value = '\n'.join(v)
             embed.add_field(name=field_name, value=field_value, inline=False)
+    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wv', 'vc'])
@@ -171,9 +172,11 @@ async def wotvvc(ctx, *arg):
             eff_list_processed.append(f"{eff_prefix}{eff_text}")
         field_value = '\n'.join(eff_list_processed)
         embed.add_field(name=field_name, value=field_value)
+    if row['Url'] != '':
+        embed.set_thumbnail(url=row['Url'])
     if embed_colour != '':
         embed.colour = wotv_dicts['colours'][embed_colour]
-    embed.set_footer(text='All data thanks to WOTV-CALC (Bismark).')
+    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
     await ctx.send(embed = embed)
 
 #####################################################
