@@ -1,8 +1,8 @@
 import discord
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import df_wotv, df_cotc
-from wotv_processing import wotv_sets, wotv_emotes, wotv_type_convert
+from gsheet_handler import df_wotvmats, df_cotc, df_wotvvc
+from wotv_processing import wotv_dicts, wotv_type_convert
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='=')
@@ -31,19 +31,16 @@ async def wotvmat(ctx, *arg):
         argstr = 'Rare'
     elif arg[0].lower() in ['crystal', 'element', 'e']:
         argstr = 'Crystal'
-    else:
-        await ctx.send('Error! Please try again!')
-        return
     if len(arg) == 1:
         embed.title = f"List of {argstr.lower()}s"
-        embed.description = '\n'.join(wotv_sets[argstr])
+        embed.description = '\n'.join(wotv_dicts['sets'][argstr])
     elif len(arg) == 2:
         embed.title = arg[1]
         embed_text_list = []
-        for name, row in df_wotv.iterrows():
+        for name, row in df_wotvmats.iterrows():
             if row[argstr] == arg[1]:
                 type_str = wotv_type_convert(row['Type'])
-                embed_text_list.append(f"{wotv_emotes[row['Rarity'].lower()]}{wotv_emotes[type_str]} {name}")
+                embed_text_list.append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}")
         embed.description = '\n'.join(embed_text_list)
     await ctx.send(embed = embed)
 
@@ -59,13 +56,13 @@ async def wotveq(ctx, *arg):
     if arg[0].lower() in ['type', 't']:
         if len(arg) == 1:
             embed.title = f"List of types"
-            embed.description = '\n'.join(wotv_sets['Type'])
+            embed.description = '\n'.join(wotv_dicts['sets']['Type'])
         elif len(arg) == 2:
             embed.title = arg[1]
-            for name, row in df_wotv.iterrows():
+            for name, row in df_wotvmats.iterrows():
                 if row['Type'] == arg[1]:
                     type_str = wotv_type_convert(row['Type'])
-                    field_name = f"{wotv_emotes[row['Rarity'].lower()]}{wotv_emotes[type_str]} {name}"
+                    field_name = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}"
                     field_value = f"- {row['Special']}"
                     embed.add_field(name=field_name, value=field_value, inline=True)
         else:
@@ -73,9 +70,9 @@ async def wotveq(ctx, *arg):
             return
     elif len(arg) == 1:
         embed.title = arg[0]
-        row = df_wotv.loc[arg[0]]
+        row = df_wotvmats.loc[arg[0]]
         type_str = wotv_type_convert(row['Type'])
-        embed.description = f"{wotv_emotes[row['Rarity'].lower()]}{wotv_emotes[type_str]} {row['Special']}"
+        embed.description = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {row['Special']}\nAcquisition: {row['Acquisition']}"
         embed_text_list = []
         for col in ['Common', 'Rare', 'Crystal']:
             embed_text_list.append(f"- {row[col]}")
@@ -84,6 +81,105 @@ async def wotveq(ctx, *arg):
         await ctx.send('Error! Please try again!')
         return
     await ctx.send(embed = embed)
+
+@bot.command(aliases=['wvs', 'vcs', 'vs'])
+async def wotvvcsearch(ctx, *arg):
+    embed = discord.Embed(
+        colour = 0x999999
+    )
+    embed.set_author(
+        name = 'FFBE幻影戦争',
+        url = 'https://wotv-calc.com/JP/cards',
+        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+    )
+    effects_dict = {
+        'Party Effect': [],
+        'Party Effect Max': [],
+        'Unit Effect': []
+    }
+    embed.title = ' '.join(arg)
+    args = ' '.join(arg).lower()
+    for k, v in wotv_dicts['colours'].items():
+        if k in args:
+            embed.colour = v
+            break
+    for index, row in df_wotvvc.iterrows():
+        for col in effects_dict.keys():
+            eff_list = row[col].split(' / ')
+            eff_prefix = wotv_dicts['emotes']['neutral']
+            for eff in eff_list:
+                if eff[0] == '[':
+                    for k, v in wotv_dicts['brackets'].items():
+                        if k in eff:
+                            eff_prefix = f"{wotv_dicts['emotes'][v]}"
+                            break
+                    else:
+                        eff_prefix = eff[:(eff.index(']') + 1)]
+                if args in eff.lower():
+                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']})")
+    for k, v in effects_dict.items():
+        if len(v) > 0:
+            field_name = k
+            field_value = '\n'.join(v)
+            embed.add_field(name=field_name, value=field_value, inline=False)
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['wv', 'vc'])
+async def wotvvc(ctx, *arg):
+    embed = discord.Embed(
+        colour = 0x999999
+    )
+    embed.set_author(
+        name = 'FFBE幻影戦争',
+        url = 'https://wotv-calc.com/JP/cards',
+        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+    )
+    try:
+        row = df_wotvvc.loc['　'.join(arg)]
+    except KeyError:
+        df_row = df_wotvvc[df_wotvvc['Nickname'].str.contains(' '.join(arg).lower())]
+        if len(df_row) == 1 or df_row.iloc[0]['Nickname'] == ' '.join(arg).lower():
+            row = df_row.iloc[0]
+        else:
+            embed_text_list = df_row['Nickname'].tolist()
+            embed.title = 'Too many results. Try the followings:'
+            embed.description = ' / '.join(embed_text_list)
+            await ctx.send(embed = embed)
+            return
+    embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
+    for col in ['Unit Effect', 'Unit Skill', 'Party Effect', 'Party Effect Max']:
+        if row[col] == '':
+            continue
+        field_name = col
+        eff_list = row[col].split(' / ')
+        eff_list_processed = []
+        embed_colour = ''
+        eff_prefix = ''
+        for eff in eff_list:
+            eff_text = eff
+            if eff[0] == '[':
+                for k, v in wotv_dicts['brackets'].items():
+                    if k in eff:
+                        embed_colour = v
+                        eff_prefix = f"{wotv_dicts['emotes'][v]} "
+                        eff_text = eff.replace(f"{k} ", '')
+                        break
+                else:
+                    cond_end = eff.index(']')
+                    eff_prefix = eff[:(cond_end + 2)]
+                    eff_text = eff[(cond_end + 2):]
+            eff_list_processed.append(f"{eff_prefix}{eff_text}")
+        field_value = '\n'.join(eff_list_processed)
+        embed.add_field(name=field_name, value=field_value)
+    if embed_colour != '':
+        embed.colour = wotv_dicts['colours'][embed_colour]
+    embed.set_footer(text='All data thanks to WOTV-CALC (Bismark).')
+    await ctx.send(embed = embed)
+
+#####################################################
+### OCTOPATH TRAVELER: CHAMPIONS OF THE CONTINENT ###
+#####################################################
+# Work paused because lack of data / interest in practical use
 
 @bot.command(aliases=['cr'])
 async def cotcrank(ctx, *arg):

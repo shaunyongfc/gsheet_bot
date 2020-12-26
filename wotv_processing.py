@@ -1,11 +1,20 @@
-from gsheet_handler import df_wotv
+from gsheet_handler import df_wotvmats
 
 wotv_emotes_raw = {
     'weapon': '790521500788064306',
     'armor': '790521500548857867',
     'accessory': '790521500658171925',
     'ur': '790521500821749808',
-    'ssr': '790521500829876244'
+    'ssr': '790521500829876244',
+    'fire': '791969566023745547',
+    'ice': '791969566308958219',
+    'wind': '791969566409752576',
+    'earth': '791969566477385738',
+    'thunder': '791969566245781535',
+    'water': '791969566254825523',
+    'light': '791969565826613259',
+    'dark': '791969566246436884',
+    'neutral': '791969566233853952'
 }
 
 def get_wotv_sets():
@@ -13,8 +22,7 @@ def get_wotv_sets():
     mat_common_set = set()
     mat_rare_set = set()
     mat_crystal_set = set()
-
-    for index, row in df_wotv.iterrows():
+    for index, row in df_wotvmats.iterrows():
         type_set.add(row['Type'])
         mat_common_set.add(row['Common'])
         if row['Rare'] != '':
@@ -38,10 +46,30 @@ def get_wotv_emotes():
 def wotv_type_convert(type_str):
     if type_str == 'アクセ':
         return 'accessory'
-    elif type_str in ['軽装', '重装']:
+    elif '防具' in type_str:
         return 'armor'
     else:
         return 'weapon'
 
-wotv_sets = get_wotv_sets()
-wotv_emotes = get_wotv_emotes()
+def get_wotv_bracket():
+    bracket_dict = dict()
+    for ele in ['fire', 'ice', 'wind', 'earth', 'thunder', 'water', 'light', 'dark']:
+        bracket_dict[f"[{ele.capitalize()}]"] = ele
+    return bracket_dict
+
+wotv_dicts = {
+    'sets': get_wotv_sets(),
+    'brackets': get_wotv_bracket(),
+    'emotes': get_wotv_emotes(),
+    'colours': {
+        'fire': 0xE47051,
+        'ice': 0xA4B3F0,
+        'wind': 0xA3E053,
+        'earth': 0xF6D993,
+        'thunder': 0xF5F464,
+        'water': 0xAAFAFC,
+        'light': 0xFCFCFC,
+        'dark': 0xE083F4,
+        'neutral': 0x7F8486
+    }
+}
