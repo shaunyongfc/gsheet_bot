@@ -1,13 +1,14 @@
 import discord, re
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import df_wotvmats, df_cotc, df_wotvvc
+from gsheet_handler import get_df
 from wotv_processing import wotv_dicts, wotv_type_convert
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='+')
 re_brackets = re.compile(r'\[[\w\/]+\]')
 re_numbers = re.compile(r'\d+$')
+df_cotc, df_wotvmats, df_wotvvc = get_df()
 
 @bot.event
 async def on_ready():
@@ -32,6 +33,15 @@ async def wotvhelp(ctx, *arg):
     for k, v in wotv_dicts['help'].items():
         embed.add_field(name=k, value='\n'.join(v), inline=False)
     await ctx.send(embed = embed)
+
+@bot.command()
+async def sync(ctx, *arg):
+    if ctx.channel.permissions_for(ctx.message.author).manage_guild:
+        global df_cotc, df_wotvmats, df_wotvvc
+        df_cotc, df_wotvmats, df_wotvvc = get_df()
+        await ctx.send('Google sheet synced.')
+    else:
+        await ctx.send('Error. Permission denied.')
 
 @bot.command(aliases=['wm'])
 async def wotvmat(ctx, *arg):
