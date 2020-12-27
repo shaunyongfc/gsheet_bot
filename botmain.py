@@ -1,11 +1,13 @@
-import discord
+import discord, re
 import pandas as pd
 from discord.ext import commands
 from gsheet_handler import df_wotvmats, df_cotc, df_wotvvc
 from wotv_processing import wotv_dicts, wotv_type_convert
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
-bot = commands.Bot(command_prefix='=')
+bot = commands.Bot(command_prefix='+')
+re_brackets = re.compile(r'\[[\w\/]+\]')
+re_numbers = re.compile(r'\d+$')
 
 @bot.event
 async def on_ready():
@@ -93,11 +95,11 @@ async def wotvvcsearch(ctx, *arg):
         icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
     )
     effects_dict = {
-        'Party Effect': [],
-        'Party Effect Max': [],
-        'Unit Effect': []
+        'Party': [],
+        'Party Max': [],
+        'Unit': []
     }
-    embed.title = ' '.join(arg)
+    embed.title = ' '.join(arg).capitalize()
     args = ' '.join(arg).lower()
     for k, v in wotv_dicts['colours'].items():
         if k in args:
@@ -108,15 +110,49 @@ async def wotvvcsearch(ctx, *arg):
             eff_list = row[col].split(' / ')
             eff_prefix = wotv_dicts['emotes']['neutral']
             for eff in eff_list:
-                if eff[0] == '[':
-                    for k, v in wotv_dicts['brackets'].items():
-                        if k in eff:
-                            eff_prefix = f"{wotv_dicts['emotes'][v]}"
-                            break
+                eff_suffix = ''
+                match_brackets = re_brackets.findall(eff)
+                if len(match_brackets) == 1:
+                    if match_brackets[0] in wotv_dicts['brackets'].keys():
+                        eff_prefix = wotv_dicts['emotes'][wotv_dicts['brackets'][match_brackets[0]]]
                     else:
-                        eff_prefix = eff[:(eff.index(']') + 1)]
+                        eff_prefix = match_brackets[0]
+                match_numbers = re_numbers.findall(eff)
+                if len(match_numbers) == 1:
+                    eff_suffix = ' ' + match_numbers[0]
                 if args in eff.lower():
-                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']})")
+                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']}){eff_suffix}")
+    for k, v in effects_dict.items():
+        if len(v) > 0:
+            field_name = k
+            field_value = '\n'.join(v)
+            embed.add_field(name=field_name, value=field_value, inline=False)
+    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['wve', 'vce', 've'])
+async def wotvvcelement(ctx, *arg):
+    embed = discord.Embed()
+    embed.set_author(
+        name = 'FFBE幻影戦争',
+        url = 'https://wotv-calc.com/JP/cards',
+        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+    )
+    effects_dict = {
+        'Party': [],
+        'Party Max': []
+    }
+    ele = arg[0].lower().replace('lightning', 'thunder')
+    embed.title = f"{wotv_dicts['emotes'][ele]} {arg[0].capitalize()}"
+    embed.colour = wotv_dicts['colours'][ele]
+    for index, row in df_wotvvc.iterrows():
+        for col in effects_dict.keys():
+            eff_list = row[col].split(' / ')
+            ele_found = 0
+            for eff in eff_list:
+                if ele_found or wotv_dicts['brackets'][ele] in eff:
+                    ele_found = 1
+                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']}) -{eff.replace(wotv_dicts['brackets'][ele], '')}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             field_name = k
@@ -138,17 +174,22 @@ async def wotvvc(ctx, *arg):
     try:
         row = df_wotvvc.loc['　'.join(arg)]
     except KeyError:
-        df_row = df_wotvvc[df_wotvvc['Nickname'].str.contains(' '.join(arg).lower())]
-        if len(df_row) == 1 or df_row.iloc[0]['Nickname'] == ' '.join(arg).lower():
-            row = df_row.iloc[0]
-        else:
-            embed_text_list = df_row['Nickname'].tolist()
-            embed.title = 'Too many results. Try the followings:'
-            embed.description = ' / '.join(embed_text_list)
-            await ctx.send(embed = embed)
-            return
+        row_df = df_wotvvc[df_wotvvc['Nickname'].str.contains(' '.join(arg).lower())]
+        if len(row_df) == 1:
+            row = row_df.iloc[0]
+        elif len(row_df) > 1:
+            for index, df_row in row_df.iterrows():
+                if df_row['Nickname'] == ' '.join(arg).lower():
+                    row = df_row
+                    break
+            else:
+                embed_text_list = row_df['Nickname'].tolist()
+                embed.title = 'Too many results. Try the followings:'
+                embed.description = ' / '.join(embed_text_list)
+                await ctx.send(embed = embed)
+                return
     embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
-    for col in ['Unit Effect', 'Unit Skill', 'Party Effect', 'Party Effect Max']:
+    for col in ['Unit', 'Party', 'Party Max', 'Skill']:
         if row[col] == '':
             continue
         field_name = col
@@ -157,18 +198,16 @@ async def wotvvc(ctx, *arg):
         embed_colour = ''
         eff_prefix = ''
         for eff in eff_list:
-            eff_text = eff
-            if eff[0] == '[':
-                for k, v in wotv_dicts['brackets'].items():
-                    if k in eff:
-                        embed_colour = v
-                        eff_prefix = f"{wotv_dicts['emotes'][v]} "
-                        eff_text = eff.replace(f"{k} ", '')
-                        break
+            match_brackets = re_brackets.findall(eff)
+            if len(match_brackets) == 1:
+                if match_brackets[0] in wotv_dicts['brackets'].keys():
+                    eff_prefix = wotv_dicts['emotes'][wotv_dicts['brackets'][match_brackets[0]]] + ' '
+                    embed_colour = wotv_dicts['brackets'][match_brackets[0]]
                 else:
-                    cond_end = eff.index(']')
-                    eff_prefix = eff[:(cond_end + 2)]
-                    eff_text = eff[(cond_end + 2):]
+                    eff_prefix = match_brackets[0] + ' '
+                eff_text = eff.replace(match_brackets[0] + ' ', '')
+            else:
+                eff_text = eff
             eff_list_processed.append(f"{eff_prefix}{eff_text}")
         field_value = '\n'.join(eff_list_processed)
         embed.add_field(name=field_name, value=field_value)

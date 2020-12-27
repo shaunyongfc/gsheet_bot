@@ -55,6 +55,7 @@ def get_wotv_bracket():
     bracket_dict = dict()
     for ele in ['fire', 'ice', 'wind', 'earth', 'thunder', 'water', 'light', 'dark']:
         bracket_dict[f"[{ele.capitalize()}]"] = ele
+        bracket_dict[ele] = f"[{ele.capitalize()}]"
     return bracket_dict
 
 wotv_dicts = {
