@@ -83,7 +83,7 @@ wotv_dicts = {
             ' > - def/spr up/pen',
             ' > - atk%/mag%/agi%/dex%/luck%/hp%',
             ' > - single/area res',
-            ' > - accuracy/evade',
+            ' > - accuracy/evasion',
             ' > - crit rate/evade/damage',
             ' > - ap gain, max damage, etc'
             ],
