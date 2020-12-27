@@ -72,5 +72,22 @@ wotv_dicts = {
         'light': 0xFCFCFC,
         'dark': 0xE083F4,
         'neutral': 0x7F8486
+    },
+    'help': {
+        'Standard commands': ['- ping', '- help'],
+        'VC Info': ['**- vc / wvc / wotvvc**',
+            'Argument either in full Japanese name or short English nickname bracketed in other commands.'],
+        'VC Search': ['**- vs / vcs / wvs /wotvvcsearch**',
+            'Argument in specific effect names with following conventions:',
+            ' > - slash/pierce/strike/missile/magic atk/res/pen',
+            ' > - def/spr up/pen',
+            ' > - atk%/mag%/agi%/dex%/luck%/hp%',
+            ' > - single/area res',
+            ' > - accuracy/evade',
+            ' > - crit rate/evade/damage',
+            ' > - ap gain, max damage, etc'
+            ],
+        'VC Element': ['**- ve / vce / wve / wotvvcelement**',
+            'Argument in element (e.g. fire)']
     }
 }

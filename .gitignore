@@ -131,7 +131,6 @@ dmypy.json
 # Not needed to upload
 .DS_Store
 bot_images
-heroku_upload/
 
 # Sensitive info
 credentials.json

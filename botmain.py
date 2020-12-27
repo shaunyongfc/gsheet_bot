@@ -18,6 +18,21 @@ async def on_ready():
 async def ping(ctx):
     await ctx.send(f"Pong! {round(bot.latency * 1000)} ms")
 
+bot.remove_command('help')
+@bot.command(aliases=['help'])
+async def wotvhelp(ctx, *arg):
+    embed = discord.Embed(
+        colour = 0x999999
+    )
+    embed.set_author(
+        name = 'FFBE幻影戦争',
+        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+    )
+    embed.title = 'Ildyra Bot Help'
+    for k, v in wotv_dicts['help'].items():
+        embed.add_field(name=k, value='\n'.join(v), inline=False)
+    await ctx.send(embed = embed)
+
 @bot.command(aliases=['wm'])
 async def wotvmat(ctx, *arg):
     embed = discord.Embed(
@@ -101,6 +116,7 @@ async def wotvvcsearch(ctx, *arg):
     }
     embed.title = ' '.join(arg).capitalize()
     args = ' '.join(arg).lower()
+    args = args.replace('lightning', 'thunder')
     for k, v in wotv_dicts['colours'].items():
         if k in args:
             embed.colour = v
