@@ -147,7 +147,11 @@ async def wotvvcsearch(ctx, *arg):
                 if len(match_numbers) == 1:
                     eff_suffix = ' ' + match_numbers[0]
                 if args in eff.lower():
-                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']}){eff_suffix}")
+                    if row['Limited'] != '':
+                        eff_prefix2 = wotv_dicts['emotes']['limited']
+                    else:
+                        eff_prefix2 = ''
+                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}){eff_suffix}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             field_name = k
@@ -177,8 +181,12 @@ async def wotvvcelement(ctx, *arg):
             ele_found = 0
             for eff in eff_list:
                 if ele_found or wotv_dicts['brackets'][ele] in eff:
-                    ele_found = 1
-                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name} ({row['Nickname']}) -{eff.replace(wotv_dicts['brackets'][ele], '')}")
+                    ele_found = 1        
+                    if row['Limited'] != '':
+                        eff_prefix2 = wotv_dicts['emotes']['limited']
+                    else:
+                        eff_prefix2 = ''
+                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}) -{eff.replace(wotv_dicts['brackets'][ele], '')}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             field_name = k
@@ -214,7 +222,10 @@ async def wotvvc(ctx, *arg):
                 embed.description = ' / '.join(embed_text_list)
                 await ctx.send(embed = embed)
                 return
-    embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
+    if row['Limited'] != '':
+        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row.name}"
+    else:
+        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
     for col in ['Unit', 'Party', 'Party Max', 'Skill']:
         if row[col] == '':
             continue

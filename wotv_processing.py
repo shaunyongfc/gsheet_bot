@@ -14,7 +14,8 @@ wotv_emotes_raw = {
     'water': '791969566254825523',
     'light': '791969565826613259',
     'dark': '791969566246436884',
-    'neutral': '791969566233853952'
+    'neutral': '791969566233853952',
+    'limited': '792712310178840596'
 }
 
 def get_wotv_sets():
@@ -72,22 +73,32 @@ wotv_dicts = {
         'light': 0xFCFCFC,
         'dark': 0xE083F4,
         'neutral': 0x7F8486
-    },
-    'help': {
-        'Standard commands': ['- ping', '- help'],
-        'VC Info': ['**- vc / wvc / wotvvc**',
-            'Argument either in full Japanese name or short English nickname bracketed in other commands.'],
-        'VC Search': ['**- vs / vcs / wvs /wotvvcsearch**',
-            'Argument in specific effect names with following conventions:',
-            ' > - slash/pierce/strike/missile/magic atk/res/pen',
-            ' > - def/spr up/pen',
-            ' > - atk%/mag%/agi%/dex%/luck%/hp%',
-            ' > - single/area res',
-            ' > - accuracy/evasion',
-            ' > - crit rate/evade/damage',
-            ' > - ap gain, max damage, etc'
-            ],
-        'VC Element': ['**- ve / vce / wve / wotvvcelement**',
-            'Argument in element (e.g. fire)']
     }
+}
+wotv_dicts['help'] =  {
+    'General info': [
+        'Bot prefix is =',
+        'Elemental icons indicate unit-element-locked effects',
+        wotv_dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects',
+        wotv_dicts['emotes']['limited'] + ' xmas moogle icon indicates limited VC'],
+    'Standard commands': ['= ping', '= help'],
+    'VC Info': ['**= vc / wvc / wotvvc**',
+        'Argument either in full Japanese name or short English nickname bracketed in other commands.',
+        'e.g. `=vc omega`'],
+    'VC Search': ['**= vs / vcs / wvs /wotvvcsearch**',
+        'Argument in specific effect names with following conventions:',
+        ' > - slash/pierce/strike/missile/magic atk/res/pen',
+        ' > - fire/ice/(etc) atk/res'
+        ' > - def/spr up/pen',
+        ' > - atk%/mag%/agi%/dex%/luck%/hp%',
+        ' > - single/area res',
+        ' > - accuracy/evasion',
+        ' > - crit rate/evade/damage',
+        ' > - ap gain, max damage, etc',
+        'e.g. `=vs pierce atk`',
+        'Note: Omitting atk will return results that include all of them'
+        ],
+    'VC Element': ['**= ve / vce / wve / wotvvcelement**',
+        'Argument in element (e.g. fire)',
+        'e.g. `=ve light`']
 }
