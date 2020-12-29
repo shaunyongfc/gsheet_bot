@@ -7,8 +7,8 @@ from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_suppo
 
 bot = commands.Bot(command_prefix='+')
 re_brackets = re.compile(r'\[[\w\/]+\]')
-re_numbers = re.compile(r'\d+$')
-df_cotc, df_wotvmats, df_wotvvc = get_df()
+re_numbers = re.compile(r'-?\d+$')
+df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
 
 @bot.event
 async def on_ready():
@@ -37,8 +37,8 @@ async def wotvhelp(ctx, *arg):
 @bot.command()
 async def sync(ctx, *arg):
     if ctx.channel.permissions_for(ctx.message.author).manage_guild:
-        global df_cotc, df_wotvmats, df_wotvvc
-        df_cotc, df_wotvmats, df_wotvvc = get_df()
+        global df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
+        df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
         await ctx.send('Google sheet synced.')
     else:
         await ctx.send('Error. Permission denied.')
@@ -84,17 +84,19 @@ async def wotveq(ctx, *arg):
         if len(arg) == 1:
             embed.title = f"List of types"
             embed.description = '\n'.join(wotv_dicts['sets']['Type'])
-        elif len(arg) == 2:
-            embed.title = arg[1]
+        else:
+            query = ' '.join(arg[1:])
+            embed.title = query
+            query = query.lower()
+            query = query.replace('gs', 'great sword')
+            query = query.replace('nb', 'ninja blade')
+            query = query.replace('armour', 'armor')
             for name, row in df_wotvmats.iterrows():
-                if row['Type'] == arg[1]:
+                if query in row['Type'].lower():
                     type_str = wotv_type_convert(row['Type'])
                     field_name = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}"
                     field_value = f"- {row['Special']}"
                     embed.add_field(name=field_name, value=field_value, inline=True)
-        else:
-            await ctx.send('Error! Please try again!')
-            return
     elif len(arg) == 1:
         embed.title = arg[0]
         row = df_wotvmats.loc[arg[0]]
@@ -124,8 +126,15 @@ async def wotvvcsearch(ctx, *arg):
         'Party Max': [],
         'Unit': []
     }
-    embed.title = ' '.join(arg).capitalize()
-    args = ' '.join(arg).lower()
+    if len(arg) == 1:
+        try:
+            args = df_wotvshortcut.loc[arg[0].lower()]['Conversion']
+        except:
+            args = arg[0]
+    else:
+        args = ' '.join(arg)
+    embed.title = args.capitalize()
+    args = args.lower()
     args = args.replace('lightning', 'thunder')
     for k, v in wotv_dicts['colours'].items():
         if k in args:
@@ -158,7 +167,10 @@ async def wotvvcsearch(ctx, *arg):
             field_value = '\n'.join(v)
             embed.add_field(name=field_name, value=field_value, inline=False)
     embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
-    await ctx.send(embed = embed)
+    try:
+        await ctx.send(embed = embed)
+    except discord.HTTPException:
+        await ctx.send('Too many results. Please refine the search.')
 
 @bot.command(aliases=['wve', 'vce', 've'])
 async def wotvvcelement(ctx, *arg):
@@ -181,12 +193,12 @@ async def wotvvcelement(ctx, *arg):
             ele_found = 0
             for eff in eff_list:
                 if ele_found or wotv_dicts['brackets'][ele] in eff:
-                    ele_found = 1        
+                    ele_found = 1
                     if row['Limited'] != '':
                         eff_prefix2 = wotv_dicts['emotes']['limited']
                     else:
                         eff_prefix2 = ''
-                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}) -{eff.replace(wotv_dicts['brackets'][ele], '')}")
+                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}) {eff.replace(wotv_dicts['brackets'][ele] + ' ', '')}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             field_name = k

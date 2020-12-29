@@ -18,6 +18,12 @@ def get_df():
 
     df_wotvvc = pd.DataFrame(spreadsheet.worksheet('WOTV_vc').get_all_records())
     df_wotvvc = df_wotvvc.set_index('VC Name')
-    return df_cotc, df_wotvmats, df_wotvvc
 
-df_cotc, df_wotvmats, df_wotvvc = get_df()
+    df_wotvshortcut = pd.DataFrame(spreadsheet.worksheet('WOTV_shortcut').get_all_records())
+    df_wotvshortcut = df_wotvshortcut.set_index('Shortcut')
+
+    df_wotvesper = pd.DataFrame(spreadsheet.worksheet('WOTV_esper').get_all_records())
+    df_wotvesper = df_wotvesper.set_index('Esper')
+    return df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
+
+df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()

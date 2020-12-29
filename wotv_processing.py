@@ -45,9 +45,9 @@ def get_wotv_emotes():
     return wotv_emotes
 
 def wotv_type_convert(type_str):
-    if type_str == 'アクセ':
+    if type_str == 'Accessory':
         return 'accessory'
-    elif '防具' in type_str:
+    elif 'Armor' in type_str:
         return 'armor'
     else:
         return 'weapon'
@@ -95,8 +95,7 @@ wotv_dicts['help'] =  {
         ' > - accuracy/evasion',
         ' > - crit rate/evade/damage',
         ' > - ap gain, max damage, etc',
-        'e.g. `=vs pierce atk`',
-        'Note: Omitting atk will return results that include all of them'
+        'e.g. `=vs pierce atk`'
         ],
     'VC Element': ['**= ve / vce / wve / wotvvcelement**',
         'Argument in element (e.g. fire)',
