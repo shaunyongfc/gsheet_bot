@@ -1,4 +1,4 @@
-from gsheet_handler import df_wotvmats
+from gsheet_handler import df_wotvmats, df_wotvesper
 
 wotv_emotes_raw = {
     'weapon': '790521500788064306',
@@ -19,7 +19,7 @@ wotv_emotes_raw = {
     'limited': '792712310178840596'
 }
 
-def get_wotv_sets():
+def get_wotv_sets(df_wotvmats):
     type_set = set()
     mat_common_set = set()
     mat_rare_set = set()
@@ -38,6 +38,14 @@ def get_wotv_sets():
         'Crystal': mat_crystal_set
     }
     return wotv_sets
+
+def get_wotv_sets_esper(df_wotvesper):
+    dict_sets = {
+        'ATK Up': set(),
+        'Killer': set(),
+        'Stat Up': set(),
+        'RES Up': set(),
+    }
 
 def get_wotv_emotes():
     wotv_emotes = dict()
@@ -61,7 +69,7 @@ def get_wotv_bracket():
     return bracket_dict
 
 wotv_dicts = {
-    'sets': get_wotv_sets(),
+    'mats_sets': get_wotv_sets(df_wotvmats),
     'brackets': get_wotv_bracket(),
     'emotes': get_wotv_emotes(),
     'colours': {

@@ -1,15 +1,14 @@
 import discord, re
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import get_df, get_df_cotc
+from gsheet_handler import get_df, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
+from gsheet_handler import get_df_cotc, df_cotc
 from wotv_processing import wotv_dicts, wotv_type_convert
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='+')
 re_brackets = re.compile(r'\[[\w\/]+\]')
 re_numbers = re.compile(r'-?\d+$')
-df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
-df_cotc = get_df_cotc()
 
 @bot.event
 async def on_ready():
@@ -68,7 +67,7 @@ async def wotveq(ctx, *arg):
     if argstr != '':
         if len(arg) == 1:
             embed.title = f"List of {argstr.lower()}s"
-            embed.description = '\n'.join(wotv_dicts['sets'][argstr])
+            embed.description = '\n'.join(wotv_dicts['mats_sets'][argstr])
         elif len(arg) == 2:
             embed.title = arg[1]
             embed_text_list = []
@@ -81,7 +80,7 @@ async def wotveq(ctx, *arg):
         if arg[0].lower() in ['type', 't']:
             if len(arg) == 1:
                 embed.title = f"List of types"
-                embed.description = '\n'.join(wotv_dicts['sets']['Type'])
+                embed.description = '\n'.join(wotv_dicts['mats_sets']['Type'])
             else:
                 query = ' '.join(arg[1:])
                 embed.title = query
@@ -293,15 +292,24 @@ async def wotvesper(ctx, *arg):
         embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row.name}"
     else:
         embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
-    field_name = 'Stats'
-    field_value_list = []
-    for col in ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK']:
-        field_value_list.append(f"**{col}** {row[col]}")
+    stat_list = ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK']
+    field_name = 'Stat'
+    embed.add_field(name=field_name, value='\n'.join(stat_list), inline=True)
+    field_name = 'Value'
+    field_value_list = [str(row[col]) for col in stat_list]
     embed.add_field(name=field_name, value='\n'.join(field_value_list), inline=True)
-    for col in ['ATK Up', 'Killer', 'Stat Up', 'RES Up']:
-        field_name = col
-        field_value_list = row[col].split(' / ')
-        embed.add_field(name=field_name, value='\n'.join(field_value_list), inline=True)
+    embed.add_field(name='Max Effects', value='(including both board and innate)', inline=False)
+    field_value_list1 = []
+    field_value_list2 = []
+    for col, suffix in [('ATK Up', 'ATK'), ('Killer', 'Killer'), ('Stat Up', ''), ('RES Up', 'RES')]:
+        if row[col] != '':
+            eff_list = row[col].split(' / ')
+            for eff in eff_list:
+                re_match = re_numbers.search(eff)
+                field_value_list1.append(f"{eff[:re_match.start()]}{suffix}")
+                field_value_list2.append(re_match.group())
+    embed.add_field(name='Effect', value='\n'.join(field_value_list1), inline=True)
+    embed.add_field(name='Value', value='\n'.join(field_value_list2), inline=True)
     if row['Url'] != '':
         embed.set_thumbnail(url=row['Url'])
     embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
