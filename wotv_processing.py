@@ -1,5 +1,7 @@
+import re
 from gsheet_handler import df_wotvmats, df_wotvesper
 
+re_numbers = re.compile(r'-?\d+$')
 wotv_emotes_raw = {
     'weapon': '790521500788064306',
     'armor': '790521500548857867',
@@ -46,6 +48,13 @@ def get_wotv_sets_esper(df_wotvesper):
         'Stat Up': set(),
         'RES Up': set(),
     }
+    for index, row in df_wotvesper.iterrows():
+        for k, v in dict_sets.items():
+            if row[k] != '':
+                for eff in row[k].split(' / '):
+                    re_match = re_numbers.search(eff)
+                    v.add(eff[:re_match.start()].strip().lower())
+    return dict_sets
 
 def get_wotv_emotes():
     wotv_emotes = dict()
@@ -68,8 +77,26 @@ def get_wotv_bracket():
         bracket_dict[ele] = f"[{ele.capitalize()}]"
     return bracket_dict
 
+def wotv_find_col(argstr):
+    args = argstr.split()
+    if args[-1] in wotv_dicts['esper_suffix'].keys():
+        col = wotv_dicts['esper_suffix'][args[-1]]
+        argstr = ' '.join(args[:-1])
+    else:
+        for k, v in wotv_dicts['esper_sets'].items():
+            if argstr in v:
+                col = k
+                break
+    return col, argstr
+
 wotv_dicts = {
     'mats_sets': get_wotv_sets(df_wotvmats),
+    'esper_sets': get_wotv_sets_esper(df_wotvesper),
+    'esper_suffix': {
+        'atk': 'ATK Up',
+        'killer': 'Killer',
+        'res': 'RES Up'
+    },
     'brackets': get_wotv_bracket(),
     'emotes': get_wotv_emotes(),
     'colours': {
