@@ -10,9 +10,6 @@ client = gspread.authorize(creds)
 def get_df():
     spreadsheet = client.open("Octopath WOTV")
 
-    df_cotc = pd.DataFrame(spreadsheet.worksheet('COTC_owned').get_all_records())
-    df_cotc = df_cotc.set_index('トラベラー')
-
     df_wotvmats = pd.DataFrame(spreadsheet.worksheet('WOTV_matlist').get_all_records())
     df_wotvmats = df_wotvmats.set_index('EQ Name')
 
@@ -24,6 +21,15 @@ def get_df():
 
     df_wotvesper = pd.DataFrame(spreadsheet.worksheet('WOTV_esper').get_all_records())
     df_wotvesper = df_wotvesper.set_index('Esper')
-    return df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
+    return df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
 
-df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
+df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
+
+def get_df_cotc():
+    spreadsheet = client.open("Octopath WOTV")
+
+    df_cotc = pd.DataFrame(spreadsheet.worksheet('COTC_owned').get_all_records())
+    df_cotc = df_cotc.set_index('トラベラー')
+    return df_cotc
+
+df_cotc = get_df_cotc()

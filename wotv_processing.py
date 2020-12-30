@@ -6,6 +6,7 @@ wotv_emotes_raw = {
     'accessory': '790521500658171925',
     'ur': '790521500821749808',
     'ssr': '790521500829876244',
+    'sr': '793618254529822730',
     'fire': '791969566023745547',
     'ice': '791969566308958219',
     'wind': '791969566409752576',
@@ -90,9 +91,8 @@ wotv_dicts['help'] =  {
         ' > - slash/pierce/strike/missile/magic atk/res/pen',
         ' > - fire/ice/(etc) atk/res'
         ' > - def/spr up/pen',
-        ' > - atk%/mag%/agi%/dex%/luck%/hp%',
+        ' > - atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
         ' > - single/area res',
-        ' > - accuracy/evasion',
         ' > - crit rate/evade/damage',
         ' > - ap gain, max damage, etc',
         'e.g. `=vs pierce atk`'

@@ -1,19 +1,25 @@
 import discord, re
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import get_df
+from gsheet_handler import get_df, get_df_cotc
 from wotv_processing import wotv_dicts, wotv_type_convert
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='+')
 re_brackets = re.compile(r'\[[\w\/]+\]')
 re_numbers = re.compile(r'-?\d+$')
-df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
+df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
+df_cotc = get_df_cotc()
 
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
     await bot.change_presence(activity = discord.Game(name = '幻影の覇者'))
+
+################################
+### FFBE: War of the Visions ###
+################################
+# Able to copy directly from this point
 
 @bot.command()
 async def ping(ctx):
@@ -36,42 +42,14 @@ async def wotvhelp(ctx, *arg):
 
 @bot.command()
 async def sync(ctx, *arg):
-    if ctx.channel.permissions_for(ctx.message.author).manage_guild:
-        global df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
-        df_cotc, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
+    if ctx.message.author.id == 294834393569296385:
+        global df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
+        df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper = get_df()
         await ctx.send('Google sheet synced.')
     else:
         await ctx.send('Error. Permission denied.')
 
-@bot.command(aliases=['wm'])
-async def wotvmat(ctx, *arg):
-    embed = discord.Embed(
-        colour = 0x999999
-    )
-    embed.set_author(
-        name = 'FFBE幻影戦争',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
-    )
-    if arg[0].lower() in ['common', 'c']:
-        argstr = 'Common'
-    elif arg[0].lower() in ['rare', 'r']:
-        argstr = 'Rare'
-    elif arg[0].lower() in ['crystal', 'element', 'e']:
-        argstr = 'Crystal'
-    if len(arg) == 1:
-        embed.title = f"List of {argstr.lower()}s"
-        embed.description = '\n'.join(wotv_dicts['sets'][argstr])
-    elif len(arg) == 2:
-        embed.title = arg[1]
-        embed_text_list = []
-        for name, row in df_wotvmats.iterrows():
-            if row[argstr] == arg[1]:
-                type_str = wotv_type_convert(row['Type'])
-                embed_text_list.append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}")
-        embed.description = '\n'.join(embed_text_list)
-    await ctx.send(embed = embed)
-
-@bot.command(aliases=['we'])
+@bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
     embed = discord.Embed(
         colour = 0x999999
@@ -80,35 +58,62 @@ async def wotveq(ctx, *arg):
         name = 'FFBE幻影戦争',
         icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
     )
-    if arg[0].lower() in ['type', 't']:
+    argstr = ''
+    if arg[0].lower() in ['common', 'c']:
+        argstr = 'Common'
+    elif arg[0].lower() in ['rare', 'r']:
+        argstr = 'Rare'
+    elif arg[0].lower() in ['crystal', 'element', 'e']:
+        argstr = 'Crystal'
+    if argstr != '':
         if len(arg) == 1:
-            embed.title = f"List of types"
-            embed.description = '\n'.join(wotv_dicts['sets']['Type'])
-        else:
-            query = ' '.join(arg[1:])
-            embed.title = query
-            query = query.lower()
-            query = query.replace('gs', 'great sword')
-            query = query.replace('nb', 'ninja blade')
-            query = query.replace('armour', 'armor')
+            embed.title = f"List of {argstr.lower()}s"
+            embed.description = '\n'.join(wotv_dicts['sets'][argstr])
+        elif len(arg) == 2:
+            embed.title = arg[1]
+            embed_text_list = []
             for name, row in df_wotvmats.iterrows():
-                if query in row['Type'].lower():
+                if row[argstr] == arg[1]:
                     type_str = wotv_type_convert(row['Type'])
-                    field_name = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}"
-                    field_value = f"- {row['Special']}"
-                    embed.add_field(name=field_name, value=field_value, inline=True)
-    elif len(arg) == 1:
-        embed.title = arg[0]
-        row = df_wotvmats.loc[arg[0]]
-        type_str = wotv_type_convert(row['Type'])
-        embed.description = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {row['Special']}\nAcquisition: {row['Acquisition']}"
-        embed_text_list = []
-        for col in ['Common', 'Rare', 'Crystal']:
-            embed_text_list.append(f"- {row[col]}")
-        embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
+                    embed_text_list.append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}")
+            embed.description = '\n'.join(embed_text_list)
     else:
-        await ctx.send('Error! Please try again!')
-        return
+        if arg[0].lower() in ['type', 't']:
+            if len(arg) == 1:
+                embed.title = f"List of types"
+                embed.description = '\n'.join(wotv_dicts['sets']['Type'])
+            else:
+                query = ' '.join(arg[1:])
+                embed.title = query
+                query = query.lower()
+                replace_dict = {
+                    'staff': 'rod',
+                    'gs': 'great sword',
+                    'greatsword': 'great sword',
+                    'nb': 'ninja blade',
+                    'ninjablade': 'ninja blade',
+                    'armour': 'armor'
+                }
+                for k, v in replace_dict.items():
+                    query = query.replace(k, v)
+                for name, row in df_wotvmats.iterrows():
+                    if query in row['Type'].lower():
+                        type_str = wotv_type_convert(row['Type'])
+                        field_name = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}"
+                        field_value = f"- {row['Special']}"
+                        embed.add_field(name=field_name, value=field_value, inline=True)
+        elif len(arg) == 1:
+            embed.title = arg[0]
+            row = df_wotvmats.loc[arg[0]]
+            type_str = wotv_type_convert(row['Type'])
+            embed.description = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {row['Special']}\nAcquisition: {row['Acquisition']}"
+            embed_text_list = []
+            for col in ['Common', 'Rare', 'Crystal']:
+                embed_text_list.append(f"- {row[col]}")
+            embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
+        else:
+            await ctx.send('Error! Please try again!')
+            return
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wvs', 'vcs', 'vs'])
@@ -264,6 +269,41 @@ async def wotvvc(ctx, *arg):
         embed.set_thumbnail(url=row['Url'])
     if embed_colour != '':
         embed.colour = wotv_dicts['colours'][embed_colour]
+    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['esper'])
+async def wotvesper(ctx, *arg):
+    embed = discord.Embed()
+    embed.set_author(
+        name = 'FFBE幻影戦争',
+        url = 'https://wotv-calc.com/JP/cards',
+        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+    )
+    row_df = df_wotvesper[df_wotvesper.index.str.lower() == ' '.join(arg).lower()]
+    if len(row_df) == 0:
+        row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(' '.join(arg).lower())]
+    if len(row_df) == 0:
+        row_df = df_wotvesper[df_wotvesper['Nickname'] == ' '.join(arg).lower()]
+    if len(row_df) == 0:
+        row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(' '.join(arg).lower())]
+    row = row_df.iloc[0]
+    embed.colour = wotv_dicts['colours'][row['Element'].lower()]
+    if row['Limited'] != '':
+        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row.name}"
+    else:
+        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
+    field_name = 'Stats'
+    field_value_list = []
+    for col in ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK']:
+        field_value_list.append(f"**{col}** {row[col]}")
+    embed.add_field(name=field_name, value='\n'.join(field_value_list), inline=True)
+    for col in ['ATK Up', 'Killer', 'Stat Up', 'RES Up']:
+        field_name = col
+        field_value_list = row[col].split(' / ')
+        embed.add_field(name=field_name, value='\n'.join(field_value_list), inline=True)
+    if row['Url'] != '':
+        embed.set_thumbnail(url=row['Url'])
     embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
     await ctx.send(embed = embed)
 
