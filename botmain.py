@@ -1,14 +1,13 @@
-import discord, re
+import discord
 import pandas as pd
 from discord.ext import commands
 from gsheet_handler import get_df, df_wotvmats, df_wotvvc, df_wotvshortcut, df_wotvesper
-from wotv_processing import wotv_dicts, wotv_type_convert, get_wotv_sets_esper, wotv_find_col
+from wotv_processing import wotv_utils
+
 from gsheet_handler import get_df_cotc, df_cotc
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='+')
-re_brackets = re.compile(r'\[[\w\/]+\]')
-re_numbers = re.compile(r'-?\d+$')
 
 @bot.event
 async def on_ready():
@@ -35,7 +34,7 @@ async def wotvhelp(ctx, *arg):
         icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
     )
     embed.title = 'Ildyra Bot Help'
-    for k, v in wotv_dicts['help'].items():
+    for k, v in wotv_utils.dicts['help'].items():
         embed.add_field(name=k, value='\n'.join(v), inline=False)
     await ctx.send(embed = embed)
 
@@ -51,7 +50,7 @@ async def sync(ctx, *arg):
 @bot.command()
 async def sync_esper(ctx, *arg):
     if ctx.message.author.id == 294834393569296385:
-        wotv_dicts['esper_sets'] = get_wotv_sets_esper(df_wotvesper)
+        wotv_utils.dicts['esper_sets'] = wotv_utils.esper_sets(df_wotvesper)
         await ctx.send('Esper keyword sets updated.')
     else:
         await ctx.send('Error. Permission denied.')
@@ -75,45 +74,34 @@ async def wotveq(ctx, *arg):
     if argstr != '':
         if len(arg) == 1:
             embed.title = f"List of {argstr.lower()}s"
-            embed.description = '\n'.join(wotv_dicts['mats_sets'][argstr])
+            embed.description = '\n'.join(wotv_utils.dicts['mats_sets'][argstr])
         elif len(arg) == 2:
             embed.title = arg[1]
             embed_text_list = []
             for name, row in df_wotvmats.iterrows():
                 if row[argstr] == arg[1]:
-                    type_str = wotv_type_convert(row['Type'])
-                    embed_text_list.append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}")
+                    embed_text_list.append(f"{wotv_utils.emote_prefix(row)} {name}")
             embed.description = '\n'.join(embed_text_list)
     else:
         if arg[0].lower() in ['type', 't']:
             if len(arg) == 1:
                 embed.title = f"List of types"
-                embed.description = '\n'.join(wotv_dicts['mats_sets']['Type'])
+                embed.description = '\n'.join(wotv_utils.dicts['mats_sets']['Type'])
             else:
                 query = ' '.join(arg[1:])
                 embed.title = query
                 query = query.lower()
-                replace_dict = {
-                    'staff': 'rod',
-                    'gs': 'great sword',
-                    'greatsword': 'great sword',
-                    'nb': 'ninja blade',
-                    'ninjablade': 'ninja blade',
-                    'armour': 'armor'
-                }
-                for k, v in replace_dict.items():
+                for k, v in wotv_utils.dicts[eq_replace].items():
                     query = query.replace(k, v)
                 for name, row in df_wotvmats.iterrows():
                     if query in row['Type'].lower():
-                        type_str = wotv_type_convert(row['Type'])
-                        field_name = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {name}"
+                        field_name = f"{wotv_utils.emote_prefix(row)} {name}"
                         field_value = f"- {row['Special']}"
                         embed.add_field(name=field_name, value=field_value, inline=True)
         elif len(arg) == 1:
             embed.title = arg[0]
             row = df_wotvmats.loc[arg[0]]
-            type_str = wotv_type_convert(row['Type'])
-            embed.description = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes'][type_str]} {row['Special']}\nAcquisition: {row['Acquisition']}"
+            embed.description = f"{wotv_utils.emote_prefix(row)} {row['Special']}\nAcquisition: {row['Acquisition']}"
             embed_text_list = []
             for col in ['Common', 'Rare', 'Crystal']:
                 embed_text_list.append(f"- {row[col]}")
@@ -148,31 +136,27 @@ async def wotvvcsearch(ctx, *arg):
     embed.title = args.capitalize()
     args = args.lower()
     args = args.replace('lightning', 'thunder')
-    for k, v in wotv_dicts['colours'].items():
+    for k, v in wotv_utils.dicts['colours'].items():
         if k in args:
             embed.colour = v
             break
     for index, row in df_wotvvc.iterrows():
         for col in effects_dict.keys():
             eff_list = row[col].split(' / ')
-            eff_prefix = wotv_dicts['emotes']['neutral']
+            eff_prefix = wotv_utils.dicts['emotes']['neutral']
             for eff in eff_list:
                 eff_suffix = ''
-                match_brackets = re_brackets.findall(eff)
+                match_brackets = wotv_utils.reb.findall(eff)
                 if len(match_brackets) == 1:
-                    if match_brackets[0] in wotv_dicts['brackets'].keys():
-                        eff_prefix = wotv_dicts['emotes'][wotv_dicts['brackets'][match_brackets[0]]]
+                    if match_brackets[0] in wotv_utils.dicts['brackets'].keys():
+                        eff_prefix = wotv_utils.dicts['emotes'][wotv_utils.dicts['brackets'][match_brackets[0]]]
                     else:
                         eff_prefix = match_brackets[0]
-                match_numbers = re_numbers.findall(eff)
+                match_numbers = wotv_utils.ren.findall(eff)
                 if len(match_numbers) == 1:
                     eff_suffix = ' ' + match_numbers[0]
                 if args in eff.lower():
-                    if row['Limited'] != '':
-                        eff_prefix2 = wotv_dicts['emotes']['limited']
-                    else:
-                        eff_prefix2 = ''
-                    effects_dict[col].append(f"{eff_prefix}{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}){eff_suffix}")
+                    effects_dict[col].append(f"{eff_prefix}{wotv_utils.emote_prefix(row)} {row.name} ({row['Nickname']}){eff_suffix}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
@@ -195,20 +179,16 @@ async def wotvvcelement(ctx, *arg):
         'Party Max': []
     }
     ele = arg[0].lower().replace('lightning', 'thunder')
-    embed.title = f"{wotv_dicts['emotes'][ele]} {arg[0].capitalize()}"
-    embed.colour = wotv_dicts['colours'][ele]
+    embed.title = f"{wotv_utils.dicts['emotes'][ele]} {arg[0].capitalize()}"
+    embed.colour = wotv_utils.dicts['colours'][ele]
     for index, row in df_wotvvc.iterrows():
         for col in effects_dict.keys():
             eff_list = row[col].split(' / ')
             ele_found = 0
             for eff in eff_list:
-                if ele_found or wotv_dicts['brackets'][ele] in eff:
+                if ele_found or wotv_utils.dicts['brackets'][ele] in eff:
                     ele_found = 1
-                    if row['Limited'] != '':
-                        eff_prefix2 = wotv_dicts['emotes']['limited']
-                    else:
-                        eff_prefix2 = ''
-                    effects_dict[col].append(f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{eff_prefix2} {row.name} ({row['Nickname']}) {eff.replace(wotv_dicts['brackets'][ele] + ' ', '')}")
+                    effects_dict[col].append(f"{wotv_utils.emote_prefix(row)} {row.name} ({row['Nickname']}) {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
@@ -242,10 +222,7 @@ async def wotvvc(ctx, *arg):
                 embed.description = ' / '.join(embed_text_list)
                 await ctx.send(embed = embed)
                 return
-    if row['Limited'] != '':
-        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row.name}"
-    else:
-        embed.title = f"{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
+    embed.title = f"{wotv_utils.emote_prefix(row)} {row.name}"
     for col in ['Unit', 'Party', 'Party Max', 'Skill']:
         if row[col] == '':
             continue
@@ -254,11 +231,11 @@ async def wotvvc(ctx, *arg):
         embed_colour = ''
         eff_prefix = ''
         for eff in eff_list:
-            match_brackets = re_brackets.findall(eff)
+            match_brackets = wotv_utils.reb.findall(eff)
             if len(match_brackets) == 1:
-                if match_brackets[0] in wotv_dicts['brackets'].keys():
-                    eff_prefix = wotv_dicts['emotes'][wotv_dicts['brackets'][match_brackets[0]]] + ' '
-                    embed_colour = wotv_dicts['brackets'][match_brackets[0]]
+                if match_brackets[0] in wotv_utils.dicts['brackets'].keys():
+                    eff_prefix = wotv_utils.dicts['emotes'][wotv_utils.dicts['brackets'][match_brackets[0]]] + ' '
+                    embed_colour = wotv_utils.dicts['brackets'][match_brackets[0]]
                 else:
                     eff_prefix = match_brackets[0] + ' '
                 eff_text = eff.replace(match_brackets[0] + ' ', '')
@@ -270,7 +247,7 @@ async def wotvvc(ctx, *arg):
     if row['Url'] != '':
         embed.set_thumbnail(url=row['Url'])
     if embed_colour != '':
-        embed.colour = wotv_dicts['colours'][embed_colour]
+        embed.colour = wotv_utils.dicts['colours'][embed_colour]
     embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
     await ctx.send(embed = embed)
 
@@ -282,7 +259,6 @@ async def wotvesper(ctx, *arg):
         url = 'https://wotv-calc.com/JP/cards',
         icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
     )
-    stat_list = ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK']
     if arg[0] in ['m', 'mobile']:
         mobile_bool = 1
         arg = arg[1:]
@@ -296,15 +272,18 @@ async def wotvesper(ctx, *arg):
             args = ' '.join(arg[1:])
         embed.title = args.capitalize()
         arg = [a.lower().strip() for a in args.split('|')]
-        col, first_arg = wotv_find_col(arg[0])
-        row_df = df_wotvesper[df_wotvesper[col].str.lower().str.contains(first_arg)]
+        col, first_arg = wotv_utils.esper_findcol(arg[0])
+        if first_arg == 'STAT':
+            row_df = df_wotvesper.nlargest(10, col)
+        else:
+            row_df = df_wotvesper[df_wotvesper[col].str.lower().str.contains(first_arg)]
         tuples_list = [(col, first_arg)]
         if len(arg) > 1:
             for argstr in arg[1:]:
-                if argstr.upper() in stat_list:
+                if argstr.upper() in wotv_utils.dicts['esper_stats']:
                     tuples_list.append((argstr.upper(), 'STAT'))
                 else:
-                    tuples_list.append(wotv_find_col(argstr))
+                    tuples_list.append(wotv_utils.esper_findcol(argstr))
         list_lists = []
         for index, row in row_df.iterrows():
             row_list = [index]
@@ -315,18 +294,15 @@ async def wotvesper(ctx, *arg):
                     eff_list = row[tupcol].split(' / ')
                     for eff in eff_list:
                         if tuparg in eff.lower():
-                            re_match = re_numbers.findall(eff)
+                            re_match = wotv_utils.ren.findall(eff)
                             row_list.append(re_match[0])
                 else:
                     row_list.append('-')
             list_lists.append(row_list)
-        list_lists.sort(key=lambda a: a[1], reverse=True)
+        list_lists.sort(key=lambda a: int(a[1]), reverse=True)
         if mobile_bool:
             for row_list in list_lists:
-                if row_df.loc[row_list[0]]['Limited'] != '':
-                    field_name = f"{wotv_dicts['emotes'][row_df.loc[row_list[0]]['Element'].lower()]}{wotv_dicts['emotes'][row_df.loc[row_list[0]]['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row_list[0]}"
-                else:
-                    field_name = f"{wotv_dicts['emotes'][row_df.loc[row_list[0]]['Element'].lower()]}{wotv_dicts['emotes'][row_df.loc[row_list[0]]['Rarity'].lower()]} {row_list[0]}"
+                field_name = f"{wotv_utils.emote_prefix(row_df.loc[row_list[0]])} {row_list[0]}"
                 field_list = []
                 for argname, argvalue in zip(arg, row_list[1:]):
                     if argvalue != '-':
@@ -334,13 +310,7 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         else:
             transpose_list = list(map(list, zip(*list_lists)))
-            field_list = []
-            for esper_name in transpose_list[0]:
-                if row_df.loc[esper_name]['Limited'] != '':
-                    full_esper = f"{wotv_dicts['emotes'][row_df.loc[esper_name]['Element'].lower()]}{wotv_dicts['emotes'][row_df.loc[esper_name]['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {esper_name}"
-                else:
-                    full_esper = f"{wotv_dicts['emotes'][row_df.loc[esper_name]['Element'].lower()]}{wotv_dicts['emotes'][row_df.loc[esper_name]['Rarity'].lower()]} {esper_name}"
-                field_list.append(full_esper)
+            field_list = [f"{wotv_utils.emote_prefix(row_df.loc[a])} {a}" for a in transpose_list[0]]
             embed.add_field(name='Esper', value='\n'.join(field_list), inline=True)
             for field_name, field_list in zip(arg, transpose_list[1:]):
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=True)
@@ -353,18 +323,15 @@ async def wotvesper(ctx, *arg):
         if len(row_df) == 0:
             row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(' '.join(arg).lower())]
         row = row_df.iloc[0]
-        embed.colour = wotv_dicts['colours'][row['Element'].lower()]
-        if row['Limited'] != '':
-            embed.title = f"{wotv_dicts['emotes'][row['Element'].lower()]}{wotv_dicts['emotes'][row['Rarity'].lower()]}{wotv_dicts['emotes']['limited']} {row.name}"
-        else:
-            embed.title = f"{wotv_dicts['emotes'][row['Element'].lower()]}{wotv_dicts['emotes'][row['Rarity'].lower()]} {row.name}"
-        field_value_list = [str(row[col]) for col in stat_list]
+        embed.colour = wotv_utils.dicts['colours'][row['Element'].lower()]
+        embed.title = f"{wotv_utils.emote_prefix(row)} {row.name}"
+        field_value_list = [str(row[col]) for col in wotv_utils.dicts['esper_stats']]
         if mobile_bool:
-            field_value_list = [f"**{col}:** {(row[col])}" for col in stat_list]
+            field_value_list = [f"**{col}:** {(row[col])}" for col in wotv_utils.dicts['esper_stats']]
             embed.add_field(name='Stat', value='\n'.join(field_value_list), inline=False)
         else:
-            field_value_list = [str(row[col]) for col in stat_list]
-            embed.add_field(name='Stat', value='\n'.join(stat_list), inline=True)
+            field_value_list = [str(row[col]) for col in wotv_utils.dicts['esper_stats']]
+            embed.add_field(name='Stat', value='\n'.join(wotv_utils.dicts['esper_stats']), inline=True)
             embed.add_field(name='Value', value='\n'.join(field_value_list), inline=True)
         field_value_list1 = []
         field_value_list2 = []
@@ -372,7 +339,7 @@ async def wotvesper(ctx, *arg):
             if row[col] != '':
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
-                    re_match = re_numbers.search(eff)
+                    re_match = wotv_utils.ren.search(eff)
                     field_value_list1.append(f"{eff[:re_match.start()]}{suffix}")
                     field_value_list2.append(re_match.group())
         if mobile_bool:
