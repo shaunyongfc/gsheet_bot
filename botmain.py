@@ -91,7 +91,7 @@ async def wotveq(ctx, *arg):
                 query = ' '.join(arg[1:])
                 embed.title = query
                 query = query.lower()
-                for k, v in wotv_utils.dicts[eq_replace].items():
+                for k, v in wotv_utils.dicts['eq_replace'].items():
                     query = query.replace(k, v)
                 for name, row in df_wotvmats.iterrows():
                     if query in row['Type'].lower():
@@ -264,7 +264,7 @@ async def wotvesper(ctx, *arg):
         arg = arg[1:]
     else:
         mobile_bool = 0
-    if arg[0] in ['compare', 'c', 'sort', 's', 'rank', 'r', 'filter', 'f']:
+    if arg[0] in ['sort', 's', 'rank', 'r', 'filter', 'f']:
         if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
             mobile_bool = 1
             args = ' '.join(arg[2:])
@@ -272,6 +272,8 @@ async def wotvesper(ctx, *arg):
             args = ' '.join(arg[1:])
         embed.title = args.capitalize()
         arg = [a.lower().strip() for a in args.split('|')]
+        if len(arg) > 2:
+            mobile_bool = 1
         col, first_arg = wotv_utils.esper_findcol(arg[0])
         if first_arg == 'STAT':
             row_df = df_wotvesper.nlargest(10, col)
@@ -314,6 +316,43 @@ async def wotvesper(ctx, *arg):
             embed.add_field(name='Esper', value='\n'.join(field_list), inline=True)
             for field_name, field_list in zip(arg, transpose_list[1:]):
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=True)
+    elif arg[0] in ['compare', 'c']:
+        if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
+            mobile_bool = 1
+            args = ' '.join(arg[2:])
+        else:
+            args = ' '.join(arg[1:])
+        embed.title = args.capitalize()
+        arg = [a.lower().strip() for a in args.split('|')]
+        if len(arg) > 2:
+            mobile_bool = 1
+        row_list = []
+        list_espers = []
+        for esper_name in arg:
+            row_df = df_wotvesper[df_wotvesper.index.str.lower() == esper_name]
+            if len(row_df) == 0:
+                row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(esper_name)]
+            if len(row_df) == 0:
+                row_df = df_wotvesper[df_wotvesper['Nickname'] == esper_name]
+            if len(row_df) == 0:
+                row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(esper_name)]
+            if len(row_df) == 1:
+                row_list.append(row_df.iloc[0])
+                list_espers.append(row_df.iloc[0].name)
+        list_stats = []
+        for row in row_list:
+            list_stats.append([str(row[col]) for col in wotv_utils.dicts['esper_stats']])
+        if mobile_bool:
+            transpose_list = list(map(list, zip(*list_stats)))
+            embed.add_field(name='Stat', value=' | '.join(list_espers), inline=False)
+            for field_name, stat_list in zip(wotv_utils.dicts['esper_stats'], transpose_list):
+                field_list = [str(a) for a in stat_list]
+                embed.add_field(name=field_name, value=' | '.join(field_list), inline=False)
+        else:
+            embed.add_field(name='Stat', value='\n'.join(wotv_utils.dicts['esper_stats']), inline=True)
+            for field_name, stat_list in zip(list_espers, list_stats):
+                field_list = [str(a) for a in stat_list]
+                embed.add_field(name=field_name, value = '\n'.join(field_list), inline=True)
     else:
         row_df = df_wotvesper[df_wotvesper.index.str.lower() == ' '.join(arg).lower()]
         if len(row_df) == 0:

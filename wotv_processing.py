@@ -17,7 +17,8 @@ wotv_emotes_raw = {
     'light': '791969565826613259',
     'dark': '791969566246436884',
     'neutral': '791969566233853952',
-    'limited': '794002206642143232'
+    'limited': '794438895932669963',
+    'esper': '794438896066101288'
 }
 
 class WotvUtils:
@@ -78,7 +79,8 @@ class WotvUtils:
                 ],
             'VC Element': ['**= ve / vce / wve / wotvvcelement**',
                 'Argument in element (e.g. fire)',
-                'e.g. `=ve light`']
+                'e.g. `=ve light`'],
+            'Esper' : ['Enter =help esper for more info.']
         }
     def mat_sets(self, df_wotvmats):
         dict_sets = {
@@ -150,6 +152,9 @@ class WotvUtils:
         if 'Limited' in row.index:
             if row['Limited'] != '':
                 prefix += self.dicts['emotes']['limited']
+        if 'Awaken' in row.index:
+            if row['Awaken'] != '':
+                prefix += self.dicts['emotes']['esper']
         return prefix
 
 wotv_utils = WotvUtils()
