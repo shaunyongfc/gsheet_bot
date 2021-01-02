@@ -58,14 +58,26 @@ class WotvUtils:
         }
         self.dicts['help'] =  {
             'General info': [
-                'Bot prefix is =',
-                'Elemental icons indicate unit-element-locked effects',
-                self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects',
-                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited'],
+                'Bot prefix is `=`.',
+                'Elemental icons indicate unit-element-locked VC effects.',
+                self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional VC effects.',
+                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
+                self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened esper data.'
+            ],
             'Standard commands': ['= ping', '= help'],
+            'VC': ['Enter `=help vc` for more info.'],
+            'Esper' : ['Enter `=help esper` for more info.']
+        }
+        self.dicts['help_vc'] = {
+            'General info': [
+                'Elemental icons indicate unit-element-locked effects.',
+                self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects.',
+                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.'
+            ],
             'VC Info': ['**= vc / wvc / wotvvc**',
                 'Argument either in full Japanese name or short English nickname bracketed in other commands.',
-                'e.g. `=vc omega`'],
+                'e.g. `=vc omega`'
+            ],
             'VC Search': ['**= vs / vcs / wvs /wotvvcsearch**',
                 'Argument in specific effect names with following conventions:',
                 ' > - slash/pierce/strike/missile/magic atk/res/pen',
@@ -76,11 +88,32 @@ class WotvUtils:
                 ' > - crit rate/evade/damage',
                 ' > - ap gain, max damage, etc',
                 'e.g. `=vs pierce atk`'
-                ],
+            ],
             'VC Element': ['**= ve / vce / wve / wotvvcelement**',
-                'Argument in element (e.g. fire)',
-                'e.g. `=ve light`'],
-            'Esper' : ['Enter =help esper for more info.']
+                'Argument in element (e.g. fire).',
+                'e.g. `=ve light`']
+        }
+        self.dicts['help_esper'] = {
+            'General info': [
+                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
+                self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
+                'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
+            ],
+            'Esper Info': ['**= esper**',
+                'Argument either in full Japanese name or short English nickname bracketed in other commands.',
+                'e.g. `=esper omega`'
+            ],
+            'Esper Rank': ['**= esper r / esper rank**',
+                'Arguments separated by `|` for each stat / effect.',
+                'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
+                '3 or more arguments will force it into mobile display mode.',
+                'e.g. `=esper r magic | human`, `=esper r m magic | mag% | agi`'
+            ],
+            'Esper Compare': ['**= esper c / esper compare**',
+                'Arguments separated by `|` for each esper / effect.',
+                'Will only compare all flat stats by default, add effect comparisons by `+ effect` as arguments.',
+                '3 or more espers will force it into mobile display mode.',
+                'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`']
         }
     def mat_sets(self, df_wotvmats):
         dict_sets = {

@@ -34,7 +34,13 @@ async def wotvhelp(ctx, *arg):
         icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
     )
     embed.title = 'Ildyra Bot Help'
-    for k, v in wotv_utils.dicts['help'].items():
+    help_dict = wotv_utils.dicts['help']
+    if len(arg) > 0:
+        if arg[0].lower() == 'vc':
+            help_dict = wotv_utils.dicts['help_vc']
+        elif arg[0].lower() == 'esper':
+            help_dict = wotv_utils.dicts['help_esper']
+    for k, v in help_dict.items():
         embed.add_field(name=k, value='\n'.join(v), inline=False)
     await ctx.send(embed = embed)
 
@@ -324,32 +330,47 @@ async def wotvesper(ctx, *arg):
             args = ' '.join(arg[1:])
         embed.title = args.capitalize()
         arg = [a.lower().strip() for a in args.split('|')]
-        if len(arg) > 2:
-            mobile_bool = 1
         row_list = []
         list_espers = []
-        for esper_name in arg:
-            row_df = df_wotvesper[df_wotvesper.index.str.lower() == esper_name]
-            if len(row_df) == 0:
-                row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(esper_name)]
-            if len(row_df) == 0:
-                row_df = df_wotvesper[df_wotvesper['Nickname'] == esper_name]
-            if len(row_df) == 0:
-                row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(esper_name)]
-            if len(row_df) == 1:
-                row_list.append(row_df.iloc[0])
-                list_espers.append(row_df.iloc[0].name)
+        extra_stats = []
+        for argstr in arg:
+            if argstr[0] == '+':
+                extra_stats.append(argstr.lstrip('+').lstrip())
+            else:
+                row_df = df_wotvesper[df_wotvesper.index.str.lower() == argstr]
+                if len(row_df) == 0:
+                    row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(argstr)]
+                if len(row_df) == 0:
+                    row_df = df_wotvesper[df_wotvesper['Nickname'] == argstr]
+                if len(row_df) == 0:
+                    row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(argstr)]
+                if len(row_df) == 1:
+                    row_list.append(row_df.iloc[0])
+                    list_espers.append(f"{wotv_utils.emote_prefix(row_df.iloc[0])} {row_df.iloc[0].name}")
+        if len(list_espers) > 2:
+            mobile_bool = 1
+        tuples_list = [wotv_utils.esper_findcol(a) for a in extra_stats]
         list_stats = []
         for row in row_list:
-            list_stats.append([str(row[col]) for col in wotv_utils.dicts['esper_stats']])
+            row_stats = [str(row[col]) for col in wotv_utils.dicts['esper_stats']]
+            for tupcol, tuparg in tuples_list:
+                if tuparg in row[tupcol].lower():
+                    eff_list = row[tupcol].split(' / ')
+                    for eff in eff_list:
+                        if tuparg in eff.lower():
+                            re_match = wotv_utils.ren.findall(eff)
+                            row_stats.append(re_match[0])
+                else:
+                    row_stats.append('-')
+            list_stats.append(row_stats)
         if mobile_bool:
             transpose_list = list(map(list, zip(*list_stats)))
             embed.add_field(name='Stat', value=' | '.join(list_espers), inline=False)
-            for field_name, stat_list in zip(wotv_utils.dicts['esper_stats'], transpose_list):
+            for field_name, stat_list in zip(wotv_utils.dicts['esper_stats'] + extra_stats, transpose_list):
                 field_list = [str(a) for a in stat_list]
                 embed.add_field(name=field_name, value=' | '.join(field_list), inline=False)
         else:
-            embed.add_field(name='Stat', value='\n'.join(wotv_utils.dicts['esper_stats']), inline=True)
+            embed.add_field(name='Stat', value='\n'.join(wotv_utils.dicts['esper_stats'] + extra_stats), inline=True)
             for field_name, stat_list in zip(list_espers, list_stats):
                 field_list = [str(a) for a in stat_list]
                 embed.add_field(name=field_name, value = '\n'.join(field_list), inline=True)
