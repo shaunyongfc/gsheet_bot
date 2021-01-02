@@ -214,7 +214,11 @@ async def wotvvc(ctx, *arg):
     try:
         row = df_wotvvc.loc['　'.join(arg)]
     except KeyError:
-        row_df = df_wotvvc[df_wotvvc['Nickname'].str.contains(' '.join(arg).lower())]
+        try:
+            arg[0].encode('ascii')
+            row_df = df_wotvvc[df_wotvvc['Nickname'].str.contains(' '.join(arg).lower())]
+        except UnicodeEncodeError:
+            row_df = df_wotvvc[df_wotvvc.index.str.contains('　'.join(arg))]
         if len(row_df) == 1:
             row = row_df.iloc[0]
         elif len(row_df) > 1:
