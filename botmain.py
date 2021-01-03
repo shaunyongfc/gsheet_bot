@@ -162,7 +162,8 @@ async def wotvvcsearch(ctx, *arg):
                 if len(match_numbers) == 1:
                     eff_suffix = ' ' + match_numbers[0]
                 if args in eff.lower():
-                    effects_dict[col].append(f"{eff_prefix}{wotv_utils.emote_prefix(row)} {row.name} ({row['Nickname']}){eff_suffix}")
+                    nickname = row['Nickname'].split(', ')[0]
+                    effects_dict[col].append(f"{eff_prefix}{wotv_utils.emote_prefix(row)} {row.name} ({nickname}){eff_suffix}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
@@ -194,7 +195,8 @@ async def wotvvcelement(ctx, *arg):
             for eff in eff_list:
                 if ele_found or wotv_utils.dicts['brackets'][ele] in eff:
                     ele_found = 1
-                    effects_dict[col].append(f"{wotv_utils.emote_prefix(row)} {row.name} ({row['Nickname']}) {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}")
+                    nickname = row['Nickname'].split(', ')[0]
+                    effects_dict[col].append(f"{wotv_utils.emote_prefix(row)} {row.name} ({nickname}) {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}")
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
@@ -223,7 +225,7 @@ async def wotvvc(ctx, *arg):
             row = row_df.iloc[0]
         elif len(row_df) > 1:
             for index, df_row in row_df.iterrows():
-                if df_row['Nickname'] == ' '.join(arg).lower():
+                if ' '.join(arg).lower() in df_row['Nickname'].split(', '):
                     row = df_row
                     break
             else:
@@ -345,7 +347,7 @@ async def wotvesper(ctx, *arg):
                 if len(row_df) == 0:
                     row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(argstr)]
                 if len(row_df) == 0:
-                    row_df = df_wotvesper[df_wotvesper['Nickname'] == argstr]
+                    row_df = df_wotvesper[argstr in df_wotvesper['Nickname'].str.split(', ')]
                 if len(row_df) == 0:
                     row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(argstr)]
                 if len(row_df) == 1:
@@ -383,7 +385,7 @@ async def wotvesper(ctx, *arg):
         if len(row_df) == 0:
             row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(' '.join(arg).lower())]
         if len(row_df) == 0:
-            row_df = df_wotvesper[df_wotvesper['Nickname'] == ' '.join(arg).lower()]
+            row_df = df_wotvesper[' '.join(arg).lower() in df_row['Nickname'].split(', ')]
         if len(row_df) == 0:
             row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(' '.join(arg).lower())]
         row = row_df.iloc[0]
