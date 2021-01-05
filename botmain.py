@@ -61,9 +61,12 @@ async def sync_esper(ctx, *arg):
     else:
         await ctx.send('Error. Permission denied.')
 
-@bot.command(aliases=['weekly'])
+@bot.command(aliases=['weekly', 'week', 'day'])
 async def wotvweekly(ctx, *arg):
-    msg_list = []
+    msg_list = [
+        'Sunday: :money_mouth:',
+        'Monday: :turtle::honey_pot:'
+    ]
     for day, daylist in wotv_utils.dicts['weekly']:
         msg_line = day + ': '
         for ele in daylist:
@@ -247,12 +250,12 @@ async def wotvvc(ctx, *arg):
                 await ctx.send(embed = embed)
                 return
     embed.title = f"{wotv_utils.emote_prefix(row)} {row.name}"
+    embed_colour = ''
     for col in ['Unit', 'Party', 'Party Max', 'Skill']:
         if row[col] == '':
             continue
         eff_list = row[col].split(' / ')
         eff_list_processed = []
-        embed_colour = ''
         eff_prefix = ''
         for eff in eff_list:
             match_brackets = wotv_utils.reb.findall(eff)
@@ -270,6 +273,7 @@ async def wotvvc(ctx, *arg):
         embed.add_field(name=col, value=field_value)
     if row['Url'] != '':
         embed.set_thumbnail(url=row['Url'])
+    print(embed_colour)
     if embed_colour != '':
         embed.colour = wotv_utils.dicts['colours'][embed_colour]
     embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
@@ -277,7 +281,9 @@ async def wotvvc(ctx, *arg):
 
 @bot.command(aliases=['esper'])
 async def wotvesper(ctx, *arg):
-    embed = discord.Embed()
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/espers',
