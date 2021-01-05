@@ -77,6 +77,7 @@ class WotvUtils:
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened esper data.'
             ],
             'Standard commands': ['= ping', '= help'],
+            'Weekly': ['Enter `=weekly` for dungeon bonus of days of the week.'],
             'VC': ['Enter `=help vc` for more info.'],
             'Esper' : ['Enter `=help esper` for more info.']
         }
