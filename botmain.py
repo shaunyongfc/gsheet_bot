@@ -27,11 +27,11 @@ bot.remove_command('help')
 @bot.command(aliases=['help'])
 async def wotvhelp(ctx, *arg):
     embed = discord.Embed(
-        colour = 0x999999
+        colour = wotv_utils.dicts['embed']['default_colour']
     )
     embed.set_author(
-        name = 'FFBE幻影戦争',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     embed.title = 'Ildyra Bot Help'
     help_dict = wotv_utils.dicts['help']
@@ -61,14 +61,26 @@ async def sync_esper(ctx, *arg):
     else:
         await ctx.send('Error. Permission denied.')
 
+@bot.command(aliases=['weekly'])
+async def wotvweekly(ctx, *arg):
+    msg_list = []
+    for day, daylist in wotv_utils.dicts['weekly']:
+        msg_line = day + ': '
+        for ele in daylist:
+            msg_line += wotv_utils.dicts['emotes'][ele]
+        msg_list.append(msg_line)
+    msg_list.append('Saturday: :dango:')
+    msg = '\n'.join(msg_list)
+    await ctx.send(msg)
+
 @bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
     embed = discord.Embed(
-        colour = 0x999999
+        colour = wotv_utils.dicts['embed']['default_colour']
     )
     embed.set_author(
-        name = 'FFBE幻影戦争',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     argstr = ''
     if arg[0].lower() in ['common', 'c']:
@@ -120,12 +132,12 @@ async def wotveq(ctx, *arg):
 @bot.command(aliases=['wvs', 'vcs', 'vs'])
 async def wotvvcsearch(ctx, *arg):
     embed = discord.Embed(
-        colour = 0x999999
+        colour = wotv_utils.dicts['embed']['default_colour']
     )
     embed.set_author(
-        name = 'FFBE幻影戦争',
+        name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     effects_dict = {
         'Party': [],
@@ -167,7 +179,7 @@ async def wotvvcsearch(ctx, *arg):
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
-    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     try:
         await ctx.send(embed = embed)
     except discord.HTTPException:
@@ -177,9 +189,9 @@ async def wotvvcsearch(ctx, *arg):
 async def wotvvcelement(ctx, *arg):
     embed = discord.Embed()
     embed.set_author(
-        name = 'FFBE幻影戦争',
+        name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     effects_dict = {
         'Party': [],
@@ -200,18 +212,18 @@ async def wotvvcelement(ctx, *arg):
     for k, v in effects_dict.items():
         if len(v) > 0:
             embed.add_field(name=k, value='\n'.join(v), inline=False)
-    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wv', 'vc'])
 async def wotvvc(ctx, *arg):
     embed = discord.Embed(
-        colour = 0x999999
+        colour = wotv_utils.dicts['embed']['default_colour']
     )
     embed.set_author(
-        name = 'FFBE幻影戦争',
+        name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     try:
         row = df_wotvvc.loc['　'.join(arg)]
@@ -260,16 +272,16 @@ async def wotvvc(ctx, *arg):
         embed.set_thumbnail(url=row['Url'])
     if embed_colour != '':
         embed.colour = wotv_utils.dicts['colours'][embed_colour]
-    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['esper'])
 async def wotvesper(ctx, *arg):
     embed = discord.Embed()
     embed.set_author(
-        name = 'FFBE幻影戦争',
-        url = 'https://wotv-calc.com/JP/cards',
-        icon_url = 'https://caelum.s-ul.eu/1OLnhC15.png'
+        name = wotv_utils.dicts['embed']['author_name'],
+        url = 'https://wotv-calc.com/JP/espers',
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     if arg[0] in ['m', 'mobile']:
         mobile_bool = 1
@@ -385,7 +397,7 @@ async def wotvesper(ctx, *arg):
         if len(row_df) == 0:
             row_df = df_wotvesper[df_wotvesper.index.str.lower().str.contains(' '.join(arg).lower())]
         if len(row_df) == 0:
-            row_df = df_wotvesper[' '.join(arg).lower() in df_row['Nickname'].split(', ')]
+            row_df = df_wotvesper[[' '.join(arg).lower() in row['Nickname'].split(', ') for _, row in df_wotvesper.iterrows()]]
         if len(row_df) == 0:
             row_df = df_wotvesper[df_wotvesper['Nickname'].str.contains(' '.join(arg).lower())]
         row = row_df.iloc[0]
@@ -417,7 +429,9 @@ async def wotvesper(ctx, *arg):
             embed.add_field(name='Value', value='\n'.join(field_value_list2), inline=True)
         if row['Url'] != '':
             embed.set_thumbnail(url=row['Url'])
-    embed.set_footer(text='Data Source: WOTV-CALC (Bismark)')
+        calc_url = f"https://wotv-calc.com/JP/esper/{row.name.lower().replace(' ', '-')}"
+        embed.add_field(name='WOTV CALC', value=calc_url, inline=False)
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 #####################################################
@@ -464,7 +478,7 @@ async def cotcrank(ctx, *arg):
             embed.colour = cotc_dicts['colours'][argstr_en]
         else:
             embed.title = f"Ranking of {aoestr}{cotc_dicts[argstr_col][argstr_jp][1]} attacks:"
-            embed.colour = 0x999999
+            embed.colour = wotv_utils.dicts['embed']['default_colour']
         hits_ranked, power_ranked = get_sorted_df(df, argstr_col, aoe=aoe)
         field_name = "Shield breaking:"
         field_value = '\n'.join([f"{a} - {b}" for a, b in hits_ranked])
@@ -509,7 +523,7 @@ async def cotcsupport(ctx, *arg):
                     aoestr = 'AoE '
     embed.title = f"List of {aoestr}{kw}{argstr_en}s:"
     if argstr_en == 'universal':
-        embed.colour = 0x999999
+        embed.colour = wotv_utils.dicts['embed']['default_colour']
     else:
         embed.colour = cotc_dicts['colours'][argstr_en]
     embed.description = get_support_df(df, argstr_jp, aoe=aoe, kw=kw)

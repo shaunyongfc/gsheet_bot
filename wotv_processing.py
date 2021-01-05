@@ -54,7 +54,19 @@ class WotvUtils:
                 'light': 0xFCFCFC,
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
-            }
+            },
+            'embed': {
+                'default_colour': 0x999999,
+                'author_name': 'FFBE幻影戦争',
+                'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png',
+                'footer': 'Data Source: WOTV-CALC (Bismark)'
+            },
+            'weekly': [
+                ('Tuesday', ['fire', 'wind']),
+                ('Wednesday', ['water', 'ice']),
+                ('Thursday', ['earth', 'dark']),
+                ('Friday', ['thunder', 'light'])
+            ]
         }
         self.dicts['help'] =  {
             'General info': [
