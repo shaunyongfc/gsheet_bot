@@ -1,5 +1,5 @@
 import re
-from gsheet_handler import df_wotvmats, df_wotvesper
+from gsheet_handler import dfwotv
 
 wotv_emotes_raw = {
     'weapon': '790521500788064306',
@@ -26,16 +26,16 @@ class WotvUtils:
         self.reb = re.compile(r'\[[\w\/]+\]')
         self.ren = re.compile(r'-?\d+$')
         self.dicts = {
-            'mats_sets': self.mat_sets(df_wotvmats),
-            'eq_replace': {
-                'staff': 'rod',
-                'gs': 'great sword',
-                'greatsword': 'great sword',
-                'nb': 'ninja blade',
-                'ninjablade': 'ninja blade',
-                'armour': 'armor'
-            },
-            'esper_sets': self.esper_sets(df_wotvesper),
+            'mat_sets': self.mat_sets(dfwotv['mats']),
+            'eq_replace': (
+                ('staff', 'rod'),
+                ('gs', 'great sword'),
+                ('greatsword', 'great sword'),
+                ('nb', 'ninja blade'),
+                ('ninjablade', 'ninja blade'),
+                ('armour', 'armor')
+            ),
+            'esper_sets': self.esper_sets(dfwotv['esper']),
             'esper_suffix': {
                 'atk': 'ATK Up',
                 'killer': 'Killer',
@@ -58,40 +58,35 @@ class WotvUtils:
             'embed': {
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
+                'gl_author_name': 'FFBE: War of the Visions',
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png',
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
-            },
-            'weekly': [
-                ('Tuesday', ['fire', 'wind']),
-                ('Wednesday', ['water', 'ice']),
-                ('Thursday', ['earth', 'dark']),
-                ('Friday', ['thunder', 'light'])
-            ]
+            }
         }
-        self.dicts['help'] =  {
-            'General info': [
+        self.dicts['help'] = (
+            ('General info', (
                 'Bot prefix is `=`.',
                 'Elemental icons indicate unit-element-locked VC effects.',
                 self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional VC effects.',
                 self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened esper data.'
-            ],
-            'Standard commands': ['= ping', '= help'],
-            'Weekly': ['Enter `=weekly` for dungeon bonus of days of the week.'],
-            'VC': ['Enter `=help vc` for more info.'],
-            'Esper' : ['Enter `=help esper` for more info.']
-        }
-        self.dicts['help_vc'] = {
-            'General info': [
+            )),
+            ('Standard commands', ('= ping', '= help')),
+            ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
+            ('VC', ('Enter `=help vc` for more info.',)),
+            ('Esper', ('Enter `=help esper` for more info.',))
+        )
+        self.dicts['help_vc'] = (
+            ('General info', (
                 'Elemental icons indicate unit-element-locked effects.',
                 self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects.',
                 self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.'
-            ],
-            'VC Info': ['**= vc / wvc / wotvvc**',
+            )),
+            ('VC Info', ('**= vc / wvc / wotvvc**',
                 'Argument either in full Japanese name or short English nickname bracketed in other commands.',
                 'e.g. `=vc omega`'
-            ],
-            'VC Search': ['**= vs / vcs / wvs /wotvvcsearch**',
+            )),
+            ('VC Search', ('**= vs / vcs / wvs /wotvvcsearch**',
                 'Argument in specific effect names with following conventions:',
                 ' > - slash/pierce/strike/missile/magic atk/res/pen',
                 ' > - fire/ice/(etc) atk/res'
@@ -101,53 +96,77 @@ class WotvUtils:
                 ' > - crit rate/evade/damage',
                 ' > - ap gain, max damage, etc',
                 'e.g. `=vs pierce atk`'
-            ],
-            'VC Element': ['**= ve / vce / wve / wotvvcelement**',
+            )),
+            ('VC Element', ('**= ve / vce / wve / wotvvcelement**',
                 'Argument in element (e.g. fire).',
-                'e.g. `=ve light`']
-        }
-        self.dicts['help_esper'] = {
-            'General info': [
+                'e.g. `=ve light`'
+            ))
+        )
+        self.dicts['help_esper'] = (
+            ('General info', (
                 self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
                 'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
-            ],
-            'Esper Info': ['**= esper**',
+            )),
+            ('Esper Info', ('**= esper**',
                 'Argument either in full Japanese name or short English nickname bracketed in other commands.',
                 'e.g. `=esper omega`'
-            ],
-            'Esper Rank': ['**= esper r / esper rank**',
+            )),
+            ('Esper Rank', ('**= esper r / esper rank**',
                 'Arguments separated by `|` for each stat / effect.',
                 'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
                 '3 or more arguments will force it into mobile display mode.',
                 'e.g. `=esper r magic | human`, `=esper r m magic | mag% | agi`'
-            ],
-            'Esper Compare': ['**= esper c / esper compare**',
+            )),
+            ('Esper Compare', ('**= esper c / esper compare**',
                 'Arguments separated by `|` for each esper / effect.',
                 'Will only compare all flat stats by default, add effect comparisons by `+ effect` as arguments.',
                 '3 or more espers will force it into mobile display mode.',
-                'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`']
-        }
-    def mat_sets(self, df_wotvmats):
+                'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
+            ))
+        )
+        self.weekly_init()
+    def weekly_init(self):
+        msg_list = [
+            'Sunday: :money_mouth:',
+            'Monday: :turtle::honey_pot:'
+        ]
+        weekly_tuples = [
+            ('Tuesday', ('fire', 'wind')),
+            ('Wednesday', ('water', 'ice')),
+            ('Thursday', ('earth', 'dark')),
+            ('Friday', ('thunder', 'light'))
+        ]
+        for day, daylist in weekly_tuples:
+            msg_line = day + ': '
+            for ele in daylist:
+                msg_line += self.dicts['emotes'][ele]
+            msg_list.append(msg_line)
+        msg_list.append('Saturday: :dango:')
+        self.weekly = '\n'.join(msg_list)
+    def mat_sets(self, df):
         dict_sets = {
             'Type': set(),
             'Common': set(),
             'Rare': set(),
             'Crystal': set()
         }
-        for index, row in df_wotvmats.iterrows():
+        for _, row in df.iterrows():
             for k, v in dict_sets.items():
                 if row[k] != '':
-                    v.add(row[k])
+                    if k == 'Crystal' and len(row[k]) > 1:
+                        v = v.union(set(row[k]))
+                    else:
+                        v.add(row[k])
         return dict_sets
-    def esper_sets(self, df_wotvesper):
+    def esper_sets(self, df):
         dict_sets = {
             'ATK Up': set(),
             'Killer': set(),
             'Stat Up': set(),
             'RES Up': set(),
         }
-        for index, row in df_wotvesper.iterrows():
+        for index, row in df.iterrows():
             for k, v in dict_sets.items():
                 if row[k] != '':
                     for eff in row[k].split(' / '):
