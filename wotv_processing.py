@@ -123,7 +123,13 @@ class WotvUtils:
                 'Will only compare all flat stats by default, add effect comparisons by `+ effect` as arguments.',
                 '3 or more espers will force it into mobile display mode.',
                 'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
-            ))
+            )),
+            ('Note on effect convention', ('Arguments of effects in rank or compare have the following conventions:',
+                ' > - slash/pierce/strike/missile/magic atk/res',
+                ' > - fire/ice/(etc) atk/res'
+                ' > - def/spr/tp%/ap%',
+                ' > - atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
+                ' > - crit rate/evade/damage'))
         )
         self.weekly_init()
     def weekly_init(self):

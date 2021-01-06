@@ -154,7 +154,7 @@ async def wotvvcsearch(ctx, *arg):
     if len(arg) == 1:
         try:
             # Check if it is a shortcut keyword
-            args = dfwotv['shortcut'].loc[arg[0].lower()]['Conversion']
+            args = dfwotv['shortcut'].loc[arg[0].lower()]['VC']
         except:
             args = arg[0]
     else:
@@ -190,7 +190,24 @@ async def wotvvcsearch(ctx, *arg):
     # Print from each list if non-empty
     for k, v in effects_dict.items():
         if len(v) > 0:
-            embed.add_field(name=k, value='\n'.join(v), inline=False)
+            field_value = '\n'.join(v)
+            if len(field_value) < 1020:
+                embed.add_field(name=k, value=field_value, inline=False)
+            else:
+                # Split if too long
+                checkpoint = 0
+                field_value_length = -2
+                field_name = k
+                for i, v_entry in enumerate(v):
+                    field_value_length += len(v_entry) + 2
+                    if field_value_length > 1000:
+                        field_value = '\n'.join(v[checkpoint:i])
+                        embed.add_field(name=field_name, value=field_value)
+                        field_value_length = len(v_entry)
+                        checkpoint = i
+                        field_name = f"{k} (cont.)"
+                field_value = '\n'.join(v[checkpoint:])
+                embed.add_field(name=field_name, value=field_value)
     embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     try:
         await ctx.send(embed = embed)
@@ -228,7 +245,24 @@ async def wotvvcelement(ctx, *arg):
     # Print from each list if non-empty
     for k, v in effects_dict.items():
         if len(v) > 0:
-            embed.add_field(name=k, value='\n'.join(v), inline=False)
+            field_value = '\n'.join(v)
+            if len(field_value) < 1020:
+                embed.add_field(name=k, value=field_value, inline=False)
+            else:
+                # Split if too long
+                checkpoint = 0
+                field_value_length = -2
+                field_name = k
+                for i, v_entry in enumerate(v):
+                    field_value_length += len(v_entry) + 2
+                    if field_value_length > 1000:
+                        field_value = '\n'.join(v[checkpoint:i])
+                        embed.add_field(name=field_name, value=field_value)
+                        field_value_length = len(v_entry)
+                        checkpoint = i
+                        field_name = f"{k} (cont.)"
+                field_value = '\n'.join(v[checkpoint:])
+                embed.add_field(name=field_name, value=field_value)
     embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
@@ -344,7 +378,7 @@ async def wotvesper(ctx, *arg):
         # Function to find which column the said effect should be
         col, first_arg = wotv_utils.esper_findcol(arg[0])
         if first_arg == 'STAT':
-            row_df = df.nlargest(10, col)
+            row_df = df.nlargest(20, col)
         else:
             row_df = df[df[col].str.lower().str.contains(first_arg)]
         tuples_list = [(col, first_arg)]
@@ -383,10 +417,34 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         else:
             transpose_list = list(map(list, zip(*list_lists)))
-            field_list = [f"{wotv_utils.emote_prefix(row_df.loc[a])} {a}" for a in transpose_list[0]]
-            embed.add_field(name='Esper', value='\n'.join(field_list), inline=True)
-            for field_name, field_list in zip(arg, transpose_list[1:]):
-                embed.add_field(name=field_name, value='\n'.join(field_list), inline=True)
+            esper_list = [f"{wotv_utils.emote_prefix(row_df.loc[a])} {a}" for a in transpose_list[0]]
+            field_value = '\n'.join(esper_list)
+            checkpoint_list = [0]
+            # Split if too long
+            if len(field_value) > 1020:
+                field_value_length = -2
+                for i, field_entry in enumerate(esper_list):
+                    field_value_length += len(field_entry) + 2
+                    if field_value_length > 1000:
+                        field_value_length = len(field_entry)
+                        checkpoint_list.append(i)
+            for i, checkpoint in enumerate(checkpoint_list, start=1):
+                if checkpoint == 0:
+                    field_name = 'Esper'
+                else:
+                    embed.add_field(name='\u200B', value='\u200B', inline=False)
+                    field_name = 'Esper (cont.)'
+                if i == len(checkpoint_list):
+                    field_value = '\n'.join(esper_list[checkpoint:])
+                else:
+                    field_value = '\n'.join(esper_list[checkpoint:checkpoint_list[i]])
+                embed.add_field(name=field_name, value=field_value, inline=True)
+                for field_name, field_list in zip(arg, transpose_list[1:]):
+                    if i == len(checkpoint_list):
+                        field_value = '\n'.join(field_list[checkpoint:])
+                    else:
+                        field_value = '\n'.join(field_list[checkpoint:checkpoint_list[i]])
+                    embed.add_field(name=field_name, value=field_value, inline=True)
     elif arg[0] in ['compare', 'c']:
         # Comparison mode
         if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
