@@ -152,11 +152,8 @@ async def wotvvcsearch(ctx, *arg):
         'Unit': []
     }
     if len(arg) == 1:
-        try:
-            # Check if it is a shortcut keyword
-            args = dfwotv['shortcut'].loc[arg[0].lower()]['VC']
-        except:
-            args = arg[0]
+        # Check if it is a shortcut keyword
+        args = wotv_utils.shortcut_convert(arg[0])
     else:
         args = ' '.join(arg)
     embed.title = args.capitalize()
@@ -369,12 +366,16 @@ async def wotvesper(ctx, *arg):
             args = ' '.join(arg[2:])
         else:
             args = ' '.join(arg[1:])
-        embed.title = args.capitalize()
+        embed.title = args
         # convert arg list to split with | instead
         arg = [a.lower().strip() for a in args.split('|')]
         if len(arg) > 2:
             # Force into mobile mode otherwise can't fit
             mobile_bool = 1
+        # Check for shortcuts
+        for i, argstr in enumerate(arg):
+            if len(argstr.split()) == 1:
+                arg[i] = wotv_utils.shortcut_convert(argstr, 'Esper')
         # Function to find which column the said effect should be
         col, first_arg = wotv_utils.esper_findcol(arg[0])
         if first_arg == 'STAT':
@@ -444,7 +445,7 @@ async def wotvesper(ctx, *arg):
                         field_value = '\n'.join(field_list[checkpoint:])
                     else:
                         field_value = '\n'.join(field_list[checkpoint:checkpoint_list[i]])
-                    embed.add_field(name=field_name, value=field_value, inline=True)
+                    embed.add_field(name=field_name.capitalize(), value=field_value, inline=True)
     elif arg[0] in ['compare', 'c']:
         # Comparison mode
         if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
@@ -452,9 +453,13 @@ async def wotvesper(ctx, *arg):
             args = ' '.join(arg[2:])
         else:
             args = ' '.join(arg[1:])
-        embed.title = args.capitalize()
+        embed.title = args
         # convert arg list to split with | instead
         arg = [a.lower().strip() for a in args.split('|')]
+        # Check for shortcuts
+        for i, argstr in enumerate(arg):
+            if len(argstr.split()) == 1:
+                arg[i] = wotv_utils.shortcut_convert(argstr, 'Esper')
         row_list = []
         list_espers = []
         extra_stats = []
@@ -494,14 +499,15 @@ async def wotvesper(ctx, *arg):
                     row_stats.append('-')
             list_stats.append(row_stats)
         # Print based on display mode
+        stat_list = wotv_utils.dicts['esper_stats'] + [a.capitalize() for a in extra_stats]
         if mobile_bool:
             transpose_list = list(map(list, zip(*list_stats)))
             embed.add_field(name='Stat', value=' | '.join(list_espers), inline=False)
-            for field_name, stat_list in zip(wotv_utils.dicts['esper_stats'] + extra_stats, transpose_list):
+            for field_name, stat_list in zip(stat_list, transpose_list):
                 field_list = [str(a) for a in stat_list]
                 embed.add_field(name=field_name, value=' | '.join(field_list), inline=False)
         else:
-            embed.add_field(name='Stat', value='\n'.join(wotv_utils.dicts['esper_stats'] + extra_stats), inline=True)
+            embed.add_field(name='Stat', value='\n'.join(stat_list), inline=True)
             for field_name, stat_list in zip(list_espers, list_stats):
                 field_list = [str(a) for a in stat_list]
                 embed.add_field(name=field_name, value = '\n'.join(field_list), inline=True)

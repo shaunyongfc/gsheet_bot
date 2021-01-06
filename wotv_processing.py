@@ -197,6 +197,15 @@ class WotvUtils:
             return 'armor'
         else:
             return 'weapon'
+    def shortcut_convert(self, argstr, col='VC'):
+        try:
+            args = dfwotv['shortcut'].loc[argstr.lower()][col]
+            if args != '':
+                return args
+            else:
+                return argstr
+        except:
+            return argstr
     def esper_findcol(self, argstr):
         if argstr.upper() in self.dicts['esper_stats']:
             return argstr.upper(), 'STAT'
