@@ -71,6 +71,11 @@ async def wotvweekly(ctx, *arg):
     # Reply pre-set message of day of the week bonuses
     await ctx.send(wotv_utils.weekly)
 
+@bot.command(aliases=['news'])
+async def wotvnews(ctx, *arg):
+    # Reply pre-set link to news
+    await ctx.send('https://site.wotvffbe.com//whatsnew')
+
 @bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
     embed = discord.Embed(
@@ -467,7 +472,19 @@ async def wotvesper(ctx, *arg):
         for argstr in arg:
             if argstr[0] == '+':
                 # additional line
-                extra_stats.append(argstr.lstrip('+').lstrip())
+                extra_arg = argstr.lstrip('+ ')
+                if extra_arg.rstrip('s') in ['all atk', 'atk']:
+                    extra_stats.append('ALL ATK Up')
+                elif extra_arg.rstrip('s') in ['all killer', 'killer']:
+                    extra_stats.append('ALL Killer')
+                elif extra_arg.rstrip('s') in ['all stat', 'stat']:
+                    extra_stats.append('ALL Stat Up')
+                elif extra_arg.rstrip('s') in ['all res', 'res']:
+                    extra_stats.append('ALL RES Up')
+                elif extra_arg == 'all':
+                    extra_stats = extra_stats + ['ALL ATK Up', 'ALL Killer', 'ALL Stat Up', 'ALL RES Up']
+                else:
+                    extra_stats.append(extra_arg)
             else:
                 # find esper
                 row_df = df[df.index.str.lower() == argstr]
@@ -485,21 +502,30 @@ async def wotvesper(ctx, *arg):
             mobile_bool = 1
         tuples_list = [wotv_utils.esper_findcol(a) for a in extra_stats]
         list_stats = []
+        list_effects = {a: dict() for a in wotv_utils.dicts['esper_colsuffix'].keys()}
         # Process each esper
-        for row in row_list:
-            row_stats = [str(row[col]) for col in wotv_utils.dicts['esper_stats']]
+        for i, row in enumerate(row_list):
+            list_stats.append([str(row[col]) for col in wotv_utils.dicts['esper_stats']])
             for tupcol, tuparg in tuples_list:
-                if tuparg in row[tupcol].lower():
-                    eff_list = row[tupcol].split(' / ')
-                    for eff in eff_list:
-                        if tuparg in eff.lower():
-                            re_match = wotv_utils.ren.findall(eff)
-                            row_stats.append(re_match[0])
+                eff_list = row[tupcol].split(' / ')
+                for eff in eff_list:
+                    if tuparg == 'ALL' or tuparg in eff.lower():
+                        re_match = wotv_utils.ren.search(eff)
+                        effstr = f"{eff[:re_match.start()]}{wotv_utils.dicts['esper_colsuffix'][tupcol]}"
+                        if effstr in list_effects[tupcol].keys():
+                            list_effects[tupcol][effstr][i] = re_match.group()
+                        else:
+                            list_effects[tupcol][effstr] = {i: re_match.group()}
+        # Combining stats data and effects data
+        list_effects_combined = {k: v for _, a in list_effects.items() for k, v in a.items()}
+        stat_list = wotv_utils.dicts['esper_stats'] + list(list_effects_combined.keys())
+        for _, effstr_dict in list_effects_combined.items():
+            for i, row_stats in enumerate(list_stats):
+                if i in effstr_dict.keys():
+                    row_stats.append(effstr_dict[i])
                 else:
                     row_stats.append('-')
-            list_stats.append(row_stats)
         # Print based on display mode
-        stat_list = wotv_utils.dicts['esper_stats'] + [a.capitalize() for a in extra_stats]
         if mobile_bool:
             transpose_list = list(map(list, zip(*list_stats)))
             embed.add_field(name='Stat', value=' | '.join(list_espers), inline=False)
@@ -533,7 +559,7 @@ async def wotvesper(ctx, *arg):
             embed.add_field(name='Value', value='\n'.join(field_value_list), inline=True)
         field_value_list1 = [] # effect names
         field_value_list2 = [] # numbers
-        for col, suffix in [('ATK Up', 'ATK'), ('Killer', 'Killer'), ('Stat Up', ''), ('RES Up', 'RES')]:
+        for col, suffix in wotv_utils.dicts['esper_colsuffix'].items():
             if row[col] != '':
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:

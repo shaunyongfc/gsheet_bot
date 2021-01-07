@@ -42,6 +42,12 @@ class WotvUtils:
                 'res': 'RES Up'
             },
             'esper_stats': ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'],
+            'esper_colsuffix': {
+                'ATK Up': 'ATK',
+                'Killer': 'Killer',
+                'Stat Up': '',
+                'RES Up': 'RES'
+            },
             'brackets': self.bracket_init(),
             'emotes': self.emotes_init(),
             'colours': {
@@ -73,6 +79,7 @@ class WotvUtils:
             )),
             ('Standard commands', ('= ping', '= help')),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
+            ('News', ('Enter `=news` for link to news.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',))
         )
@@ -121,6 +128,7 @@ class WotvUtils:
             ('Esper Compare', ('**= esper c / esper compare**',
                 'Arguments separated by `|` for each esper / effect.',
                 'Will only compare all flat stats by default, add effect comparisons by `+ effect` as arguments.',
+                'Alternatively, `+all` to add all effects; `+atk` `+killer` `+stat` `+res` for their respective categories.',
                 '3 or more espers will force it into mobile display mode.',
                 'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
             )),
@@ -209,6 +217,8 @@ class WotvUtils:
     def esper_findcol(self, argstr):
         if argstr.upper() in self.dicts['esper_stats']:
             return argstr.upper(), 'STAT'
+        if argstr[:3] == 'ALL':
+            return argstr[4:], 'ALL'
         args = argstr.split()
         if args[-1] in self.dicts['esper_suffix'].keys():
             col = self.dicts['esper_suffix'][args[-1]]
