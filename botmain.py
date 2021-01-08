@@ -14,6 +14,15 @@ async def on_ready():
     print(f"We have logged in as {bot.user}")
     await bot.change_presence(activity = discord.Game(name = '幻影の覇者'))
 
+@bot.command()
+async def emotes(ctx):
+    emotes = [str(a) for a in ctx.message.guild.emojis]
+    await ctx.send(' '.join(emotes))
+
+@bot.command()
+async def teststr(ctx):
+    await ctx.send('<a:wotv_elements:796963642418790451>')
+
 ################################
 ### FFBE: War of the Visions ###
 ################################
@@ -86,6 +95,17 @@ async def checkservers(ctx, *arg):
         guilds = list(bot.guilds)
         guild_names = '\n'.join(f"- {a.name}" for a in guilds)
         await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
+
+@bot.command()
+async def sendmsg(ctx, channel_id, *arg):
+    if ctx.message.author.id == 294834393569296385:
+        # Send customised message in specific channel
+        channel = bot.get_channel(int(channel_id))
+        if len(arg) == 0:
+            msg = 'Hi.'
+        else:
+            msg = ' '.join(arg)
+        await channel.send(' '.join(arg))
 
 @bot.command(aliases=['weekly', 'week', 'day', 'weekday'])
 async def wotvweekly(ctx, *arg):

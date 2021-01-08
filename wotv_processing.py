@@ -2,25 +2,28 @@ import re
 from gsheet_handler import dfwotv
 
 # raw code of emotes uploaded into Discord
-wotv_emotes_raw = {
-    'weapon': '790521500788064306',
-    'armor': '790521500548857867',
-    'accessory': '790521500658171925',
-    'ur': '790521500821749808',
-    'ssr': '790521500829876244',
-    'sr': '793618254529822730',
-    'fire': '791969566023745547',
-    'ice': '791969566308958219',
-    'wind': '791969566409752576',
-    'earth': '791969566477385738',
-    'thunder': '791969566245781535',
-    'water': '791969566254825523',
-    'light': '791969565826613259',
-    'dark': '791969566246436884',
-    'neutral': '791969566233853952',
-    'limited': '794438895932669963',
-    'esper': '794438896066101288'
-}
+wotv_emotes_raw = (
+    ('weapon', '790521500788064306'),
+    ('armor', '790521500548857867'),
+    ('accessory', '790521500658171925'),
+    ('ur', '790521500821749808'),
+    ('ssr', '790521500829876244'),
+    ('sr', '793618254529822730'),
+    ('fire', '791969566023745547'),
+    ('ice', '791969566308958219'),
+    ('wind', '791969566409752576'),
+    ('earth', '791969566477385738'),
+    ('thunder', '791969566245781535'),
+    ('water', '791969566254825523'),
+    ('light', '791969565826613259'),
+    ('dark', '791969566246436884'),
+    ('neutral', '791969566233853952'),
+    ('limited', '794438895932669963'),
+    ('esper', '794438896066101288')
+)
+wotv_aemotes_raw = (
+    ('elements', '796963642418790451'),
+)
 
 class WotvUtils:
     def __init__(self):
@@ -95,7 +98,7 @@ class WotvUtils:
         )
         self.dicts['help_vc'] = (
             ('General info', (
-                'Elemental icons indicate unit-element-locked effects.',
+                self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
                 self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects.',
                 self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.'
             )),
@@ -201,8 +204,10 @@ class WotvUtils:
         return dict_sets
     def emotes_init(self):
         wotv_emotes = dict()
-        for k, v in wotv_emotes_raw.items():
+        for k, v in wotv_emotes_raw:
             wotv_emotes[k] = f"<:wotv_{k}:{v}>"
+        for k, v in wotv_aemotes_raw:
+            wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
         return wotv_emotes
     def bracket_init(self):
         bracket_dict = dict()
