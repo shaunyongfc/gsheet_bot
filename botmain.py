@@ -45,6 +45,27 @@ async def wotvhelp(ctx, *arg):
         embed.add_field(name=a, value='\n'.join(b), inline=False)
     await ctx.send(embed = embed)
 
+@bot.command(aliases=['changelog', 'version'])
+async def wotvchangelog(ctx, *arg):
+    # Return recent changelogs
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    embed.title = 'Ildyra Bot Changelog'
+    try:
+        entry_num = int(arg[0])
+    except:
+        entry_num = 5
+    for i, tup in enumerate(wotv_utils.dicts['changelog']):
+        if i == entry_num:
+            break
+        embed.add_field(name=tup[0], value = '\n'.join(tup[1]), inline=False)
+    await ctx.send(embed = embed)
+
 @bot.command()
 async def sync(ctx, *arg):
     if ctx.message.author.id == 294834393569296385:
@@ -74,7 +95,13 @@ async def wotvweekly(ctx, *arg):
 @bot.command(aliases=['news'])
 async def wotvnews(ctx, *arg):
     # Reply pre-set link to news
-    await ctx.send('https://site.wotvffbe.com//whatsnew')
+    try:
+        if arg[0].lower() == 'gl':
+            await ctx.send('https://site.na.wotvffbe.com//whatsnew')
+        else:
+            await ctx.send('https://site.wotvffbe.com//whatsnew')
+    except:
+        await ctx.send('https://site.wotvffbe.com//whatsnew')
 
 @bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
@@ -374,9 +401,6 @@ async def wotvesper(ctx, *arg):
         embed.title = args
         # convert arg list to split with | instead
         arg = [a.lower().strip() for a in args.split('|')]
-        if len(arg) > 2:
-            # Force into mobile mode otherwise can't fit
-            mobile_bool = 1
         # Check for shortcuts
         for i, argstr in enumerate(arg):
             if len(argstr.split()) == 1:
@@ -387,9 +411,14 @@ async def wotvesper(ctx, *arg):
             row_df = df.nlargest(20, col)
         else:
             row_df = df[df[col].str.lower().str.contains(first_arg)]
-        tuples_list = [(col, first_arg)]
-        if len(arg) > 1:
-            for argstr in arg[1:]:
+        if first_arg == 'y':
+            arg = arg[1:]
+        if len(arg) > 2:
+            # Force into mobile mode otherwise can't fit
+            mobile_bool = 1
+        tuples_list = []
+        if len(arg) > 0:
+            for argstr in arg:
                 if argstr.upper() in wotv_utils.dicts['esper_stats']:
                     tuples_list.append((argstr.upper(), 'STAT'))
                 else:
@@ -411,7 +440,8 @@ async def wotvesper(ctx, *arg):
                     row_list.append('-')
             list_lists.append(row_list)
         # Sort list
-        list_lists.sort(key=lambda a: int(a[1]), reverse=True)
+        if first_arg != 'y':
+            list_lists.sort(key=lambda a: int(a[1]), reverse=True)
         # Print based on display mode
         if mobile_bool:
             for row_list in list_lists:

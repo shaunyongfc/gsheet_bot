@@ -1,6 +1,7 @@
 import re
 from gsheet_handler import dfwotv
 
+# raw code of emotes uploaded into Discord
 wotv_emotes_raw = {
     'weapon': '790521500788064306',
     'armor': '790521500548857867',
@@ -23,8 +24,8 @@ wotv_emotes_raw = {
 
 class WotvUtils:
     def __init__(self):
-        self.reb = re.compile(r'\[[\w\/]+\]')
-        self.ren = re.compile(r'-?\d+$')
+        self.reb = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
+        self.ren = re.compile(r'-?\d+$') # regex for numbers
         self.dicts = {
             'mat_sets': self.mat_sets(dfwotv['mats']),
             'eq_replace': (
@@ -67,17 +68,26 @@ class WotvUtils:
                 'gl_author_name': 'FFBE: War of the Visions',
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png',
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
-            }
+            },
+            'changelog': (
+                ('8th January 2021', (
+                    'Changelog implemented (this function).',
+                    'Esper filter - able to filter 3-star or limited espers. (`=help esper` for more info)',
+                    'Slight changes in general info.'
+                )),
+                ('7th January 2021', (
+                    'Esper compare - able to compare all or a group of effects at once. (`=help esper` for more info)',
+                    'News link - get link to news with `=news` or `=news gl`.'
+                ))
+            )
         }
         self.dicts['help'] = (
             ('General info', (
                 'Bot prefix is `=`.',
-                'Elemental icons indicate unit-element-locked VC effects.',
-                self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional VC effects.',
-                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
-                self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened esper data.'
+                'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
+                'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.'
             )),
-            ('Standard commands', ('= ping', '= help')),
+            ('Standard commands', ('`=ping`', '`=help`', '`=changelog/version`')),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to news.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
@@ -122,6 +132,8 @@ class WotvUtils:
             ('Esper Rank', ('**= esper r / esper rank**',
                 'Arguments separated by `|` for each stat / effect.',
                 'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
+                'Filter 3-star espers by `=esper r awaken` (/ `3-star`) but will not be sorted.',
+                'Filter limited espers by `=esper r limited` (/ `collab`) but will not be sorted.',
                 '3 or more arguments will force it into mobile display mode.',
                 'e.g. `=esper r magic | human`, `=esper r m magic | mag% | agi`'
             )),
@@ -215,10 +227,14 @@ class WotvUtils:
         except:
             return argstr
     def esper_findcol(self, argstr):
-        if argstr.upper() in self.dicts['esper_stats']:
-            return argstr.upper(), 'STAT'
         if argstr[:3] == 'ALL':
             return argstr[4:], 'ALL'
+        if argstr.rstrip('s') in ['awakened', 'awaken', '3-star', '3star', '3']:
+            return 'Awaken', 'y'
+        if argstr in ['collab', 'limited']:
+            return 'Limited', 'y'
+        if argstr.upper() in self.dicts['esper_stats']:
+            return argstr.upper(), 'STAT'
         args = argstr.split()
         if args[-1] in self.dicts['esper_suffix'].keys():
             col = self.dicts['esper_suffix'][args[-1]]
