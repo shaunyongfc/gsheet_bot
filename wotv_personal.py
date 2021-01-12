@@ -5,6 +5,8 @@ from gsheet_handler import client
 ELEMENTS = ['Fire', 'Ice', 'Wind', 'Earth', 'Thunder', 'Water', 'Light', 'Dark']
 ROLES = ['Slash', 'Pierce', 'Strike', 'Missile', 'Magic', 'Heal', 'Tank']
 
+# process a personal sheet of unit data into unit summary by category
+
 def main(spreadsheet):
     df_wotvunitcat = pd.DataFrame(spreadsheet.worksheet('WOTV_unitcat').get_all_records())
     df_wotvunitcat = df_wotvunitcat.set_index('Unit')

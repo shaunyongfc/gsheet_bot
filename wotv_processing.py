@@ -30,7 +30,14 @@ class WotvUtils:
         self.reb = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
         self.ren = re.compile(r'-?\d+$') # regex for numbers
         self.dicts = {
-            'mat_sets': self.mat_sets(dfwotv['mats']),
+            'mat_sets': self.mat_sets(dfwotv['eq']),
+            'eq_lists': {
+                'Type': ['t'],
+                'Regular': ['n', 'common'],
+                'Rare': ['r'],
+                'Cryst': ['c', 'e', 'element'],
+                'Ore': ['o']
+            },
             'eq_replace': (
                 ('staff', 'rod'),
                 ('gs', 'great sword'),
@@ -73,6 +80,9 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
+                ('12th January 2021', (
+                    'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
+                )),
                 ('8th January 2021', (
                     'Changelog implemented (this function).',
                     'Esper filter - able to filter 3-star or limited espers. (`=help esper` for more info)',
@@ -88,13 +98,37 @@ class WotvUtils:
             ('General info', (
                 'Bot prefix is `=`.',
                 'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
-                'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.'
+                'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
+                'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
             ('Standard commands', ('`=ping`', '`=help`', '`=changelog/version`')),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to news.',)),
+            ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',))
+        )
+        self.dicts['help_eq'] = (
+            ('General info', (
+                'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
+            )),
+            ('List of keywords', ('**= eq l**',
+                'Argument is one of `type, regular, rare, cryst, ore` to check their respective keywords.',
+                'Put no argument to return the above list.'
+                'e.g. `=eq l rare`'
+            )),
+            ('Equipment by type', ('**= eq t**',
+                'Argument is one of the equipment types that can be checked by command above.',
+                'e.g. `=eq t accessory`, `=eq t sword`'
+            )),
+            ('Equipment by material', ('**= eq**',
+                'Argument is one of the materials that can be checked by the first command.',
+                'e.g. `=eq heart`, `=eq fire`'
+            )),
+            ('Equipment by name', ('**= eq**',
+                'Argument is by full Japanese equipment name.',
+                'e.g. `=eq リボン`'
+            ))
         )
         self.dicts['help_vc'] = (
             ('General info', (
@@ -176,14 +210,15 @@ class WotvUtils:
     def mat_sets(self, df):
         dict_sets = {
             'Type': set(),
-            'Common': set(),
+            'Regular': set(),
             'Rare': set(),
-            'Crystal': set()
+            'Cryst': set(),
+            'Ore': set()
         }
         for _, row in df.iterrows():
             for k, v in dict_sets.items():
                 if row[k] != '':
-                    if k == 'Crystal' and len(row[k]) > 1:
+                    if k == 'Cryst' and len(row[k]) > 1:
                         v = v.union(set(row[k]))
                     else:
                         v.add(row[k])

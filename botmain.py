@@ -23,57 +23,14 @@ async def emotes(ctx):
 async def teststr(ctx):
     await ctx.send('<a:wotv_elements:796963642418790451>')
 
-################################
-### FFBE: War of the Visions ###
-################################
+######################
+### Admin Commands ###
+######################
 # Able to copy directly from this point
 
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! {round(bot.latency * 1000)} ms")
-
-bot.remove_command('help')
-@bot.command(aliases=['help'])
-async def wotvhelp(ctx, *arg):
-    # Customised bot help function
-    embed = discord.Embed(
-        colour = wotv_utils.dicts['embed']['default_colour']
-    )
-    embed.set_author(
-        name = wotv_utils.dicts['embed']['author_name'],
-        icon_url = wotv_utils.dicts['embed']['author_icon_url']
-    )
-    embed.title = 'Ildyra Bot Help'
-    help_tuples = wotv_utils.dicts['help']
-    if len(arg) > 0:
-        if arg[0].lower() == 'vc':
-            help_tuples = wotv_utils.dicts['help_vc']
-        elif arg[0].lower() == 'esper':
-            help_tuples = wotv_utils.dicts['help_esper']
-    for a, b in help_tuples:
-        embed.add_field(name=a, value='\n'.join(b), inline=False)
-    await ctx.send(embed = embed)
-
-@bot.command(aliases=['changelog', 'version'])
-async def wotvchangelog(ctx, *arg):
-    # Return recent changelogs
-    embed = discord.Embed(
-        colour = wotv_utils.dicts['embed']['default_colour']
-    )
-    embed.set_author(
-        name = wotv_utils.dicts['embed']['author_name'],
-        icon_url = wotv_utils.dicts['embed']['author_icon_url']
-    )
-    embed.title = 'Ildyra Bot Changelog'
-    try:
-        entry_num = int(arg[0])
-    except:
-        entry_num = 5
-    for i, tup in enumerate(wotv_utils.dicts['changelog']):
-        if i == entry_num:
-            break
-        embed.add_field(name=tup[0], value = '\n'.join(tup[1]), inline=False)
-    await ctx.send(embed = embed)
 
 @bot.command()
 async def sync(ctx, *arg):
@@ -107,6 +64,55 @@ async def sendmsg(ctx, channel_id, *arg):
             msg = ' '.join(arg)
         await channel.send(' '.join(arg))
 
+################################
+### FFBE: War of the Visions ###
+################################
+
+bot.remove_command('help')
+@bot.command(aliases=['help'])
+async def wotvhelp(ctx, *arg):
+    # Customised bot help function
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    embed.title = 'Ildyra Bot Help'
+    help_tuples = wotv_utils.dicts['help']
+    if len(arg) > 0:
+        if arg[0].lower() == 'vc':
+            help_tuples = wotv_utils.dicts['help_vc']
+        elif arg[0].lower() == 'esper':
+            help_tuples = wotv_utils.dicts['help_esper']
+        elif arg[0].lower() == 'eq':
+            help_tuples = wotv_utils.dicts['help_eq']
+    for a, b in help_tuples:
+        embed.add_field(name=a, value='\n'.join(b), inline=False)
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['changelog', 'version'])
+async def wotvchangelog(ctx, *arg):
+    # Return recent changelogs
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    embed.title = 'Ildyra Bot Changelog'
+    try:
+        entry_num = int(arg[0])
+    except:
+        entry_num = 5
+    for i, tup in enumerate(wotv_utils.dicts['changelog']):
+        if i == entry_num:
+            break
+        embed.add_field(name=tup[0], value = '\n'.join(tup[1]), inline=False)
+    await ctx.send(embed = embed)
+
 @bot.command(aliases=['weekly', 'week', 'day', 'weekday'])
 async def wotvweekly(ctx, *arg):
     # Reply pre-set message of day of the week bonuses
@@ -132,56 +138,61 @@ async def wotveq(ctx, *arg):
         name = wotv_utils.dicts['embed']['author_name'],
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
-    # Check if material search
-    argstr = ''
-    if arg[0].lower() in ['common', 'c']:
-        argstr = 'Common'
-    elif arg[0].lower() in ['rare', 'r']:
-        argstr = 'Rare'
-    elif arg[0].lower() in ['crystal', 'element', 'e']:
-        argstr = 'Crystal'
-    if argstr != '':
-        # For material search
+    if arg[0].lower() in ['list', 'l']:
         if len(arg) == 1:
-            # Print list of materials in the category
-            embed.title = f"List of {argstr.lower()}s"
-            embed.description = '\n'.join(wotv_utils.dicts['mat_sets'][argstr])
-        elif len(arg) == 2:
-            # Print all eq that use said materials
-            embed.title = arg[1]
-            embed_text_list = []
-            for name, row in dfwotv['mats'].iterrows():
-                if row[argstr] == arg[1] or (argstr == 'Crystal' and arg[1] in row[argstr]):
-                    embed_text_list.append(f"{wotv_utils.emote_prefix(row)} {name}")
-            embed.description = '\n'.join(embed_text_list)
+            # Print list of lists
+            embed.title = f"List of lists"
+            embed.description = '\n'.join(wotv_utils.dicts['eq_lists'].keys())
+        else:
+            # Print list of searchable items in the column
+            argstr = ' '.join(arg[1:]).lower()
+            for k, v in wotv_utils.dicts['eq_lists'].items():
+                if argstr in v or argstr == k.lower():
+                    argstr = k
+                    break
+            embed.title = f"List of {argstr}s"
+            text_list = list(wotv_utils.dicts['mat_sets'][argstr])
+            if argstr != 'Type':
+                text_list = [f"{a} ({dfwotv['mat'].loc[a]['Names'].split(' / ')[0].title()})" for a in text_list]
+            embed.description = '\n'.join(text_list)
+    # Check if type search
+    elif arg[0].lower() in ['type', 't'] and len(arg) > 1:
+        # Process query
+        argstr = ' '.join(arg[1:])
+        embed.title = argstr
+        argstr = argstr.lower()
+        for a, b in wotv_utils.dicts['eq_replace']:
+            argstr = argstr.replace(a, b)
+        # Find eq that match and add to the embed
+        for index, row in dfwotv['eq'].iterrows():
+            if argstr in row['Type'].lower():
+                field_name = f"{wotv_utils.emote_prefix(row)} {index}"
+                field_value = f"- {row['Special']}"
+                embed.add_field(name=field_name, value=field_value, inline=True)
     else:
-        # Check if type search
-        if arg[0].lower() in ['type', 't']:
-            if len(arg) == 1:
-                # Print list of types
-                embed.title = f"List of types"
-                embed.description = '\n'.join(wotv_utils.dicts['mat_sets']['Type'])
-            else:
-                # Process query
-                query = ' '.join(arg[1:])
-                embed.title = query
-                query = query.lower()
-                for a, b in wotv_utils.dicts['eq_replace']:
-                    query = query.replace(a, b)
-                # Find eq that match and add to the embed
-                for index, row in dfwotv['mats'].iterrows():
-                    if query in row['Type'].lower():
-                        field_name = f"{wotv_utils.emote_prefix(row)} {index}"
-                        field_value = f"- {row['Special']}"
-                        embed.add_field(name=field_name, value=field_value, inline=True)
-        elif len(arg) == 1:
+        # Check if material search
+        argstr = ' '.join(arg)
+        for index, row in dfwotv['mat'].iterrows():
+            if argstr in row['Names'].split(' / '):
+                matstr = (index, row['Type'], row['Names'].split(' / ')[0].title())
+                break
+        if matstr[0] != '':
+            # Print all eq that use said materials
+            embed.title = f"Recipes w/ {matstr[2]}"
+            embed_text_list = []
+            for index, row in dfwotv['eq'].iterrows():
+                if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' and matstr[0] in row[matstr[1]]):
+                    embed_text_list.append(f"{wotv_utils.emote_prefix(row)} {index}")
+            embed.description = '\n'.join(embed_text_list)
+        else:
             # Find the specific eq
             embed.title = arg[0]
-            row = dfwotv['mats'].loc[arg[0]]
+            row = dfwotv['eq'].loc[arg[0]]
             embed.description = f"{wotv_utils.emote_prefix(row)} {row['Special']}\nAcquisition: {row['Acquisition']}"
             embed_text_list = []
-            for col in ['Common', 'Rare', 'Crystal']:
-                embed_text_list.append(f"- {row[col]}")
+            for col in ['Regular', 'Rare', 'Crystal', 'Orb']:
+                if row[col] != '':
+                    embed_text_list.append(f"- {row[col]}")
             embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
     await ctx.send(embed = embed)
 
@@ -208,7 +219,7 @@ async def wotvvcsearch(ctx, *arg):
         args = wotv_utils.shortcut_convert(arg[0])
     else:
         args = ' '.join(arg)
-    embed.title = args.capitalize()
+    embed.title = args.title()
     args = args.lower()
     args = args.replace('lightning', 'thunder')
     # Fluff to change embed colour if requested effect is elemental
@@ -234,7 +245,7 @@ async def wotvvcsearch(ctx, *arg):
                     match_numbers = wotv_utils.ren.findall(eff)
                     if len(match_numbers) == 1:
                         eff_suffix = ' ' + match_numbers[0]
-                    nickname = row['Nickname'].split(', ')[0]
+                    nickname = row['Nickname'].split(' / ')[0]
                     effects_dict[col].append(f"{eff_prefix}{wotv_utils.emote_prefix(row)} {row.name} ({nickname}){eff_suffix}")
     # Print from each list if non-empty
     for k, v in effects_dict.items():
@@ -279,7 +290,7 @@ async def wotvvcelement(ctx, *arg):
         'Party Max': []
     }
     ele = arg[0].lower().replace('lightning', 'thunder')
-    embed.title = f"{wotv_utils.dicts['emotes'][ele]} {arg[0].capitalize()}"
+    embed.title = f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}"
     embed.colour = wotv_utils.dicts['colours'][ele]
     # Search each vc
     for index, row in df.iterrows():
@@ -289,7 +300,7 @@ async def wotvvcelement(ctx, *arg):
             for eff in eff_list:
                 if ele_found or wotv_utils.dicts['brackets'][ele] in eff:
                     ele_found = 1
-                    nickname = row['Nickname'].split(', ')[0]
+                    nickname = row['Nickname'].split(' / ')[0]
                     effects_dict[col].append(f"{wotv_utils.emote_prefix(row)} {index} ({nickname}) {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}")
     # Print from each list if non-empty
     for k, v in effects_dict.items():
@@ -344,7 +355,7 @@ async def wotvvc(ctx, *arg):
             row = row_df.iloc[0]
         elif len(row_df) > 1:
             for _, df_row in row_df.iterrows():
-                if ' '.join(arg).lower() in df_row['Nickname'].split(', '):
+                if ' '.join(arg).lower() in df_row['Nickname'].split(' / '):
                     row = df_row
                     break
             else:
@@ -469,7 +480,7 @@ async def wotvesper(ctx, *arg):
                 field_list = []
                 for argname, argvalue in zip(arg, row_list[1:]):
                     if argvalue != '-':
-                        field_list.append(f"**{argname.capitalize()}**: {argvalue}")
+                        field_list.append(f"**{argname.title()}**: {argvalue}")
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         else:
             transpose_list = list(map(list, zip(*list_lists)))
@@ -541,7 +552,7 @@ async def wotvesper(ctx, *arg):
                 if len(row_df) == 0:
                     row_df = df[df.index.str.lower().str.contains(argstr)]
                 if len(row_df) == 0:
-                    row_df = df[argstr in df['Nickname'].str.split(', ')]
+                    row_df = df[argstr in df['Nickname'].str.split(' / ')]
                 if len(row_df) == 0:
                     row_df = df[df['Nickname'].str.contains(argstr)]
                 if len(row_df) == 1:
@@ -593,7 +604,7 @@ async def wotvesper(ctx, *arg):
         if len(row_df) == 0:
             row_df = df[df.index.str.lower().str.contains(' '.join(arg).lower())]
         if len(row_df) == 0:
-            row_df = df[[' '.join(arg).lower() in row['Nickname'].split(', ') for _, row in df.iterrows()]]
+            row_df = df[[' '.join(arg).lower() in row['Nickname'].split(' / ') for _, row in df.iterrows()]]
         if len(row_df) == 0:
             row_df = df[df['Nickname'].str.contains(' '.join(arg).lower())]
         row = row_df.iloc[0]

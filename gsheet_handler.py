@@ -11,8 +11,11 @@ def get_dfwotv():
     dfwotv = dict()
     spreadsheet = client.open("Octopath WOTV")
 
-    df = pd.DataFrame(spreadsheet.worksheet('WOTV_matlist').get_all_records())
-    dfwotv['mats'] = df.set_index('EQ Name')
+    df = pd.DataFrame(spreadsheet.worksheet('WOTV_eq').get_all_records())
+    dfwotv['eq'] = df.set_index('EQ Name')
+
+    df = pd.DataFrame(spreadsheet.worksheet('WOTV_matname').get_all_records())
+    dfwotv['mat'] = df.set_index('Material')
 
     df = pd.DataFrame(spreadsheet.worksheet('WOTV_vc').get_all_records())
     dfwotv['vc'] = df.set_index('VC Name')
