@@ -3,6 +3,7 @@ import pandas as pd
 from discord.ext import commands
 from gsheet_handler import get_dfwotv, dfwotv
 from wotv_processing import wotv_utils
+from sql_handler import mydb
 
 from gsheet_handler import get_df_cotc, df_cotc
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
@@ -38,7 +39,7 @@ async def ping(ctx):
 
 @bot.command()
 async def sync(ctx, *arg):
-    if ctx.message.author.id == 294834393569296385:
+    if ctx.message.author.id == owner_userid:
         if len(arg) == 0:
             # Synchronise sheets
             global dfwotv
@@ -51,25 +52,60 @@ async def sync(ctx, *arg):
 
 @bot.command()
 async def checkservers(ctx, *arg):
-    if ctx.message.author.id == 294834393569296385:
+    if ctx.message.author.id == owner_userid:
         # Check what servers bot is in
         guilds = list(bot.guilds)
         guild_names = '\n'.join(f"- {a.name}" for a in guilds)
         await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
 
 @bot.command()
+async def scnew(ctx, *arg):
+    if ctx.message.author.id == owner_userid:
+        try:
+            type_id = int(arg[0])
+        except:
+            if arg[0] == 'channel':
+                type_id = 0
+            elif arg[0] == 'emote':
+                type_id = 2
+            elif arg[0] == 'aemote':
+                type_id = 3
+            else:
+                type_id = 1
+        sc_name = ' '.join(arg[2:])
+        sc_id = int(arg[1])
+        mydb.new_shortcut(sc_name, type_id, sc_id)
+        await ctx.send(f"Added {sc_name} as type {type_id} shortcut.")
+
+@bot.command()
+async def scall(ctx):
+    if ctx.message.author.id == owner_userid:
+        embed = discord.Embed()
+        embed.title = 'All Shortcuts'
+        tup_list = mydb.get_all_shortcuts()
+        field_lists = [[], [], []]
+        for tup in tup_list:
+            field_lists[0].append(tup[0])
+            field_lists[1].append(str(tup[1]))
+            field_lists[2].append(str(tup[2]))
+        for name, field_list in zip(['Name', 'Type', 'id'], field_lists):
+            embed.add_field(name=name, value='\n'.join(field_list))
+        await ctx.send(embed = embed)
+
+@bot.command()
 async def sendmsg(ctx, *arg):
-    if ctx.message.author.id == 294834393569296385:
+    if ctx.message.author.id == owner_userid:
         # Send customised message in specific channel
         try:
             channel = bot.get_channel(int(arg[0]))
             arg = arg[1:]
         except:
-            channel = ctx.message.channel
+            channel = bot.get_channel(mydb.get_shortcut(arg[0]))
+            arg = arg[1:]
         if len(arg) == 0:
             msg = 'Hi.'
         else:
-            msg = ' '.join(arg)
+            msg = mydb.msg_process(' '.join(arg))
         await channel.send(msg)
 
 ################################
@@ -213,7 +249,14 @@ async def wotveq(ctx, *arg):
                 embed_text_list = []
                 for col in ['Regular', 'Rare', 'Cryst', 'Ore']:
                     if row[col] != '':
-                        embed_text_list.append(f"- {row[col]}")
+                        if col == 'Cryst':
+                            if row['Rarity'] == 'UR':
+                                engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)C', 'Megac')
+                            else:
+                                engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)', '')
+                        else:
+                            engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0]
+                        embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
     await ctx.send(embed = embed)
 
@@ -775,7 +818,8 @@ async def cotctraveler(ctx, *arg):
     embed.add_field(name=field_name, value=field_value, inline=True)
     await ctx.send(embed = embed)
 
-fp = open(f"token.txt")
-token = fp.read().rstrip('\n')
-fp.close()
+with open(f"token.txt") as fp:
+    token = fp.read().rstrip('\n')
+with open(f"owner_userid.txt") as fp:
+    owner_userid = int(fp.read().rstrip('\n'))
 bot.run(token)

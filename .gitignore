@@ -135,3 +135,4 @@ bot_images
 # Sensitive info
 credentials.json
 token.txt
+owner_userid.txt
