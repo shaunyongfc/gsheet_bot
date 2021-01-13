@@ -33,6 +33,7 @@ class WotvUtils:
             'mat_sets': self.mat_sets(dfwotv['eq']),
             'eq_lists': {
                 'Type': ['t'],
+                'Acquisition': ['a'],
                 'Regular': ['n', 'common'],
                 'Rare': ['r'],
                 'Cryst': ['c', 'e', 'element'],
@@ -80,6 +81,10 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
+                ('13th January 2021', (
+                    'Equipment function - expansion to check via English names.',
+                    'Return list of suggestions when result not found for some commands.'
+                )),
                 ('12th January 2021', (
                     'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
                 )),
@@ -98,6 +103,7 @@ class WotvUtils:
             ('General info', (
                 'Bot prefix is `=`.',
                 'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
+                'Feel free to contact me to request adding aliases to vc/esper/equipment.',
                 'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
@@ -113,7 +119,7 @@ class WotvUtils:
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
             )),
             ('List of keywords', ('**= eq l**',
-                'Argument is one of `type, regular, rare, cryst, ore` to check their respective keywords.',
+                'Argument is one of `type, acquisition, regular, rare, cryst, ore` to check their respective keywords.',
                 'Put no argument to return the above list.'
                 'e.g. `=eq l rare`'
             )),
@@ -121,13 +127,17 @@ class WotvUtils:
                 'Argument is one of the equipment types that can be checked by command above.',
                 'e.g. `=eq t accessory`, `=eq t sword`'
             )),
+            ('Equipment by acquisition method', ('**= eq a**',
+                'Argument is one of the acquisition methods that can be checked by command above.',
+                'e.g. `=eq t accessory`, `=eq a raid`'
+            )),
             ('Equipment by material', ('**= eq**',
                 'Argument is one of the materials that can be checked by the first command.',
                 'e.g. `=eq heart`, `=eq fire`'
             )),
             ('Equipment by name', ('**= eq**',
-                'Argument is by full Japanese equipment name.',
-                'e.g. `=eq リボン`'
+                'Argument is by equipment name (subject to name availability).',
+                'e.g. `=eq ribbon`'
             ))
         )
         self.dicts['help_vc'] = (
@@ -210,6 +220,7 @@ class WotvUtils:
     def mat_sets(self, df):
         dict_sets = {
             'Type': set(),
+            'Acquisition': set(),
             'Regular': set(),
             'Rare': set(),
             'Cryst': set(),
@@ -285,22 +296,61 @@ class WotvUtils:
                     col = k
                     break
         return col, argstr
-    def emote_prefix(self, row, elestr=''):
-        prefix = ''
+    def name_str(self, row, name='NAME', alias=1, elestr=''):
+        namestr = ''
         if elestr != '':
-            prefix += self.dicts['emotes'][elestr]
+            namestr += self.dicts['emotes'][elestr]
         elif 'Element' in row.index:
-            prefix += self.dicts['emotes'][row['Element'].lower()]
+            namestr += self.dicts['emotes'][row['Element'].lower()]
         if 'Rarity' in row.index:
-            prefix += self.dicts['emotes'][row['Rarity'].lower()]
+            namestr += self.dicts['emotes'][row['Rarity'].lower()]
         if 'Type' in row.index:
-            prefix += self.dicts['emotes'][self.eqt_convert(row['Type'])]
+            namestr += self.dicts['emotes'][self.eqt_convert(row['Type'])]
         if 'Limited' in row.index:
             if row['Limited'] != '':
-                prefix += self.dicts['emotes']['limited']
+                namestr += self.dicts['emotes']['limited']
         if 'Awaken' in row.index:
             if row['Awaken'] != '':
-                prefix += self.dicts['emotes']['esper']
-        return prefix
+                namestr += self.dicts['emotes']['esper']
+        if name == 'NAME':
+            namestr += f" {row.name}"
+        else:
+            namestr += f" {name}"
+        if 'Aliases' in row.index and alias:
+            engstr = row['Aliases'].split(' / ')[0]
+            if engstr != '':
+                namestr += f" ({engstr})"
+        return namestr
+    def find_row(self, df, arg):
+        if isinstance(arg, str):
+            argstr = arg.lower()
+        else:
+            try:
+                arg[0].encode('ascii')
+                argstr = ' '.join(arg).lower()
+            except UnicodeEncodeError: # Check if arguments are in Japanese
+                argstr = '　'.join(arg)
+        try:
+            row = df.loc[argstr]
+            return 1, row
+        except KeyError:
+            if 'Aliases' in df.columns:
+                df_aliases = df[df['Aliases'].str.lower().str.contains(' '.join(arg).lower())]
+                if len(df_aliases) > 0:
+                    for _, row in df_aliases.iterrows():
+                        if argstr in [a.lower() for a in row['Aliases'].split(' / ')]:
+                            return 1, row
+            df_name = df[df.index.str.lower().str.contains(argstr.lower())]
+            if len(df_name) == 1:
+                return 1, df_name.iloc[0]
+            elif len(df_aliases) == 1:
+                return 1, df_aliases.iloc[0]
+            else:
+                suggestion_list = df_name.index.tolist()
+                for alias_list in df_aliases['Aliases'].tolist():
+                    for suggestion in alias_list.split(' / '):
+                        if suggestion != '':
+                            suggestion_list.append(suggestion)
+                return 0, ' / '.join(suggestion_list)
 
 wotv_utils = WotvUtils()

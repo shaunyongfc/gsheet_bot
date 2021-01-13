@@ -1,13 +1,13 @@
 import pandas as pd
 import gspread
 from gspread_dataframe import set_with_dataframe
-from gsheet_handler import client
+from gsheet_handler import  myspreadsheet
 ELEMENTS = ['Fire', 'Ice', 'Wind', 'Earth', 'Thunder', 'Water', 'Light', 'Dark']
 ROLES = ['Slash', 'Pierce', 'Strike', 'Missile', 'Magic', 'Heal', 'Tank']
 
 # process a personal sheet of unit data into unit summary by category
 
-def main(spreadsheet):
+def wotvsummary_process(spreadsheet):
     df_wotvunitcat = pd.DataFrame(spreadsheet.worksheet('WOTV_unitcat').get_all_records())
     df_wotvunitcat = df_wotvunitcat.set_index('Unit')
     list_elements = []
@@ -30,7 +30,8 @@ def main(spreadsheet):
     df = pd.DataFrame.from_records(data=list_elements, index=ELEMENTS, columns=ROLES)
     return df
 
+def wotvsummary_update(spreadsheet, summarydf):
+    set_with_dataframe(spreadsheet.worksheet('WOTV_unitsum'), summarydf, include_index=True)
+
 if __name__ == '__main__':
-    spreadsheet = client.open("Octopath WOTV")
-    worksheet = spreadsheet.worksheet('WOTV_unitsum')
-    set_with_dataframe(worksheet, main(spreadsheet), include_index=True)
+    wotvsummary_update(myspreadsheet, wotvsummary_process(myspreadsheet))
