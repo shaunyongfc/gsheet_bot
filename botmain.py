@@ -186,7 +186,7 @@ async def wotveq(ctx, *arg):
         argstr = ' '.join(arg)
         matstr = ('',)
         for index, row in dfwotv['mat'].iterrows():
-            if argstr in row['Aliases'].split(' / '):
+            if argstr in row['Aliases'].lower().split(' / '):
                 matstr = (index, row['Type'], row['Aliases'].split(' / ')[0])
                 break
         if matstr[0] != '':
