@@ -25,6 +25,8 @@ wotv_emotes_raw = (
     ('limited', '799155023249408001'),
     ('esper', '799155023086878740'),
     ('kame', '799186663041531907'),
+    ('pink', '799230682470678559'),
+    ('pot', '799231267651584010'),
     ('gil', '799228097185579028'),
     ('visiore', '799228097169457163')
 )
@@ -80,10 +82,37 @@ class WotvUtils:
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
             },
-            'fortunes': ( # unfinished
-                'I see the stars of the Hallowed Father shining with might. A miracle could be happening!',
-                'I see the stars of the Dragon King smiling with grace. I foresee a delightful outcome.'
+            'fortune_str': ( # unfinished
+                'I see the stars of the Hallowed Father bestowing us their heavenly blessings. Congratulations!',
+                'I see the stars of the Legendary Knight reassuring us of their divine protection.',
+                'I see the stars of the Lord of the Sea dancing with grace. This is a good omen.',
+                'I see the stars of the Bird of Rebirth shimmering with grace. This is a good omen.',
+                'I see the stars of the Purgatory Demon shining brightly. I wonder what this could mean.',
+                'I see the stars of the Ice Queen shining brightly. I wonder what this could mean.',
+                'I see the stars of the Quadruplet Fairies shining brightly. I wonder what this could mean.',
+                'I see the stars of the Rock Giant shining brightly. I wonder what this could mean.',
+                'I see the stars of the Wise Man shining brightly. I wonder what this could mean.',
+                'I see the stars of the Songstress shining brightly. I wonder what this could mean.',
+                'I see the stars of the Guardian Fortress of Light shifting uneasily. This is an ill omen.',
+                'I see the stars of the Messenger of the Dark grinning wickedly. This is an ill omen.',
+                'I see the stars of the Lady of Six Realms beckoning us with an arduous challenge.',
+                'I see the stars of the Hallowed Father seething with anger. A disaster could be upon us...'
             ),
+            'fortune_index': list(range(14)),
+            'fortune_weights': [1, 4, 8, 8,
+                                10, 10, 10, 10, 10, 10,
+                                8, 8, 4, 1],
+            'fortune_rarity': ('ur', 'ssr', 'sr', 'sr',
+                                'r', 'r', 'r', 'r', 'r', 'r',
+                                'sr', 'sr', 'ssr', 'ur'),
+            'fortune_urls': ('https://caelum.s-ul.eu/GLYWmkxl.png',
+                            'https://caelum.s-ul.eu/qffB7KHD.png',
+                            'https://caelum.s-ul.eu/JjcdW0Kw.png',
+                            'https://caelum.s-ul.eu/y9Xtlc70.png',
+                            'https://caelum.s-ul.eu/K1qCN3Qs.png'),
+            'fortune_url': (0, 1, 1, 1,
+                            2, 2, 2, 2, 2, 2,
+                            3, 3, 3, 4),
             'embed': {
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
@@ -92,12 +121,13 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
-                ('13th January 2021', (
-                    'Equipment function - expansion to check via English names.',
-                    'Return list of suggestions when result not found for some commands.'
+                ('14th January 2021', (
+                    'Updated icons.',
+                    'Ramada Star Reading - `=stars`'
                 )),
-                ('12th January 2021', (
+                ('13th January 2021', (
                     'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
+                    'Return list of suggestions when result not found for some commands.'
                 )),
                 ('8th January 2021', (
                     'Changelog implemented (this function).',
@@ -119,11 +149,13 @@ class WotvUtils:
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
             ('Standard commands', ('`=ping`', '`=help`', '`=changelog/version`')),
-            ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
-            ('News', ('Enter `=news` for link to news.',)),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
-            ('Esper', ('Enter `=help esper` for more info.',))
+            ('Esper', ('Enter `=help esper` for more info.',)),
+            ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
+            ('News', ('Enter `=news` for link to news.',)),
+            ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=fortune` to have Ramada read your fortune.',
+            '(Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.)'))
         )
         self.dicts['help_eq'] = (
             ('General info', (
@@ -214,18 +246,18 @@ class WotvUtils:
         msg_list = []
         weekly_tuples = [
             ('Sunday', ('gil',)),
-            ('Monday', ('kame',)),
+            ('Monday', ('kame', 'pot')),
             ('Tuesday', ('fire', 'wind')),
             ('Wednesday', ('water', 'ice')),
             ('Thursday', ('earth', 'dark')),
-            ('Friday', ('thunder', 'light'))
+            ('Friday', ('thunder', 'light')),
+            ('Saturday', ('pink', 'gil'))
         ]
         for day, daylist in weekly_tuples:
             msg_line = day + ': '
             for ele in daylist:
                 msg_line += self.dicts['emotes'][ele]
             msg_list.append(msg_line)
-        msg_list.append('Saturday: :dango:')
         self.weekly = '\n'.join(msg_list)
     def mat_sets(self, df):
         dict_sets = {
@@ -362,5 +394,8 @@ class WotvUtils:
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
+    def fortune(self):
+        choice = random.choices(self.dicts['fortune_index'])[0]
+        return self.dicts['fortune_str'][choice], self.dicts['fortune_rarity'][choice], self.dicts['fortune_urls'][self.dicts['fortune_url'][choice]]
 
 wotv_utils = WotvUtils()

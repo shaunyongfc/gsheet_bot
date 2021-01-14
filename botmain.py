@@ -58,6 +58,8 @@ async def checkservers(ctx, *arg):
         guild_names = '\n'.join(f"- {a.name}" for a in guilds)
         await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
 
+# sql-related commands are currently faulty, to be fixed someday
+
 @bot.command()
 async def scnew(ctx, *arg):
     if ctx.message.author.id == owner_userid:
@@ -144,6 +146,22 @@ async def wotvhelp(ctx, *arg):
             help_tuples = wotv_utils.dicts['help_eq']
     for a, b in help_tuples:
         embed.add_field(name=a, value='\n'.join(b), inline=False)
+    await ctx.send(embed = embed)
+
+@bot.command(aliases=['fortune', 'stars'])
+async def wotvfortune(ctx, *args):
+    # Fluff command to read fortune
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    fortunestr, fortunerarity, fortuneurl = wotv_utils.fortune()
+    embed.title = f"Ramada Star Reading {wotv_utils.dicts['emotes'][fortunerarity]}"
+    embed.description = fortunestr
+    embed.set_thumbnail(url=fortuneurl)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['changelog', 'version'])
