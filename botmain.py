@@ -305,7 +305,7 @@ async def wotvvcsearch(ctx, *arg):
     for _, row in df.iterrows():
         for col in effects_dict.keys():
             eff_list = row[col].split(' / ')
-            eff_prefix = wotv_utils.dicts['emotes']['neutral'] # Default icon unless condition found
+            eff_prefix = wotv_utils.dicts['emotes']['allele'] # Default icon unless condition found
             for eff in eff_list:
                 # Have to process the brackets first because might match 2nd conditional effect
                 match_brackets = wotv_utils.reb.findall(eff)

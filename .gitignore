@@ -131,6 +131,7 @@ dmypy.json
 # Not needed to upload
 .DS_Store
 bot_images
+discord-bot-aira
 
 # Sensitive info
 credentials.json

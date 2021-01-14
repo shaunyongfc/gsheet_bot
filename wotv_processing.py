@@ -1,14 +1,17 @@
 import re
+import random
 from gsheet_handler import dfwotv
 
 # raw code of emotes uploaded into Discord
 wotv_emotes_raw = (
-    ('weapon', '790521500788064306'),
-    ('armor', '790521500548857867'),
-    ('accessory', '790521500658171925'),
-    ('ur', '790521500821749808'),
-    ('ssr', '790521500829876244'),
-    ('sr', '793618254529822730'),
+    ('weapon', '799182037348909077'),
+    ('armor', '799182037696905276'),
+    ('accessory', '799182037248114689'),
+    ('ur', '799226625631322152'),
+    ('ssr', '799226625199570965'),
+    ('sr', '799226625715208212'),
+    ('r', '799226625371537449'),
+    ('mr', '799226833635508224'),
     ('fire', '791969566023745547'),
     ('ice', '791969566308958219'),
     ('wind', '791969566409752576'),
@@ -18,8 +21,12 @@ wotv_emotes_raw = (
     ('light', '791969565826613259'),
     ('dark', '791969566246436884'),
     ('neutral', '791969566233853952'),
-    ('limited', '794438895932669963'),
-    ('esper', '794438896066101288')
+    ('allele', '799186663229227038'),
+    ('limited', '799155023249408001'),
+    ('esper', '799155023086878740'),
+    ('kame', '799186663041531907'),
+    ('gil', '799228097185579028'),
+    ('visiore', '799228097169457163')
 )
 wotv_aemotes_raw = (
     ('elements', '796963642418790451'),
@@ -73,6 +80,10 @@ class WotvUtils:
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
             },
+            'fortunes': ( # unfinished
+                'I see the stars of the Hallowed Father shining with might. A miracle could be happening!',
+                'I see the stars of the Dragon King smiling with grace. I foresee a delightful outcome.'
+            ),
             'embed': {
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
@@ -143,8 +154,8 @@ class WotvUtils:
         self.dicts['help_vc'] = (
             ('General info', (
                 self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
-                self.dicts['emotes']['neutral'] + ' neutral icon indicates unconditional effects.',
-                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.'
+                self.dicts['emotes']['allele'] + ' ALL icon indicates unconditional effects.',
+                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
             ('VC Info', ('**= vc / wvc / wotvvc**',
                 'Argument either in full Japanese name or short English nickname bracketed in other commands.',
@@ -168,7 +179,7 @@ class WotvUtils:
         )
         self.dicts['help_esper'] = (
             ('General info', (
-                self.dicts['emotes']['limited'] + ' halloween pumpkin icon indicates time limited.',
+                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.',
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
                 'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
             )),
@@ -200,11 +211,10 @@ class WotvUtils:
         )
         self.weekly_init()
     def weekly_init(self):
-        msg_list = [
-            'Sunday: :money_mouth:',
-            'Monday: :turtle::honey_pot:'
-        ]
+        msg_list = []
         weekly_tuples = [
+            ('Sunday', ('gil',)),
+            ('Monday', ('kame',)),
             ('Tuesday', ('fire', 'wind')),
             ('Wednesday', ('water', 'ice')),
             ('Thursday', ('earth', 'dark')),
