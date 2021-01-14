@@ -70,12 +70,22 @@ async def scnew(ctx, *arg):
                 type_id = 2
             elif arg[0] == 'aemote':
                 type_id = 3
+            elif arg[0] == 'role':
+                type_id = 4
             else:
                 type_id = 1
         sc_name = ' '.join(arg[2:])
         sc_id = int(arg[1])
         mydb.new_shortcut(sc_name, type_id, sc_id)
         await ctx.send(f"Added {sc_name} as type {type_id} shortcut.")
+
+@bot.command()
+async def scdel(ctx, *arg):
+    if ctx.message.author.id == owner_userid:
+        argstr = ' '.join(arg)
+        scstr = mydb.get_shortcut(argstr)
+        mydb.delete_shortcut(argstr)
+        await ctx.send(f"Deleted shortcut `{scstr}`.")
 
 @bot.command()
 async def scall(ctx):

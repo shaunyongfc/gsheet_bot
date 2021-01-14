@@ -37,6 +37,8 @@ class MyDB():
                 return f"<:{tup[0]}:{tup[2]}>"
             elif tup[1] == 3: # animated emote
                 return f"<a:{tup[0]}:{tup[2]}>"
+            elif tup[1] == 4: # role id
+                return f"<@&{tup[2]}>"
     def get_all_shortcuts(self):
         self.cur.execute(f"SELECT * FROM msgshortcuts")
         return self.cur.fetchall()
