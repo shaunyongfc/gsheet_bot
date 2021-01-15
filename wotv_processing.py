@@ -82,37 +82,22 @@ class WotvUtils:
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
             },
-            'fortune_str': ( # unfinished
+            'fortune_str': (
                 'I see the stars of the Hallowed Father bestowing us their heavenly blessings. Congratulations!',
                 'I see the stars of the Legendary Knight reassuring us of their divine protection.',
-                'I see the stars of the Lord of the Sea dancing with grace. This is a good omen.',
-                'I see the stars of the Bird of Rebirth shimmering with grace. This is a good omen.',
-                'I see the stars of the Purgatory Demon shining brightly. I wonder what this could mean.',
-                'I see the stars of the Ice Queen shining brightly. I wonder what this could mean.',
-                'I see the stars of the Quadruplet Fairies shining brightly. I wonder what this could mean.',
-                'I see the stars of the Rock Giant shining brightly. I wonder what this could mean.',
-                'I see the stars of the Wise Man shining brightly. I wonder what this could mean.',
-                'I see the stars of the Songstress shining brightly. I wonder what this could mean.',
+                'I see the stars of the Lord of the Sea smiling joyfully. This is a good omen.',
+                'I see the stars of the Bird of Rebirth dancing gracefully. This is a good omen.',
+                'I see the stars of the Purgatory Demon shimmering. I wonder what this could mean.',
+                'I see the stars of the Ice Queen shimmering. I wonder what this could mean.',
+                'I see the stars of the Quadruplet Fairies shimmering. I wonder what this could mean.',
+                'I see the stars of the Rock Giant shimmering. I wonder what this could mean.',
+                'I see the stars of the Wise Man shimmering. I wonder what this could mean.',
+                'I see the stars of the Sea Songstress shimmering. I wonder what this could mean.',
                 'I see the stars of the Guardian Fortress of Light shifting uneasily. This is an ill omen.',
                 'I see the stars of the Messenger of the Dark grinning wickedly. This is an ill omen.',
                 'I see the stars of the Lady of Six Realms beckoning us with an arduous challenge.',
                 'I see the stars of the Hallowed Father seething with anger. A disaster could be upon us...'
             ),
-            'fortune_index': list(range(14)),
-            'fortune_weights': [1, 4, 8, 8,
-                                10, 10, 10, 10, 10, 10,
-                                8, 8, 4, 1],
-            'fortune_rarity': ('ur', 'ssr', 'sr', 'sr',
-                                'r', 'r', 'r', 'r', 'r', 'r',
-                                'sr', 'sr', 'ssr', 'ur'),
-            'fortune_urls': ('https://caelum.s-ul.eu/GLYWmkxl.png',
-                            'https://caelum.s-ul.eu/qffB7KHD.png',
-                            'https://caelum.s-ul.eu/JjcdW0Kw.png',
-                            'https://caelum.s-ul.eu/y9Xtlc70.png',
-                            'https://caelum.s-ul.eu/K1qCN3Qs.png'),
-            'fortune_url': (0, 1, 1, 1,
-                            2, 2, 2, 2, 2, 2,
-                            3, 3, 3, 4),
             'embed': {
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
@@ -395,7 +380,8 @@ class WotvUtils:
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
     def fortune(self):
-        choice = random.choices(self.dicts['fortune_index'])[0]
-        return self.dicts['fortune_str'][choice], self.dicts['fortune_rarity'][choice], self.dicts['fortune_urls'][self.dicts['fortune_url'][choice]]
+        choice = random.choices(dfwotv['stars'].index.tolist(), weights=dfwotv['stars']['Weight'].tolist())[0]
+        row = dfwotv['stars'].iloc[choice]
+        return row['Fortune'], row['Rarity'].lower(), row['Url']
 
 wotv_utils = WotvUtils()
