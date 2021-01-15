@@ -1,4 +1,4 @@
-import gspread
+import gspread, re
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -9,36 +9,81 @@ client = gspread.authorize(creds)
 testspreadsheet = client.open("Octopath WOTV")
 sharedspreadsheet = client.open("Ramada Bot")
 
-def get_dfwotv():
-    dfwotv = dict()
+class DfHandlerWotv():
+    # Object handling WOTV sheets related operations
+    def __init__(self):
+        self.sync()
+    def sync(self):
+        df = pd.DataFrame(testspreadsheet.worksheet('WOTV_eq').get_all_records())
+        self.eq = df.set_index('EQ Name')
 
-    df = pd.DataFrame(testspreadsheet.worksheet('WOTV_eq').get_all_records())
-    dfwotv['eq'] = df.set_index('EQ Name')
+        df = pd.DataFrame(testspreadsheet.worksheet('WOTV_matname').get_all_records())
+        self.mat = df.set_index('Material')
 
-    df = pd.DataFrame(testspreadsheet.worksheet('WOTV_matname').get_all_records())
-    dfwotv['mat'] = df.set_index('Material')
+        df = pd.DataFrame(testspreadsheet.worksheet('WOTV_vc').get_all_records())
+        self.vc = df.set_index('VC Name')
 
-    df = pd.DataFrame(testspreadsheet.worksheet('WOTV_vc').get_all_records())
-    dfwotv['vc'] = df.set_index('VC Name')
+        df = pd.DataFrame(testspreadsheet.worksheet('WOTV_esper').get_all_records())
+        self.esper = df.set_index('Esper')
 
-    df = pd.DataFrame(testspreadsheet.worksheet('WOTV_esper').get_all_records())
-    dfwotv['esper'] = df.set_index('Esper')
+        df = pd.DataFrame(testspreadsheet.worksheet('WOTVGL_esper').get_all_records())
+        self.glesper = df.set_index('Esper')
 
-    df = pd.DataFrame(testspreadsheet.worksheet('WOTVGL_esper').get_all_records())
-    dfwotv['gl_esper'] = df.set_index('Esper')
+        df = pd.DataFrame(sharedspreadsheet.worksheet('WOTV_shortcut').get_all_records())
+        self.shortcut = df.set_index('Shortcut')
 
-    df = pd.DataFrame(sharedspreadsheet.worksheet('WOTV_shortcut').get_all_records())
-    dfwotv['shortcut'] = df.set_index('Shortcut')
+        self.stars = pd.DataFrame(sharedspreadsheet.worksheet('WOTV_stars').get_all_records())
 
-    df = pd.DataFrame(sharedspreadsheet.worksheet('WOTV_stars').get_all_records())
-    dfwotv['stars'] = df
-    return dfwotv
+dfwotv = DfHandlerWotv()
 
-dfwotv = get_dfwotv()
+class DfHandlerGen():
+    # Object handling general sheets related operations
+    def __init__(self):
+        self.res = re.compile(r'&\w+') # regex for shortcuts
+        self.sync()
+    def sync(self):
+        self.shortcuts = pd.DataFrame(sharedspreadsheet.worksheet('my_shortcuts').get_all_records())
+    def add_shortcut(self, *arg):
+        if len(arg) == 3:
+            try:
+                int(arg[2])
+                sharedspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
+                self.sync()
+                return 'Added.'
+            except:
+                return 'Non-integer id.'
+        else:
+            return 'Incorrect arguments.'
+    def get_shortcut(self, name):
+        row_index = self.shortcuts[self.shortcuts['Name'] == name].index.tolist()[0]
+        row = self.shortcuts.iloc[row_index]
+        if row['Type'] == 'channel':
+            return row['id']
+        elif row['Type'] == 'user':
+            return f"<@{row['id']}>"
+        elif row['Type'] == 'emote':
+            return f"<:{row['Name']}:{row['id']}>"
+        elif row['Type'] == 'aemote':
+            return f"<a:{row['Name']}:{row['id']}>"
+        elif row['Type'] == 'role':
+            return f"<@&{row['id']}>"
+    def msg_process(self, argstr):
+        re_matches = self.res.findall(argstr)
+        for re_match in re_matches:
+            try:
+                argstr = argstr.replace(re_match, self.get_shortcut(re_match[1:]))
+            except:
+                pass
+        return argstr
 
-def get_df_cotc():
-    df_cotc = pd.DataFrame(testspreadsheet.worksheet('COTC_owned').get_all_records())
-    df_cotc = df_cotc.set_index('トラベラー')
-    return df_cotc
+dfgen = DfHandlerGen()
 
-df_cotc = get_df_cotc()
+class DfHandlerCotc():
+    # Object handling COTC sheets related operations
+    def __init__(self):
+        self.sync()
+    def sync(self):
+        df_cotc = pd.DataFrame(testspreadsheet.worksheet('COTC_owned').get_all_records())
+        self.cotc = df_cotc.set_index('トラベラー')
+
+dfcotc = DfHandlerCotc()

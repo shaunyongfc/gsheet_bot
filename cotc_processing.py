@@ -1,4 +1,4 @@
-from gsheet_handler import df_cotc
+# from gsheet_handler import dfcotc
 
 def get_cotc_emotes():
     cotc_emotes_raw = {

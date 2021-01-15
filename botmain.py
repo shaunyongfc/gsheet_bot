@@ -1,11 +1,10 @@
 import discord
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import get_dfwotv, dfwotv
+from gsheet_handler import dfwotv, dfgen
 from wotv_processing import wotv_utils
-from sql_handler import mydb
 
-from gsheet_handler import get_df_cotc, df_cotc
+from gsheet_handler import dfcotc
 from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 bot = commands.Bot(command_prefix='+')
@@ -28,9 +27,9 @@ async def emotes(ctx, *arg):
 async def teststr(ctx):
     await ctx.send('<a:wotv_elements:796963642418790451>')
 
-######################
-### Admin Commands ###
-######################
+################################
+### Admin / General Commands ###
+################################
 # Able to copy directly from this point
 
 @bot.command()
@@ -41,14 +40,17 @@ async def ping(ctx):
 async def sync(ctx, *arg):
     if ctx.message.author.id == owner_userid:
         if len(arg) == 0:
-            # Synchronise sheets
-            global dfwotv
-            dfwotv = get_dfwotv()
+            # Synchronise WOTV sheets
+            dfwotv.sync()
             await ctx.send('Google sheet synced.')
         elif arg[0] == 'esper':
             # Update the set of effects per column in Esper
-            wotv_utils.dicts['esper_sets'] = wotv_utils.esper_sets(dfwotv['esper'])
+            wotv_utils.dicts['esper_sets'] = wotv_utils.esper_sets(dfwotv.esper)
             await ctx.send('Esper keyword sets updated.')
+        elif arg[0] == 'gen':
+            # Synchronise general sheets
+            dfgen.sync()
+            await ctx.send('Google sheet (general) synced.')
 
 @bot.command()
 async def checkservers(ctx, *arg):
@@ -58,51 +60,10 @@ async def checkservers(ctx, *arg):
         guild_names = '\n'.join(f"- {a.name}" for a in guilds)
         await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
 
-# sql-related commands are currently faulty, to be fixed someday
-
 @bot.command()
 async def scnew(ctx, *arg):
-    if ctx.message.author.id == owner_userid:
-        try:
-            type_id = int(arg[0])
-        except:
-            if arg[0] == 'channel':
-                type_id = 0
-            elif arg[0] == 'emote':
-                type_id = 2
-            elif arg[0] == 'aemote':
-                type_id = 3
-            elif arg[0] == 'role':
-                type_id = 4
-            else:
-                type_id = 1
-        sc_name = ' '.join(arg[2:])
-        sc_id = int(arg[1])
-        mydb.new_shortcut(sc_name, type_id, sc_id)
-        await ctx.send(f"Added {sc_name} as type {type_id} shortcut.")
-
-@bot.command()
-async def scdel(ctx, *arg):
-    if ctx.message.author.id == owner_userid:
-        argstr = ' '.join(arg)
-        scstr = mydb.get_shortcut(argstr)
-        mydb.delete_shortcut(argstr)
-        await ctx.send(f"Deleted shortcut `{scstr}`.")
-
-@bot.command()
-async def scall(ctx):
-    if ctx.message.author.id == owner_userid:
-        embed = discord.Embed()
-        embed.title = 'All Shortcuts'
-        tup_list = mydb.get_all_shortcuts()
-        field_lists = [[], [], []]
-        for tup in tup_list:
-            field_lists[0].append(tup[0])
-            field_lists[1].append(str(tup[1]))
-            field_lists[2].append(str(tup[2]))
-        for name, field_list in zip(['Name', 'Type', 'id'], field_lists):
-            embed.add_field(name=name, value='\n'.join(field_list))
-        await ctx.send(embed = embed)
+    # New shortcut into worksheet
+    await ctx.send(dfgen.add_shortcut(*arg))
 
 @bot.command()
 async def sendmsg(ctx, *arg):
@@ -112,12 +73,12 @@ async def sendmsg(ctx, *arg):
             channel = bot.get_channel(int(arg[0]))
             arg = arg[1:]
         except:
-            channel = bot.get_channel(mydb.get_shortcut(arg[0]))
+            channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
             arg = arg[1:]
         if len(arg) == 0:
             msg = 'Hi.'
         else:
-            msg = mydb.msg_process(' '.join(arg))
+            msg = dfgen.msg_process(' '.join(arg))
         await channel.send(msg)
 
 ################################
@@ -225,7 +186,7 @@ async def wotveq(ctx, *arg):
             embed.title = f"List of {argstr}s"
             text_list = list(wotv_utils.dicts['mat_sets'][argstr])
             if argstr not in ['Type', 'Acquisition']:
-                text_list = [f"{a} ({dfwotv['mat'].loc[a]['Aliases'].split(' / ')[0]})" for a in text_list]
+                text_list = [f"{a} ({dfwotv.mat.loc[a]['Aliases'].split(' / ')[0]})" for a in text_list]
             embed.description = '\n'.join(text_list)
     # Check if type search
     elif arg[0].lower() in ['type', 't', 'acquisition', 'a'] and len(arg) > 1:
@@ -240,7 +201,7 @@ async def wotveq(ctx, *arg):
         for a, b in wotv_utils.dicts['eq_replace']:
             argstr = argstr.replace(a, b)
         # Find eq that match and add to the embed
-        for index, row in dfwotv['eq'].iterrows():
+        for index, row in dfwotv.eq.iterrows():
             if argstr in row[colstr].lower():
                 field_name = wotv_utils.name_str(row)
                 field_value = f"- {row['Special']}"
@@ -249,7 +210,7 @@ async def wotveq(ctx, *arg):
         # Check if material search
         argstr = ' '.join(arg)
         matstr = ('',)
-        for index, row in dfwotv['mat'].iterrows():
+        for index, row in dfwotv.mat.iterrows():
             if argstr in row['Aliases'].lower().split(' / '):
                 matstr = (index, row['Type'], row['Aliases'].split(' / ')[0])
                 break
@@ -257,13 +218,13 @@ async def wotveq(ctx, *arg):
             # Print all eq that use said materials
             embed.title = f"Recipes w/ {matstr[2]}"
             embed_text_list = []
-            for index, row in dfwotv['eq'].iterrows():
+            for index, row in dfwotv.eq.iterrows():
                 if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' and matstr[0] in row[matstr[1]]):
                     embed_text_list.append(wotv_utils.name_str(row))
             embed.description = '\n'.join(embed_text_list)
         else:
             # Find the specific eq
-            rowfound, row = wotv_utils.find_row(dfwotv['eq'], arg)
+            rowfound, row = wotv_utils.find_row(dfwotv.eq, arg)
             if rowfound == 0:
                 if row == '':
                     embed.title = ' '.join(arg)
@@ -279,11 +240,11 @@ async def wotveq(ctx, *arg):
                     if row[col] != '':
                         if col == 'Cryst':
                             if row['Rarity'] == 'UR':
-                                engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)C', 'Megac')
+                                engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)C', 'Megac')
                             else:
-                                engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)', '')
+                                engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)', '')
                         else:
-                            engstr = dfwotv['mat'].loc[row[col]]['Aliases'].split(' / ')[0]
+                            engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
                         embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
     await ctx.send(embed = embed)
@@ -294,7 +255,7 @@ async def wotvvcsearch(ctx, *arg):
         colour = wotv_utils.dicts['embed']['default_colour']
     )
     # Preliminary code for global implementation
-    df = dfwotv['vc']
+    df = dfwotv.vc
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
@@ -369,7 +330,7 @@ async def wotvvcsearch(ctx, *arg):
 async def wotvvcelement(ctx, *arg):
     embed = discord.Embed()
     # Preliminary code for global implementation
-    df = dfwotv['vc']
+    df = dfwotv.vc
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
@@ -422,7 +383,7 @@ async def wotvvc(ctx, *arg):
         colour = wotv_utils.dicts['embed']['default_colour']
     )
     # Preliminary code for global implementation
-    df = dfwotv['vc']
+    df = dfwotv.vc
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/cards',
@@ -479,7 +440,7 @@ async def wotvesper(ctx, *arg):
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
         global_bool = 1
-        df = dfwotv['gl_esper']
+        df = dfwotv.glesper
         arg = arg[1:]
     else:
         embed.set_author(
@@ -488,7 +449,7 @@ async def wotvesper(ctx, *arg):
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
         global_bool = 0
-        df = dfwotv['esper']
+        df = dfwotv.esper
     # Check arguments
     if arg[0] in ['m', 'mobile']:
         mobile_bool = 1
@@ -744,7 +705,7 @@ async def cotcrank(ctx, *arg):
         else:
             continue
         break
-    df = df_cotc[df_cotc[argstr_col] == argstr_jp]
+    df = dfcotc.cotc[dfcotc.cotc[argstr_col] == argstr_jp]
     if argstr_col == '影響力':
         embed.title = f"List of {argstr_en} travelers:"
         desc_text = []
@@ -787,7 +748,7 @@ async def cotcsupport(ctx, *arg):
             argstr_jp = k
             argstr_en = v[0]
             break
-    df = df_cotc[df_cotc[argstr_jp] != '']
+    df = dfcotc.cotc[dfcotc.cotc[argstr_jp] != '']
     aoe = 0
     aoestr = ''
     kw = ''
@@ -821,7 +782,7 @@ async def cotctraveler(ctx, *arg):
         name = 'オクトパストラベラー 大陸の覇者',
         icon_url = 'https://caelum.s-ul.eu/iNkqSeQ7.png'
     )
-    row = df_cotc.loc[arg[0]]
+    row = dfcotc.cotc.loc[arg[0]]
     embed.title = get_cotc_label(row)
     embed.colour = cotc_dicts['colours'][cotc_dicts['属性'][row['属性']][0]]
     field_name_icons = {

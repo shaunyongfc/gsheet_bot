@@ -39,7 +39,7 @@ class WotvUtils:
         self.reb = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
         self.ren = re.compile(r'-?\d+$') # regex for numbers
         self.dicts = {
-            'mat_sets': self.mat_sets(dfwotv['eq']),
+            'mat_sets': self.mat_sets(dfwotv.eq),
             'eq_lists': {
                 'Type': ['t'],
                 'Acquisition': ['a'],
@@ -56,7 +56,7 @@ class WotvUtils:
                 ('ninjablade', 'ninja blade'),
                 ('armour', 'armor')
             ),
-            'esper_sets': self.esper_sets(dfwotv['esper']),
+            'esper_sets': self.esper_sets(dfwotv.esper),
             'esper_suffix': {
                 'atk': 'ATK Up',
                 'killer': 'Killer',
@@ -297,7 +297,7 @@ class WotvUtils:
             return 'weapon'
     def shortcut_convert(self, argstr, col='VC'):
         try:
-            args = dfwotv['shortcut'].loc[argstr.lower()][col]
+            args = dfwotv.shortcut.loc[argstr.lower()][col]
             if args != '':
                 return args
             else:
@@ -380,8 +380,8 @@ class WotvUtils:
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
     def fortune(self):
-        choice = random.choices(dfwotv['stars'].index.tolist(), weights=dfwotv['stars']['Weight'].tolist())[0]
-        row = dfwotv['stars'].iloc[choice]
+        choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
+        row = dfwotv.stars.iloc[choice]
         return row['Fortune'], row['Rarity'].lower(), row['Url']
 
 wotv_utils = WotvUtils()
