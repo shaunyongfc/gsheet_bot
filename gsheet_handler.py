@@ -23,8 +23,8 @@ class DfHandlerWotv():
         df = pd.DataFrame(myspreadsheet.worksheet('WOTV_esper').get_all_records())
         self.esper = df.set_index('Esper')
 
-        df = pd.DataFrame(myspreadsheet.worksheet('WOTVGL_esper').get_all_records())
-        self.glesper = df.set_index('Esper')
+        #df = pd.DataFrame(myspreadsheet.worksheet('WOTVGL_esper').get_all_records())
+        #self.glesper = df.set_index('Esper')
 
         df = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_matname').get_all_records())
         self.mat = df.set_index('Material')

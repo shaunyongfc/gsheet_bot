@@ -218,11 +218,33 @@ async def wotveq(ctx, *arg):
         if matstr[0] != '':
             # Print all eq that use said materials
             embed.title = f"Recipes w/ {matstr[2]}"
-            embed_text_list = []
+            embed_text_list = {
+                'ur': [],
+                'ssr': []
+            }
             for index, row in dfwotv.eq.iterrows():
                 if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' and matstr[0] in row[matstr[1]]):
-                    embed_text_list.append(wotv_utils.name_str(row))
-            embed.description = '\n'.join(embed_text_list)
+                    embed_text_list[row['Rarity'].lower()].append(wotv_utils.name_str(row))
+            for k, v in embed_text_list.items():
+                if len(v) > 0:
+                    field_value = '\n'.join(v)
+                    if len(field_value) < 1020:
+                        embed.add_field(name=k.upper(), value=field_value, inline=True)
+                    else:
+                        # Split if too long
+                        checkpoint = 0
+                        field_value_length = -2
+                        field_name = k.upper()
+                        for i, v_entry in enumerate(v):
+                            field_value_length += len(v_entry) + 2
+                            if field_value_length > 1000:
+                                field_value = '\n'.join(v[checkpoint:i])
+                                embed.add_field(name=field_name, value=field_value, inline=True)
+                                field_value_length = len(v_entry)
+                                checkpoint = i
+                                field_name = f"{k.upper()} (cont.)"
+                        field_value = '\n'.join(v[checkpoint:])
+                        embed.add_field(name=field_name, value=field_value, inline=True)
         else:
             # Find the specific eq
             rowfound, row = wotv_utils.find_row(dfwotv.eq, arg)
@@ -468,23 +490,23 @@ async def wotvesper(ctx, *arg):
         colour = wotv_utils.dicts['embed']['default_colour']
     )
     # Preliminary code for global implementation
-    if arg[0] in ['global', 'gl']:
-        embed.set_author(
-            name = wotv_utils.dicts['embed']['gl_author_name'],
-            url = 'https://wotv-calc.com/espers',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
-        )
-        global_bool = 1
-        df = dfwotv.glesper
-        arg = arg[1:]
-    else:
-        embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
-            url = 'https://wotv-calc.com/JP/espers',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
-        )
-        global_bool = 0
-        df = dfwotv.esper
+    #if arg[0] in ['global', 'gl']:
+        #embed.set_author(
+        #    name = wotv_utils.dicts['embed']['gl_author_name'],
+        #    url = 'https://wotv-calc.com/espers',
+        #    icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        #)
+        #global_bool = 1
+        #df = dfwotv.glesper
+        #arg = arg[1:]
+    #else:
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        url = 'https://wotv-calc.com/JP/espers',
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    global_bool = 0
+    df = dfwotv.esper
     # Check arguments
     if arg[0] in ['m', 'mobile']:
         mobile_bool = 1

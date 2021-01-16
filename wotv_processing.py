@@ -335,20 +335,20 @@ class WotvUtils:
                     col = k
                     break
         return col, argstr
-    def name_str(self, row, name='NAME', alias=1, elestr=''):
+    def name_str(self, row, name='NAME', element=1, rarity=1, type=1, limited=1, awaken=1, alias=1, elestr=''):
         namestr = ''
         if elestr != '':
             namestr += self.dicts['emotes'][elestr]
-        elif 'Element' in row.index:
+        elif 'Element' in row.index and element:
             namestr += self.dicts['emotes'][row['Element'].lower()]
-        if 'Rarity' in row.index:
+        if 'Rarity' in row.index and rarity:
             namestr += self.dicts['emotes'][row['Rarity'].lower()]
-        if 'Type' in row.index:
+        if 'Type' in row.index and type:
             namestr += self.dicts['emotes'][self.eqt_convert(row['Type'])]
-        if 'Limited' in row.index:
+        if 'Limited' in row.index and limited:
             if row['Limited'] != '':
                 namestr += self.dicts['emotes']['limited']
-        if 'Awaken' in row.index:
+        if 'Awaken' in row.index and awaken:
             if row['Awaken'] != '':
                 namestr += self.dicts['emotes']['esper']
         if name == 'NAME':
