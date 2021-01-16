@@ -109,7 +109,7 @@ async def wotvhelp(ctx, *arg):
         embed.add_field(name=a, value='\n'.join(b), inline=False)
     await ctx.send(embed = embed)
 
-@bot.command(aliases=['fortune', 'stars'])
+@bot.command(aliases=['fortune', 'stars', 'ramada'])
 async def wotvfortune(ctx, *args):
     # Fluff command to read fortune
     embed = discord.Embed(
@@ -167,6 +167,7 @@ async def wotveq(ctx, *arg):
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
+    # Preliminary code for global implementation
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
@@ -247,7 +248,41 @@ async def wotveq(ctx, *arg):
                             engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
                         embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
+
+@bot.command(aliases=['wes', 'eqs', 'es'])
+async def wotveqsearch(ctx, *arg):
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    embed.set_author(
+        name = wotv_utils.dicts['embed']['author_name'],
+        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+    )
+    if len(arg) == 1:
+        # Check if it is a shortcut keyword
+        args = wotv_utils.shortcut_convert(arg[0])
+    else:
+        args = ' '.join(arg)
+    embed.title = args.title()
+    args = args.lower()
+    args = args.replace('lightning', 'thunder')
+    for k, v in wotv_utils.dicts['colours'].items():
+        if k in args:
+            embed.colour = v
+            break
+    # Search each eq
+    for _, row in dfwotv.eq.iterrows():
+            eff_list = row['Special'].split(' / ')
+            for eff in eff_list:
+                if args in eff.lower():
+                    embed.add_field(name=wotv_utils.name_str(row), value=f"- {row['Special']}")
+    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
+    try:
+        await ctx.send(embed = embed)
+    except discord.HTTPException:
+        await ctx.send('Too many results. Please refine the search.')
 
 @bot.command(aliases=['wvs', 'vcs', 'vs'])
 async def wotvvcsearch(ctx, *arg):

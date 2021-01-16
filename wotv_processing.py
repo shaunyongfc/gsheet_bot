@@ -106,6 +106,10 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
+                ('16th January 2021', (
+                    'Changed display picture because of clash with another bot.',
+                    'Equipment search function - search equipment by effect. (`=help eq` for more info)'
+                )),
                 ('14th January 2021', (
                     'Updated icons.',
                     'Ramada Star Reading - `=stars`'
@@ -138,13 +142,18 @@ class WotvUtils:
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
-            ('News', ('Enter `=news` for link to news.',)),
+            ('News', ('Enter `=news` for link to JP news, `=news gl` for link to GL news.',)),
             ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=fortune` to have Ramada read your fortune.',
-            '(Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.)'))
+            'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
+            'Current rate:',
+            ' - 60% Neutral (R)',
+            ' - 20% Good (14% SR, 4% SSR, 2% UR)',
+            ' - 20% Bad (14% SR, 4% SSR, 2% UR)'))
         )
         self.dicts['help_eq'] = (
             ('General info', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
+                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
             ('List of keywords', ('**= eq l**',
                 'Argument is one of `type, acquisition, regular, rare, cryst, ore` to check their respective keywords.',
@@ -166,7 +175,10 @@ class WotvUtils:
             ('Equipment by name', ('**= eq**',
                 'Argument is by equipment name (subject to name availability).',
                 'e.g. `=eq ribbon`'
-            ))
+            )),
+            ('Equipment by effect', ('**= es / eqs**',
+                'Argument is specific effect names.',
+                'e.g. `=es slash res`'))
         )
         self.dicts['help_vc'] = (
             ('General info', (
