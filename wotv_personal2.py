@@ -8,9 +8,10 @@ SHARDS_REQ = {
     'SSR': [20, 40, 80, 160, 200],
     'EX': [80, 120, 200]
     }
-SHARDS_DAILY = {'UR+': 1, 'UR': 2, 'SSR': 3}
 STAGE_NAME = ['LB +0', 'LB +1', 'LB +2', 'LB +3', 'LB +4', 'LB +5', 'EX 19', 'EX 22', 'EX 25']
 LB_SUPPRESS = 3
+
+# WIP to process a personal sheet of unit data into progress prediction
 
 class Unit:
     def __init__(self, rarity='UR', plus=0, shards=0):
@@ -48,46 +49,8 @@ class Roster:
         self.gains = dict()
         for k in unit_list:
             self.gains[k] = [0, 0]
-    def hq_init(self, name_list):
-        self.hqlist = []
-        for name in name_list:
-            self.hq_in(name)
-        self.hq_print()
-    def hq_replace(self, out_name, in_name):
-        self.hq_out(out_name)
-        self.hq_in(in_name)
-        self.hq_print()
-    def hq_in(self, in_name, num=-1):
-        if num == -1:
-            gain = SHARDS_DAILY[self.units[in_name].rarity]
-        else:
-            gain = num
-        self.gains[in_name][1] = gain
-        self.hqcount += gain
-        self.hqlist.append(in_name)
-    def hq_out(self, out_name):
-        self.hqcount -= self.gains[out_name][1]
-        self.gains[out_name][1] = 0
-        self.hqlist.remove(out_name)
     def hq_print(self):
         print(f'HQ ({self.hqcount}/10): {self.hqlist}')
-    def b_init(self, name_list):
-        self.blist = []
-        for name in name_list:
-            self.b_in(name)
-        self.b_print()
-    def b_replace(self, out_name, in_name):
-        self.b_out(out_name)
-        self.b_in(in_name)
-        self.b_print()
-    def b_in(self, in_name):
-        self.gains[in_name][0] += SHARDS_DAILY[self.units[in_name].rarity]
-        self.bcount += 1
-        self.blist.append(in_name)
-    def b_out(self, out_name):
-        self.gains[out_name][0] -= SHARDS_DAILY[self.units[out_name].rarity]
-        self.bcount -= 1
-        self.blist.remove(out_name)
     def b_print(self):
         print(f'Barracks ({self.bcount}/5): {self.blist}')
     def daily(self):

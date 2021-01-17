@@ -81,6 +81,23 @@ async def sendmsg(ctx, *arg):
             msg = dfgen.msg_process(' '.join(arg))
         await channel.send(msg)
 
+@bot.command()
+async def delmsg(ctx, *arg):
+    if len(arg) == 1:
+        msg = await ctx.fetch_message(int(arg[0]))
+    elif len(arg) == 2:
+        try:
+            channel = bot.get_channel(int(arg[0]))
+        except:
+            channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
+        msg = await channel.fetch_message(int(arg[1]))
+    try:
+        await msg.delete()
+        await ctx.send('Message deleted.')
+    except:
+        await ctx.send('Message not found.')
+
+
 ################################
 ### FFBE: War of the Visions ###
 ################################
@@ -119,8 +136,8 @@ async def wotvfortune(ctx, *args):
         name = wotv_utils.dicts['embed']['author_name'],
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
-    fortunestr, fortunerarity, fortuneurl = wotv_utils.fortune()
-    embed.title = f"Ramada Star Reading {wotv_utils.dicts['emotes'][fortunerarity]}"
+    fortunestr, fortunedeco, fortuneurl = wotv_utils.fortune()
+    embed.title = f"Ramada Star Reading {fortunedeco}"
     embed.description = fortunestr
     embed.set_thumbnail(url=fortuneurl)
     await ctx.send(embed = embed)

@@ -28,7 +28,9 @@ wotv_emotes_raw = (
     ('pink', '799230682470678559'),
     ('pot', '799231267651584010'),
     ('gil', '799228097185579028'),
-    ('visiore', '799228097169457163')
+    ('visiore', '799228097169457163'),
+    ('up', '800158793983852584'),
+    ('down', '800158794007969892')
 )
 wotv_aemotes_raw = (
     ('elements', '796963642418790451'),
@@ -82,23 +84,7 @@ class WotvUtils:
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
             },
-            'fortune_str': (
-                'I see the stars of the Hallowed Father bestowing us their heavenly blessings. Congratulations!',
-                'I see the stars of the Legendary Knight reassuring us of their divine protection.',
-                'I see the stars of the Lord of the Sea smiling joyfully. This is a good omen.',
-                'I see the stars of the Bird of Rebirth dancing gracefully. This is a good omen.',
-                'I see the stars of the Purgatory Demon shimmering. I wonder what this could mean.',
-                'I see the stars of the Ice Queen shimmering. I wonder what this could mean.',
-                'I see the stars of the Quadruplet Fairies shimmering. I wonder what this could mean.',
-                'I see the stars of the Rock Giant shimmering. I wonder what this could mean.',
-                'I see the stars of the Wise Man shimmering. I wonder what this could mean.',
-                'I see the stars of the Sea Songstress shimmering. I wonder what this could mean.',
-                'I see the stars of the Guardian Fortress of Light shifting uneasily. This is an ill omen.',
-                'I see the stars of the Messenger of the Dark grinning wickedly. This is an ill omen.',
-                'I see the stars of the Lady of Six Realms beckoning us with an arduous challenge.',
-                'I see the stars of the Hallowed Father seething with anger. A disaster could be upon us...'
-            ),
-            'embed': {
+            'embed': { # default embed settings
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
                 'gl_author_name': 'FFBE: War of the Visions',
@@ -146,15 +132,22 @@ class WotvUtils:
             ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=fortune` to have Ramada read your fortune.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
             'Current rate:',
-            ' - 60% Neutral (R)',
-            ' - 20% Good (14% SR, 4% SSR, 2% UR)',
-            ' - 20% Bad (14% SR, 4% SSR, 2% UR)'))
+            ' - 40% Neutral (R)',
+            ' - 30% Good (22% SR, 6% SSR, 2% UR)',
+            ' - 30% Bad (22% SR, 6% SSR, 2% UR)'))
         )
         self.dicts['help_eq'] = (
             ('General info', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
+            ('Equipment by name', ('**= eq**',
+                'Argument is by equipment name (subject to name availability).',
+                'e.g. `=eq ribbon`'
+            )),
+            ('Equipment by effect', ('**= es / eqs**',
+                'Argument is specific effect names.',
+                'e.g. `=es slash res`')),
             ('List of keywords', ('**= eq l**',
                 'Argument is one of `type, acquisition, regular, rare, cryst, ore` to check their respective keywords.',
                 'Put no argument to return the above list.'
@@ -170,15 +163,9 @@ class WotvUtils:
             )),
             ('Equipment by material', ('**= eq**',
                 'Argument is one of the materials that can be checked by the first command.',
+                'It shares the same command as equipment by name, so needs to be exact match (among the aliases).',
                 'e.g. `=eq heart`, `=eq fire`'
-            )),
-            ('Equipment by name', ('**= eq**',
-                'Argument is by equipment name (subject to name availability).',
-                'e.g. `=eq ribbon`'
-            )),
-            ('Equipment by effect', ('**= es / eqs**',
-                'Argument is specific effect names.',
-                'e.g. `=es slash res`'))
+            ))
         )
         self.dicts['help_vc'] = (
             ('General info', (
@@ -240,6 +227,7 @@ class WotvUtils:
         )
         self.weekly_init()
     def weekly_init(self):
+        # only runs once to generate the end string
         msg_list = []
         weekly_tuples = [
             ('Sunday', ('gil',)),
@@ -257,6 +245,7 @@ class WotvUtils:
             msg_list.append(msg_line)
         self.weekly = '\n'.join(msg_list)
     def mat_sets(self, df):
+        # only runs once to generate the dictonary entry
         dict_sets = {
             'Type': set(),
             'Acquisition': set(),
@@ -274,6 +263,7 @@ class WotvUtils:
                         v.add(row[k])
         return dict_sets
     def esper_sets(self, df):
+        # only runs once to generate the dictonary entry
         dict_sets = {
             'ATK Up': set(),
             'Killer': set(),
@@ -288,6 +278,7 @@ class WotvUtils:
                         v.add(eff[:re_match.start()].strip().lower())
         return dict_sets
     def emotes_init(self):
+        # only runs once to generate the dictonary entry
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
             wotv_emotes[k] = f"<:wotv_{k}:{v}>"
@@ -295,12 +286,14 @@ class WotvUtils:
             wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
         return wotv_emotes
     def bracket_init(self):
+        # only runs once to generate the dictonary entry
         bracket_dict = dict()
         for ele in ['fire', 'ice', 'wind', 'earth', 'thunder', 'water', 'light', 'dark']:
             bracket_dict[f"[{ele.capitalize()}]"] = ele
             bracket_dict[ele] = f"[{ele.capitalize()}]"
         return bracket_dict
     def eqt_convert(self, type_str):
+        # only used so correct type emote is generated when printed
         if type_str == 'Accessory':
             return 'accessory'
         elif 'Armor' in type_str:
@@ -308,6 +301,7 @@ class WotvUtils:
         else:
             return 'weapon'
     def shortcut_convert(self, argstr, col='VC'):
+        # convert shortcut if in the sheet
         try:
             args = dfwotv.shortcut.loc[argstr.lower()][col]
             if args != '':
@@ -317,6 +311,7 @@ class WotvUtils:
         except:
             return argstr
     def esper_findcol(self, argstr):
+        # find the correct column to search for an effect from an argument string
         if argstr[:3] == 'ALL':
             return argstr[4:], 'ALL'
         if argstr.rstrip('s') in ['awakened', 'awaken', '3-star', '3star', '3']:
@@ -336,6 +331,7 @@ class WotvUtils:
                     break
         return col, argstr
     def name_str(self, row, name='NAME', element=1, rarity=1, type=1, limited=1, awaken=1, alias=1, elestr=''):
+        # process an entry to print the name string decorated with emotes
         namestr = ''
         if elestr != '':
             namestr += self.dicts['emotes'][elestr]
@@ -361,6 +357,7 @@ class WotvUtils:
                 namestr += f" ({engstr})"
         return namestr
     def find_row(self, df, arg):
+        # tolerance processing for query to find the correct entry
         if isinstance(arg, str):
             argstr = arg.lower()
         else:
@@ -392,8 +389,10 @@ class WotvUtils:
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
     def fortune(self):
+        # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
         row = dfwotv.stars.iloc[choice]
-        return row['Fortune'], row['Rarity'].lower(), row['Url']
+        row_deco = self.dicts['emotes'][row['Rarity'].lower()] + self.dicts['emotes'][row['Emote']]
+        return row['Fortune'], row_deco, row['Url']
 
 wotv_utils = WotvUtils()
