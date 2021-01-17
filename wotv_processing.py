@@ -132,9 +132,9 @@ class WotvUtils:
             ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=fortune` to have Ramada read your fortune.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
             'Current rate:',
-            ' - 40% Neutral (R)',
-            ' - 30% Good (22% SR, 6% SSR, 2% UR)',
-            ' - 30% Bad (22% SR, 6% SSR, 2% UR)'))
+            ' - 36% Neutral (R)',
+            ' - 32% Good (22% SR, 8% SSR, 2% UR)',
+            ' - 32% Bad (22% SR, 8% SSR, 2% UR)'))
         )
         self.dicts['help_eq'] = (
             ('General info', (
