@@ -113,31 +113,29 @@ class WotvUtils:
                     'Esper compare - able to compare all or a group of effects at once. (`=help esper` for more info)',
                     'News link - get link to news with `=news` or `=news gl`.'
                 ))
-            )
+            ),
+            'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
+            'ramada_implication': ('up', 'neutral', 'down')
         }
-        self.dicts['help'] = (
-            ('General info', (
+        self.help_general = (
+            ('General Info', (
                 'Bot prefix is `=`.',
                 'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
                 'Feel free to contact me to request adding aliases to vc/esper/equipment.',
                 'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
-            ('Standard commands', ('`=ping`', '`=help`', '`=changelog/version`')),
+            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`')),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to JP news, `=news gl` for link to GL news.',)),
-            ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=fortune` to have Ramada read your fortune.',
-            'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
-            'Current rate:',
-            ' - 36% Neutral (R)',
-            ' - 32% Good (22% SR, 8% SSR, 2% UR)',
-            ' - 32% Bad (22% SR, 8% SSR, 2% UR)'))
+            ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
+            'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.'))
         )
-        self.dicts['help_eq'] = (
-            ('General info', (
+        self.help_eq = (
+            ('General Info (Equipment)', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
@@ -167,8 +165,8 @@ class WotvUtils:
                 'e.g. `=eq heart`, `=eq fire`'
             ))
         )
-        self.dicts['help_vc'] = (
-            ('General info', (
+        self.help_vc = (
+            ('General Info (Vision Cards)', (
                 self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
                 self.dicts['emotes']['allele'] + ' ALL icon indicates unconditional effects.',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
@@ -193,8 +191,8 @@ class WotvUtils:
                 'e.g. `=ve light`'
             ))
         )
-        self.dicts['help_esper'] = (
-            ('General info', (
+        self.help_esper = (
+            ('General Info (Espers)', (
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.',
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
                 'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
@@ -225,6 +223,7 @@ class WotvUtils:
                 ' > - atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
                 ' > - crit rate/evade/damage'))
         )
+        self.update_ramada()
         self.weekly_init()
     def weekly_init(self):
         # only runs once to generate the end string
@@ -388,11 +387,32 @@ class WotvUtils:
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
-    def fortune(self):
+    def ramada(self):
         # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
         row = dfwotv.stars.iloc[choice]
         row_deco = self.dicts['emotes'][row['Rarity'].lower()] + self.dicts['emotes'][row['Emote']]
         return row['Fortune'], row_deco, row['Url']
+    def update_ramada(self):
+        # Generate current rate dynamically directly from data
+        rate_lists = []
+        for rarity in self.dicts['ramada_rarity']:
+            df_row1 = dfwotv.stars[dfwotv.stars['Rarity'] == rarity]
+            rarity_str = f"{self.dicts['emotes'][rarity.lower()]}: {df_row1['Weight'].sum()}%"
+            implication_lists = []
+            for implication in self.dicts['ramada_implication']:
+                df_row2 = df_row1[df_row1['Emote'] == implication]
+                if len(df_row2) > 0:
+                    implication_lists.append(f"{self.dicts['emotes'][implication]} {df_row2['Weight'].sum()}%")
+            rarity_str += f" ({' '.join(implication_lists)})"
+            rate_lists.append(rarity_str)
+        self.help_ramada = (
+            ('General Info (Ramada Star Reading)',
+                ('A fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune.',
+                'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
+                'Note that the rate may change from time to time. Any feedback is welcome.'
+            )),
+            ('Current rate:', rate_lists)
+        )
 
 wotv_utils = WotvUtils()

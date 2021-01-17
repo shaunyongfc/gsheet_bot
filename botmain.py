@@ -43,6 +43,9 @@ async def sync(ctx, *arg):
             # Synchronise WOTV sheets
             dfwotv.sync()
             await ctx.send('Google sheet synced.')
+        elif arg[0] == 'ramada':
+            wotv_utils.update_ramada()
+            await ctx.send('Ramada rate updated.')
         elif arg[0] == 'esper':
             # Update the set of effects per column in Esper
             wotv_utils.dicts['esper_sets'] = wotv_utils.esper_sets(dfwotv.esper)
@@ -103,7 +106,7 @@ async def delmsg(ctx, *arg):
 ################################
 
 bot.remove_command('help')
-@bot.command(aliases=['help'])
+@bot.command(aliases=['help', 'about'])
 async def wotvhelp(ctx, *arg):
     # Customised bot help function
     embed = discord.Embed(
@@ -114,20 +117,22 @@ async def wotvhelp(ctx, *arg):
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     embed.title = 'Ildyra Bot Help'
-    help_tuples = wotv_utils.dicts['help']
+    help_tuples = wotv_utils.help_general
     if len(arg) > 0:
         if arg[0].lower() == 'vc':
-            help_tuples = wotv_utils.dicts['help_vc']
+            help_tuples = wotv_utils.help_vc
         elif arg[0].lower() == 'esper':
-            help_tuples = wotv_utils.dicts['help_esper']
+            help_tuples = wotv_utils.help_esper
         elif arg[0].lower() == 'eq':
-            help_tuples = wotv_utils.dicts['help_eq']
+            help_tuples = wotv_utils.help_eq
+        elif arg[0].lower() in ['stars', 'ramada']:
+            help_tuples = wotv_utils.help_ramada
     for a, b in help_tuples:
         embed.add_field(name=a, value='\n'.join(b), inline=False)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['fortune', 'stars', 'ramada'])
-async def wotvfortune(ctx, *args):
+async def wotvramada(ctx, *args):
     # Fluff command to read fortune
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -136,7 +141,7 @@ async def wotvfortune(ctx, *args):
         name = wotv_utils.dicts['embed']['author_name'],
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
-    fortunestr, fortunedeco, fortuneurl = wotv_utils.fortune()
+    fortunestr, fortunedeco, fortuneurl = wotv_utils.ramada()
     embed.title = f"Ramada Star Reading {fortunedeco}"
     embed.description = fortunestr
     embed.set_thumbnail(url=fortuneurl)
