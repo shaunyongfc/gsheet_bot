@@ -50,7 +50,7 @@ class DfHandlerGen():
                 ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
                 self.sync()
                 return 'Added.'
-            except:
+            except ValueError:
                 return 'Non-integer id.'
         else:
             return 'Incorrect arguments.'
@@ -72,7 +72,7 @@ class DfHandlerGen():
         for re_match in re_matches:
             try:
                 argstr = argstr.replace(re_match, self.get_shortcut(re_match[1:]))
-            except:
+            except IndexError:
                 pass
         return argstr
 

@@ -92,13 +92,16 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
+                ('19th January 2021', (
+                    'Math function - `=math` or `=calc` for simple math calculations.',
+                )),
                 ('16th January 2021', (
                     'Changed display picture because of clash with another bot.',
                     'Equipment search function - search equipment by effect. (`=help eq` for more info)'
                 )),
                 ('14th January 2021', (
-                    'Updated icons.',
-                    'Ramada Star Reading - `=stars`'
+                    'Updated icons into in-game-assets.',
+                    'Ramada Star Reading - `=stars` (fluff command).'
                 )),
                 ('13th January 2021', (
                     'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
@@ -125,7 +128,7 @@ class WotvUtils:
                 'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
-            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`')),
+            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`, `=math/calc`')),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
@@ -229,13 +232,13 @@ class WotvUtils:
         # only runs once to generate the end string
         msg_list = []
         weekly_tuples = [
-            ('Sunday', ('gil',)),
-            ('Monday', ('kame', 'pot')),
-            ('Tuesday', ('fire', 'wind')),
-            ('Wednesday', ('water', 'ice')),
-            ('Thursday', ('earth', 'dark')),
-            ('Friday', ('thunder', 'light')),
-            ('Saturday', ('pink', 'gil'))
+            ('`Sunday   `', ('gil',)),
+            ('`Monday   `', ('kame', 'pot')),
+            ('`Tuesday  `', ('fire', 'wind')),
+            ('`Wednesday`', ('water', 'ice')),
+            ('`Thursday `', ('earth', 'dark')),
+            ('`Friday   `', ('thunder', 'light')),
+            ('`Saturday `', ('pink', 'gil'))
         ]
         for day, daylist in weekly_tuples:
             msg_line = day + ': '
@@ -307,7 +310,7 @@ class WotvUtils:
                 return args
             else:
                 return argstr
-        except:
+        except KeyError:
             return argstr
     def esper_findcol(self, argstr):
         # find the correct column to search for an effect from an argument string
@@ -353,7 +356,10 @@ class WotvUtils:
         if 'Aliases' in row.index and alias:
             engstr = row['Aliases'].split(' / ')[0]
             if engstr != '':
-                namestr += f" ({engstr})"
+                if name == '':
+                    namestr += engstr
+                else:
+                    namestr += f" ({engstr})"
         return namestr
     def find_row(self, df, arg):
         # tolerance processing for query to find the correct entry

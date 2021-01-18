@@ -20,7 +20,7 @@ async def emotes(ctx, *arg):
     try:
         if arg[0] == 'raw':
             await ctx.send(f"`{' '.join(emotes)}`")
-    except:
+    except IndexError:
         await ctx.send(' '.join(emotes))
 
 @bot.command()
@@ -35,6 +35,10 @@ async def teststr(ctx):
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong! {round(bot.latency * 1000)} ms")
+
+@bot.command(aliases=['calc', 'eval'])
+async def math(ctx, *arg):
+    await ctx.send(f"`{' '.join(arg)} = {eval(''.join(arg))}`")
 
 @bot.command()
 async def sync(ctx, *arg):
@@ -75,7 +79,7 @@ async def sendmsg(ctx, *arg):
         try:
             channel = bot.get_channel(int(arg[0]))
             arg = arg[1:]
-        except:
+        except ValueError:
             channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
             arg = arg[1:]
         if len(arg) == 0:
@@ -91,13 +95,17 @@ async def delmsg(ctx, *arg):
     elif len(arg) == 2:
         try:
             channel = bot.get_channel(int(arg[0]))
-        except:
+        except ValueError:
             channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
-        msg = await channel.fetch_message(int(arg[1]))
     try:
+        try:
+            msg = await channel.fetch_message(int(arg[1]))
+        except AttributeError:
+            await ctx.send('Channel not found.')
+            return
         await msg.delete()
         await ctx.send('Message deleted.')
-    except:
+    except discord.NotFound:
         await ctx.send('Message not found.')
 
 
@@ -160,8 +168,8 @@ async def wotvchangelog(ctx, *arg):
     embed.title = 'Ildyra Bot Changelog'
     try:
         entry_num = int(arg[0])
-    except:
-        entry_num = 5
+    except IndexError:
+        entry_num = 3
     for i, tup in enumerate(wotv_utils.dicts['changelog']):
         if i == entry_num:
             break
@@ -181,7 +189,7 @@ async def wotvnews(ctx, *arg):
             await ctx.send('https://site.na.wotvffbe.com//whatsnew')
         else:
             await ctx.send('https://site.wotvffbe.com//whatsnew')
-    except:
+    except IndexError:
         await ctx.send('https://site.wotvffbe.com//whatsnew')
 
 @bot.command(aliases=['we', 'eq'])

@@ -16,8 +16,8 @@ class Roster:
     def __init__(self, spreadsheet):
         self.unitlb = pd.DataFrame(spreadsheet.worksheet('WOTV_unitlb').get_all_records()).set_index('Unit')
         unithq = pd.DataFrame(spreadsheet.worksheet('WOTV_unithq').get_all_records())
-        self.unitbr = unithq[unithq['Type'] == 0]
-        self.unithq = unithq[unithq['Type'] == 1]
+        self.unitbr = unithq[unithq['Type'] != 1]
+        self.unithq = unithq[unithq['Type'] != 0]
         self.brqueue = -1
         self.hqqueue = -1
         self.day_count = 0
