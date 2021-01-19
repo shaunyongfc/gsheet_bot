@@ -39,7 +39,8 @@ async def ping(ctx):
 @bot.command(aliases=['calc', 'eval'])
 async def math(ctx, *arg):
     argstr = ' '.join(arg).strip('`')
-    await ctx.send(f"`{argstr} = {eval(argstr.replace('^', '**'))}`")
+    mathstr = wotv_utils.math(argstr)
+    await ctx.send(f"`{argstr} = {mathstr}`")
 
 @bot.command()
 async def sync(ctx, *arg):
@@ -375,7 +376,7 @@ async def wotvvcsearch(ctx, *arg):
             eff_prefix = wotv_utils.dicts['emotes']['allele'] # Default icon unless condition found
             for eff in eff_list:
                 # Have to process the brackets first because might match 2nd conditional effect
-                match_brackets = wotv_utils.reb.findall(eff)
+                match_brackets = wotv_utils.reconditions.findall(eff)
                 if len(match_brackets) == 1:
                     if match_brackets[0] in wotv_utils.dicts['brackets'].keys():
                         eff_prefix = wotv_utils.dicts['emotes'][wotv_utils.dicts['brackets'][match_brackets[0]]]
@@ -383,7 +384,7 @@ async def wotvvcsearch(ctx, *arg):
                         eff_prefix = match_brackets[0]
                 if args in eff.lower():
                     eff_suffix = '' # Actually effect numbers
-                    match_numbers = wotv_utils.ren.findall(eff)
+                    match_numbers = wotv_utils.revalues.findall(eff)
                     if len(match_numbers) == 1:
                         eff_suffix = ' ' + match_numbers[0]
                     effects_dict[col].append(f"{eff_prefix}{wotv_utils.name_str(row)}{eff_suffix}")
@@ -495,7 +496,7 @@ async def wotvvc(ctx, *arg):
             eff_list_processed = []
             eff_prefix = ''
             for eff in eff_list:
-                match_brackets = wotv_utils.reb.findall(eff)
+                match_brackets = wotv_utils.reconditions.findall(eff)
                 if len(match_brackets) == 1:
                     if match_brackets[0] in wotv_utils.dicts['brackets'].keys():
                         eff_prefix = wotv_utils.dicts['emotes'][wotv_utils.dicts['brackets'][match_brackets[0]]] + ' '
@@ -587,7 +588,7 @@ async def wotvesper(ctx, *arg):
                     eff_list = row[tupcol].split(' / ')
                     for eff in eff_list:
                         if tuparg in eff.lower():
-                            re_match = wotv_utils.ren.findall(eff)
+                            re_match = wotv_utils.revalues.findall(eff)
                             row_list.append(re_match[0])
                 else:
                     row_list.append('-')
@@ -693,7 +694,7 @@ async def wotvesper(ctx, *arg):
                 eff_list = row[tupcol].split(' / ')
                 for eff in eff_list:
                     if tuparg == 'ALL' or tuparg in eff.lower():
-                        re_match = wotv_utils.ren.search(eff)
+                        re_match = wotv_utils.revalues.search(eff)
                         effstr = f"{eff[:re_match.start()]}{wotv_utils.dicts['esper_colsuffix'][tupcol]}"
                         if effstr in list_effects[tupcol].keys():
                             list_effects[tupcol][effstr][i] = re_match.group()
@@ -747,7 +748,7 @@ async def wotvesper(ctx, *arg):
                 if row[col] != '':
                     eff_list = row[col].split(' / ')
                     for eff in eff_list:
-                        re_match = wotv_utils.ren.search(eff)
+                        re_match = wotv_utils.revalues.search(eff)
                         field_value_list1.append(f"{eff[:re_match.start()]}{suffix}")
                         field_value_list2.append(re_match.group())
             # Print based on display mode

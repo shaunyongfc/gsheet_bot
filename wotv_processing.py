@@ -38,8 +38,17 @@ wotv_aemotes_raw = (
 
 class WotvUtils:
     def __init__(self):
-        self.reb = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
-        self.ren = re.compile(r'-?\d+$') # regex for numbers
+        self.reconditions = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
+        self.revalues = re.compile(r'-?\d+$') # regex for numbers
+        self.opdicts = {
+            '+': (lambda a, b: a + b),
+            '-': (lambda a, b: a - b),
+            '*': (lambda a, b: a * b),
+            '/': (lambda a, b: a / b),
+            '%': (lambda a, b: a % b),
+            '^': (lambda a, b: a ** b),
+            '**': (lambda a, b: a ** b),
+        }
         self.dicts = {
             'mat_sets': self.mat_sets(dfwotv.eq),
             'eq_lists': {
@@ -276,7 +285,7 @@ class WotvUtils:
             for k, v in dict_sets.items():
                 if row[k] != '':
                     for eff in row[k].split(' / '):
-                        re_match = self.ren.search(eff)
+                        re_match = self.revalues.search(eff)
                         v.add(eff[:re_match.start()].strip().lower())
         return dict_sets
     def emotes_init(self):
@@ -420,5 +429,40 @@ class WotvUtils:
             )),
             ('Current rate:', rate_lists)
         )
+    def math(self, mathstr):
+        while True:
+            lbrackets = []
+            for i, mathchar in enumerate(mathstr):
+                if mathchar == '(':
+                    lbrackets.append(i)
+                elif mathchar == ')':
+                    if len(lbrackets) == 1:
+                        bstart = lbrackets.pop()
+                        bend = i
+                        break
+                    elif len(lbrackets) > 0:
+                        lbrackets.pop()
+            else:
+                break
+            mathstr = mathstr[0:bstart] + self.math(mathstr[bstart+1:bend]) + mathstr[bend+1:]
+        for opstr, opfunc in self.opdicts.items():
+            op_index = mathstr.find(opstr)
+            if op_index != -1:
+                try:
+                    leftstr = self.math(mathstr[:op_index]).strip()
+                    rightstr = self.math(mathstr[op_index+1:]).strip()
+                    mathstr = str(opfunc(float(leftstr), float(rightstr)))
+                except ValueError:
+                    if 'Zero Division Error' in [leftstr, rightstr]:
+                        mathstr = 'Zero Division Error'
+                    elif 'Overflow Error' in [leftstr, rightstr]:
+                        mathstr = 'Overflow Error'
+                    else:
+                        mathstr = 'Excuse me?'
+                except ZeroDivisionError:
+                    mathstr = 'Zero Division Error'
+                except OverflowError:
+                    mathstr = 'Overflow Error'
+        return mathstr
 
 wotv_utils = WotvUtils()
