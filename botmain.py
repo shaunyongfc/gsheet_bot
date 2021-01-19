@@ -9,6 +9,16 @@ from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_suppo
 
 bot = commands.Bot(command_prefix='+')
 
+def logs_embed(msg):
+    if msg.guild == None:
+        embed = discord.Embed(title= f"{msg.channel}")
+    else:
+        embed = discord.Embed(title= f"{msg.guild} | {msg.channel}")
+    embed.add_field(name='Content', value=msg.content)
+    embed.add_field(name='Author', value=msg.author)
+    embed.add_field(name='Time', value=msg.created_at)
+    return embed
+
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
@@ -34,10 +44,12 @@ async def teststr(ctx):
 
 @bot.command()
 async def ping(ctx):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     await ctx.send(f"Pong! {round(bot.latency * 1000)} ms")
 
 @bot.command(aliases=['calc', 'eval'])
 async def math(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     argstr = ' '.join(arg).strip('`')
     mathstr = wotv_utils.math(argstr)
     await ctx.send(f"`{argstr} = {mathstr}`")
@@ -64,20 +76,21 @@ async def sync(ctx, *arg):
 @bot.command()
 async def checkservers(ctx, *arg):
     if ctx.message.author.id == owner_userid:
-        # Check what servers bot is in
+    # Check what servers bot is in
         guilds = list(bot.guilds)
         guild_names = '\n'.join(f"- {a.name}" for a in guilds)
         await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
 
 @bot.command()
 async def scnew(ctx, *arg):
+    if ctx.message.author.id == owner_userid:
     # New shortcut into worksheet
-    await ctx.send(dfgen.add_shortcut(*arg))
+        await ctx.send(dfgen.add_shortcut(*arg))
 
 @bot.command()
 async def sendmsg(ctx, *arg):
     if ctx.message.author.id == owner_userid:
-        # Send customised message in specific channel
+    # Send customised message in specific channel
         try:
             channel = bot.get_channel(int(arg[0]))
             arg = arg[1:]
@@ -92,23 +105,25 @@ async def sendmsg(ctx, *arg):
 
 @bot.command()
 async def delmsg(ctx, *arg):
-    if len(arg) == 1:
-        msg = await ctx.fetch_message(int(arg[0]))
-    elif len(arg) == 2:
+    if ctx.message.author.id == owner_userid:
+    # Delete specific message by the bot
+        if len(arg) == 1:
+            msg = await ctx.fetch_message(int(arg[0]))
+        elif len(arg) == 2:
+            try:
+                channel = bot.get_channel(int(arg[0]))
+            except ValueError:
+                channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
         try:
-            channel = bot.get_channel(int(arg[0]))
-        except ValueError:
-            channel = bot.get_channel(dfgen.get_shortcut(arg[0]))
-    try:
-        try:
-            msg = await channel.fetch_message(int(arg[1]))
-        except AttributeError:
-            await ctx.send('Channel not found.')
-            return
-        await msg.delete()
-        await ctx.send('Message deleted.')
-    except discord.NotFound:
-        await ctx.send('Message not found.')
+            try:
+                msg = await channel.fetch_message(int(arg[1]))
+            except AttributeError:
+                await ctx.send('Channel not found.')
+                return
+            await msg.delete()
+            await ctx.send('Message deleted.')
+        except discord.NotFound:
+            await ctx.send('Message not found.')
 
 
 ################################
@@ -118,6 +133,7 @@ async def delmsg(ctx, *arg):
 bot.remove_command('help')
 @bot.command(aliases=['help', 'about'])
 async def wotvhelp(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Customised bot help function
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -143,6 +159,7 @@ async def wotvhelp(ctx, *arg):
 
 @bot.command(aliases=['fortune', 'stars', 'ramada'])
 async def wotvramada(ctx, *args):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Fluff command to read fortune
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -159,6 +176,7 @@ async def wotvramada(ctx, *args):
 
 @bot.command(aliases=['changelog', 'version'])
 async def wotvchangelog(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Return recent changelogs
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -180,11 +198,13 @@ async def wotvchangelog(ctx, *arg):
 
 @bot.command(aliases=['weekly', 'week', 'day', 'weekday'])
 async def wotvweekly(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Reply pre-set message of day of the week bonuses
     await ctx.send(wotv_utils.weekly)
 
 @bot.command(aliases=['news'])
 async def wotvnews(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Reply pre-set link to news
     try:
         if arg[0].lower() == 'gl':
@@ -196,6 +216,7 @@ async def wotvnews(ctx, *arg):
 
 @bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
@@ -307,6 +328,7 @@ async def wotveq(ctx, *arg):
 
 @bot.command(aliases=['wes', 'eqs', 'es'])
 async def wotveqsearch(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
@@ -340,6 +362,7 @@ async def wotveqsearch(ctx, *arg):
 
 @bot.command(aliases=['wvs', 'vcs', 'vs'])
 async def wotvvcsearch(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
@@ -417,6 +440,7 @@ async def wotvvcsearch(ctx, *arg):
 
 @bot.command(aliases=['wve', 'vce', 've'])
 async def wotvvcelement(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed()
     # Preliminary code for global implementation
     df = dfwotv.vc
@@ -468,6 +492,7 @@ async def wotvvcelement(ctx, *arg):
 
 @bot.command(aliases=['wv', 'vc'])
 async def wotvvc(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
@@ -518,6 +543,7 @@ async def wotvvc(ctx, *arg):
 
 @bot.command(aliases=['esper'])
 async def wotvesper(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
     )
@@ -900,4 +926,6 @@ with open(f"token.txt") as fp:
     token = fp.read().rstrip('\n')
 with open(f"owner_userid.txt") as fp:
     owner_userid = int(fp.read().rstrip('\n'))
+with open(f"owner_logschannel.txt") as fp:
+    logs_channel = int(fp.read().rstrip('\n'))
 bot.run(token)
