@@ -102,7 +102,8 @@ class WotvUtils:
             },
             'changelog': (
                 ('19th January 2021', (
-                    'Math function - `=math` or `=calc` for simple math calculations. (beta)',
+                    'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.',
+                    'Math function - `=math` or `=calc` for simple math calculations.',
                 )),
                 ('16th January 2021', (
                     'Changed display picture because of clash with another bot.',
@@ -135,7 +136,8 @@ class WotvUtils:
                 'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
                 'Feel free to contact me to request adding aliases to vc/esper/equipment.',
                 'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
-                'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
+                'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).',
+                'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.'
             )),
             ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`, `=math/calc` (beta)')),
             ('Equipment', ('Enter `help eq` for more info.',)),
