@@ -102,7 +102,7 @@ class WotvUtils:
             },
             'changelog': (
                 ('19th January 2021', (
-                    'Math function - `=math` or `=calc` for simple math calculations.',
+                    'Math function - `=math` or `=calc` for simple math calculations. (beta)',
                 )),
                 ('16th January 2021', (
                     'Changed display picture because of clash with another bot.',
@@ -137,7 +137,7 @@ class WotvUtils:
                 'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).'
             )),
-            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`, `=math/calc`')),
+            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`, `=math/calc` (beta)')),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
@@ -446,8 +446,9 @@ class WotvUtils:
                 break
             mathstr = mathstr[0:bstart] + self.math(mathstr[bstart+1:bend]) + mathstr[bend+1:]
         for opstr, opfunc in self.opdicts.items():
-            op_index = mathstr.find(opstr)
-            if op_index != -1:
+            op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
+            if len(op_index_list) > 0:
+                op_index = op_index_list[-1]
                 try:
                     leftstr = self.math(mathstr[:op_index]).strip()
                     rightstr = self.math(mathstr[op_index+1:]).strip()
