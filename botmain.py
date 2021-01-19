@@ -38,7 +38,8 @@ async def ping(ctx):
 
 @bot.command(aliases=['calc', 'eval'])
 async def math(ctx, *arg):
-    await ctx.send(f"`{' '.join(arg)} = {eval(''.join(arg))}`")
+    argstr = ' '.join(arg).strip('`')
+    await ctx.send(f"`{argstr} = {eval(argstr.replace('^', '**'))}`")
 
 @bot.command()
 async def sync(ctx, *arg):
