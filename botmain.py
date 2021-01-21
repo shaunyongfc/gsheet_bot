@@ -164,16 +164,34 @@ async def wotvhelp(ctx, *arg):
         embed.add_field(name=a, value='\n'.join(b), inline=False)
     await ctx.send(embed = embed)
 
+@bot.command(aliases=['rand', 'random', 'choice'])
+async def wotvrand(ctx, *arg):
+    await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
+    embed = discord.Embed()
+    randstr = wotv_utils.rand(*arg)
+    if isinstance(randstr, int):
+        embed.colour = wotv_utils.dicts['colours']['ice']
+        embed.title = "Random Lasswell"
+        embed.description = f"...maybe {randstr}?"
+        embed.set_thumbnail(url='https://caelum.s-ul.eu/HR4roxj1.png')
+    elif randstr == '':
+        embed.colour = wotv_utils.dicts['colours']['light']
+        embed.title = "Random Fina"
+        embed.description = f"Hey! Give us either:\n- a number\n- two numbers\n- two or more choices"
+        embed.set_thumbnail(url='https://caelum.s-ul.eu/wyOCFKXg.png')
+    else:
+        embed.colour = wotv_utils.dicts['colours']['fire']
+        embed.title = "Random Rain"
+        embed.description = f"How about {randstr}?"
+        embed.set_thumbnail(url='https://caelum.s-ul.eu/vehb4Xij.png')
+    await ctx.send(embed = embed)
+
 @bot.command(aliases=['fortune', 'stars', 'ramada'])
-async def wotvramada(ctx, *args):
+async def wotvramada(ctx, *arg):
     await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     # Fluff command to read fortune
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
-    )
-    embed.set_author(
-        name = wotv_utils.dicts['embed']['author_name'],
-        icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
     fortunestr, fortunedeco, fortuneurl = wotv_utils.ramada()
     embed.title = f"Ramada Star Reading {fortunedeco}"

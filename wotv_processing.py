@@ -101,6 +101,9 @@ class WotvUtils:
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
             'changelog': (
+                ('21st January 2021', (
+                    'Random function - `=rand` or `=choice` to have bot pick a random number within given range or a random choice.',
+                )),
                 ('19th January 2021', (
                     'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.',
                     'Math function - `=math` or `=calc` for simple math calculations.',
@@ -140,7 +143,7 @@ class WotvUtils:
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).',
                 'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.'
             )),
-            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`', '`=math/calc`')),
+            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`', '`=math/calc`', '`=rand/choice`')),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
@@ -405,6 +408,17 @@ class WotvUtils:
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
+    def rand(self, *arg):
+        if len(arg) == 1:
+            if arg[0].isnumeric():
+                return random.randint(0, int(arg[0]))
+        elif len(arg) == 2:
+            if arg[0].isnumeric() and arg[1].isnumeric():
+                return random.randint(int(arg[0]), int(arg[1]))
+        if len(arg) > 1:
+            return random.choice(arg)
+        else:
+            return ''
     def ramada(self):
         # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
