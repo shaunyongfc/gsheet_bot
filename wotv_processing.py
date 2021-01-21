@@ -128,7 +128,8 @@ class WotvUtils:
                 ))
             ),
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
-            'ramada_implication': ('up', 'neutral', 'down')
+            'ramada_implication': ('up', 'neutral', 'down'),
+            'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?')
         }
         self.help_general = (
             ('General Info', (
@@ -139,13 +140,13 @@ class WotvUtils:
                 'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).',
                 'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.'
             )),
-            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`, `=math/calc` (beta)')),
+            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`', '`=math/calc`')),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to JP news, `=news gl` for link to GL news.',)),
-            ('[Fluff] Ramada Star Reading', ('Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
+            ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.'))
         )
         self.help_eq = (
@@ -432,6 +433,7 @@ class WotvUtils:
             ('Current rate:', rate_lists)
         )
     def math(self, mathstr):
+        # Custom math command (recursive)
         while True:
             lbrackets = []
             for i, mathchar in enumerate(mathstr):
@@ -456,16 +458,16 @@ class WotvUtils:
                     rightstr = self.math(mathstr[op_index+1:]).strip()
                     mathstr = str(opfunc(float(leftstr), float(rightstr)))
                 except ValueError:
-                    if 'Zero Division Error' in [leftstr, rightstr]:
-                        mathstr = 'Zero Division Error'
-                    elif 'Overflow Error' in [leftstr, rightstr]:
-                        mathstr = 'Overflow Error'
+                    if self.dicts['math_errors'][0] in [leftstr, rightstr]:
+                        mathstr = self.dicts['math_errors'][0]
+                    elif self.dicts['math_errors'][1] in [leftstr, rightstr]:
+                        mathstr = self.dicts['math_errors'][1]
                     else:
-                        mathstr = 'Excuse me?'
+                        mathstr = self.dicts['math_errors'][2]
                 except ZeroDivisionError:
-                    mathstr = 'Zero Division Error'
+                    mathstr = self.dicts['math_errors'][0]
                 except OverflowError:
-                    mathstr = 'Overflow Error'
+                    mathstr = self.dicts['math_errors'][1]
         return mathstr
 
 wotv_utils = WotvUtils()

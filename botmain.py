@@ -10,6 +10,7 @@ from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_suppo
 bot = commands.Bot(command_prefix='+')
 
 def logs_embed(msg):
+    # Generate embed for command logging
     if msg.guild == None:
         embed = discord.Embed(title= f"{msg.channel}")
     else:
@@ -52,6 +53,12 @@ async def math(ctx, *arg):
     await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     argstr = ' '.join(arg).strip('`')
     mathstr = wotv_utils.math(argstr)
+    try:
+        float(mathstr)
+    except ValueError:
+        if mathstr not in wotv_utils.dicts['math_errors']:
+            await ctx.send(f"<@{ctx.author.id}> <:blobthinkingglare:394389944216453127>")
+            return
     await ctx.send(f"`{argstr} = {mathstr}`")
 
 @bot.command()
@@ -315,13 +322,15 @@ async def wotveq(ctx, *arg):
                 for col in ['Regular', 'Rare', 'Cryst', 'Ore']:
                     if row[col] != '':
                         if col == 'Cryst':
-                            if row['Rarity'] == 'UR':
-                                engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)C', 'Megac')
-                            else:
-                                engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0].replace('(Mega)', '')
+                            for cryst_ele in list(row[col]):
+                                if row['Rarity'] == 'UR':
+                                    engstr = dfwotv.mat.loc[cryst_ele]['Aliases'].split(' / ')[0].replace('(Mega)C', 'Megac')
+                                else:
+                                    engstr = dfwotv.mat.loc[cryst_ele]['Aliases'].split(' / ')[0].replace('(Mega)', '')
+                                embed_text_list.append(f"- {cryst_ele} ({engstr})")
                         else:
                             engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
-                        embed_text_list.append(f"- {row[col]} ({engstr})")
+                            embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
     embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
