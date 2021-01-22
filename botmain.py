@@ -36,7 +36,9 @@ async def emotes(ctx, *arg):
 
 @bot.command()
 async def teststr(ctx):
-    await ctx.send('<a:wotv_elements:796963642418790451>')
+    embed = discord.Embed()
+    embed.description = '<@324194581941977088>'
+    await ctx.send(embed = embed)
 
 ################################
 ### Admin / General Commands ###
@@ -57,7 +59,7 @@ async def math(ctx, *arg):
         float(mathstr)
     except ValueError:
         if mathstr not in wotv_utils.dicts['math_errors']:
-            await ctx.send(f"<@{ctx.author.id}> <:blobthinkingglare:394389944216453127>")
+            await ctx.send(f"<@{ctx.author.id}> <:blobthinkingglare:801974273236926524>")
             return
     await ctx.send(f"`{argstr} = {mathstr}`")
 
@@ -168,22 +170,16 @@ async def wotvhelp(ctx, *arg):
 async def wotvrand(ctx, *arg):
     await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed()
-    randstr = wotv_utils.rand(*arg)
+    randstr, npctup = wotv_utils.rand(*arg)
+    embed.title = f"Random {npctup[0]}"
+    embed.colour = wotv_utils.dicts['colours'][npctup[1]]
+    embed.set_thumbnail(url=npctup[2])
     if isinstance(randstr, int):
-        embed.colour = wotv_utils.dicts['colours']['ice']
-        embed.title = "Random Lasswell"
-        embed.description = f"...maybe {randstr}?"
-        embed.set_thumbnail(url='https://caelum.s-ul.eu/HR4roxj1.png')
+        embed.description = f"...I pick **{randstr}**."
     elif randstr == '':
-        embed.colour = wotv_utils.dicts['colours']['light']
-        embed.title = "Random Fina"
-        embed.description = f"Hey! Give us either:\n- a number\n- two numbers\n- two or more choices"
-        embed.set_thumbnail(url='https://caelum.s-ul.eu/wyOCFKXg.png')
+        embed.description = f"Hey! Give us either:\n- one or two numbers\n- two or more choices"
     else:
-        embed.colour = wotv_utils.dicts['colours']['fire']
-        embed.title = "Random Rain"
-        embed.description = f"How about {randstr}?"
-        embed.set_thumbnail(url='https://caelum.s-ul.eu/vehb4Xij.png')
+        embed.description = f"How about **{randstr}**?"
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['fortune', 'stars', 'ramada'])

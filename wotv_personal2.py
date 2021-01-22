@@ -40,7 +40,7 @@ class Roster:
                     print(f" - Barracks Update: {row['Unit']}")
                 if self.unit_gain(row['Unit'], SHARDS_DAILY[self.unitlb.loc[row['Unit'], 'Rarity']]):
                     if self.unitlb.loc[row['Unit'], 'Stage'] >= LB_SUPPRESS:
-                        print(f"Day {self.day_count}: {row['Unit']} progressed into {STAGE_NAME[self.unitlb.loc[row['Unit'], 'Stage']]}")
+                        print(f"Day {self.day_count}: {row['Unit']} -> {STAGE_NAME[self.unitlb.loc[row['Unit'], 'Stage']]}")
                 if brcount == 5:
                     break
         hqcount = 0
@@ -53,7 +53,7 @@ class Roster:
                     print(f" - HQ Update: {row['Unit']}")
                 if self.unit_gain(row['Unit'], hq_gain):
                     if self.unitlb['Stage'][row['Unit']] >= LB_SUPPRESS:
-                        print(f"Day {self.day_count}: {row['Unit']} progressed into {STAGE_NAME[self.unitlb.loc[row['Unit'], 'Stage']]}")
+                        print(f"Day {self.day_count}: {row['Unit']} -> {STAGE_NAME[self.unitlb.loc[row['Unit'], 'Stage']]}")
                 if hqcount == 10:
                     break
     def progress(self, days=360):

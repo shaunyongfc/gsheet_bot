@@ -2,6 +2,9 @@ import re
 import random
 from gsheet_handler import dfwotv
 
+with open(f"owner_userid.txt") as fp:
+    owner_userid = int(fp.read().rstrip('\n'))
+
 # raw code of emotes uploaded into Discord
 wotv_emotes_raw = (
     ('weapon', '799182037348909077'),
@@ -105,7 +108,7 @@ class WotvUtils:
                     'Random function - `=rand` or `=choice` to have bot pick a random number within given range or a random choice.',
                 )),
                 ('19th January 2021', (
-                    'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.',
+                    'Warning: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.',
                     'Math function - `=math` or `=calc` for simple math calculations.',
                 )),
                 ('16th January 2021', (
@@ -114,7 +117,7 @@ class WotvUtils:
                 )),
                 ('14th January 2021', (
                     'Updated icons into in-game-assets.',
-                    'Ramada Star Reading - `=stars` (fluff command).'
+                    'Ramada Star Reading - `=stars` or `=ramada` (fluff command).'
                 )),
                 ('13th January 2021', (
                     'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
@@ -132,23 +135,33 @@ class WotvUtils:
             ),
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
-            'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?')
+            'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?'),
+            'random_npc': ((
+                    ('Lasswell', 'ice', 'https://caelum.s-ul.eu/HR4roxj1.png'),
+                    ('Tyytas', 'dark', 'https://caelum.s-ul.eu/j9SO6eQ7.png')
+                ),(
+                    ('Fina', 'light', 'https://caelum.s-ul.eu/wyOCFKXg.png'),
+                    ('Chel', 'ice', 'https://caelum.s-ul.eu/OdzVtlce.png')
+                ),(
+                    ('Rain', 'fire', 'https://caelum.s-ul.eu/vehb4Xij.png'),
+                    ('Howlet', 'wind', 'https://caelum.s-ul.eu/Buf87Axy.png')
+                )
+            )
         }
         self.help_general = (
             ('General Info', (
                 'Bot prefix is `=`.',
-                'Made by `Caelum#3319`, please contact me for any bug report / data correction / suggestion (depends on viability).',
-                'Feel free to contact me to request adding aliases to vc/esper/equipment.',
-                'JP data only for now. Would need collaborator(s) to implement GL data. Please contact me if interested.',
-                'For programming reason, element name lightning is all replaced by thunder (because the text contains another element light).',
-                'Warning: Bot command calls will be logged for future improvement purpose. Please do not include sensitive info while using the bot.'
+                f"Made by <@{owner_userid}>, please contact me for any bug report / data correction / suggestion (depends on viability). Feel free to contact me to request adding aliases to vc / esper / equipment.",
+                'Currently, only JP data is available. Would need collaborator(s) to implement GL data. Please contact me if interested.',
+                'For programming reason, element name lightning is replaced by thunder because the text contains another element light.',
+                'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
             )),
-            ('Standard Commands', ('`=ping`', '`=help`', '`=changelog/version`', '`=math/calc`', '`=rand/choice`')),
+            ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=math/calc`, `=rand/choice`',)),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
-            ('News', ('Enter `=news` for link to JP news, `=news gl` for link to GL news.',)),
+            ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.'))
         )
@@ -163,7 +176,8 @@ class WotvUtils:
             )),
             ('Equipment by effect', ('**= es / eqs**',
                 'Argument is specific effect names.',
-                'e.g. `=es slash res`')),
+                'e.g. `=es slash res`'
+            )),
             ('List of keywords', ('**= eq l**',
                 'Argument is one of `type, acquisition, regular, rare, cryst, ore` to check their respective keywords.',
                 'Put no argument to return the above list.'
@@ -411,14 +425,14 @@ class WotvUtils:
     def rand(self, *arg):
         if len(arg) == 1:
             if arg[0].isnumeric():
-                return random.randint(0, int(arg[0]))
+                return random.randint(0, int(arg[0])), random.choice(self.dicts['random_npc'][0])
         elif len(arg) == 2:
             if arg[0].isnumeric() and arg[1].isnumeric():
-                return random.randint(int(arg[0]), int(arg[1]))
+                return random.randint(int(arg[0]), int(arg[1])), random.choice(self.dicts['random_npc'][0])
         if len(arg) > 1:
-            return random.choice(arg)
+            return random.choice(arg), random.choice(self.dicts['random_npc'][2])
         else:
-            return ''
+            return '', random.choice(self.dicts['random_npc'][1])
     def ramada(self):
         # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
