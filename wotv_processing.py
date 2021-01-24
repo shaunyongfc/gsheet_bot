@@ -432,7 +432,7 @@ class WotvUtils:
         else:
             df = dfwotv.rand
         df_index = df[df['Incorrect'] == incorrect].sample().index[0]
-        df_row = df.iloc[df_index]
+        df_row = df.loc[df_index]
         return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'], df_row['String'].replace('CHOICE', randstr))
     def ramada(self):
         # random fortune generator for star reading
