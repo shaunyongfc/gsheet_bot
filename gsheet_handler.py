@@ -33,6 +33,7 @@ class DfHandlerWotv():
         self.shortcut = df.set_index('Shortcut')
 
         self.stars = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
+        self.rand = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
 
 dfwotv = DfHandlerWotv()
 

@@ -1,9 +1,7 @@
 import re
 import random
 from gsheet_handler import dfwotv
-
-with open(f"owner_userid.txt") as fp:
-    owner_userid = int(fp.read().rstrip('\n'))
+from id_dict import id_dict
 
 # raw code of emotes uploaded into Discord
 wotv_emotes_raw = (
@@ -136,33 +134,11 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?'),
-            'random_npc_ffbe': ([
-                    ('Rain', 'fire', 'https://caelum.s-ul.eu/vehb4Xij.png', 'How about **CHOICE**?'),
-                    ('Lasswell', 'ice', 'https://caelum.s-ul.eu/HR4roxj1.png', '...I pick **CHOICE**.')
-                ],[
-                    ('Fina', 'light', 'https://caelum.s-ul.eu/wyOCFKXg.png', 'Hey!'),
-                ]
-            ),
-            'random_npc': ([
-                    ('Howlet', 'wind', 'https://caelum.s-ul.eu/Buf87Axy.png', 'Let\'s go with **CHOICE**.'),
-                    ('Tyytas', 'dark', 'https://caelum.s-ul.eu/j9SO6eQ7.png', 'I pick **CHOICE**.'),
-                    ('Dario', 'wind', 'https://caelum.s-ul.eu/EbtfeYQE.png', '**CHOICE** seems fine.'),
-                    ('Vinera', 'dark', 'https://caelum.s-ul.eu/G1hxqHry.png', 'I guess **CHOICE**.'),
-                    ('Mont', 'earth', 'https://caelum.s-ul.eu/34Y8ncXD.png', 'I\'ll go with **CHOICE**.'),
-                    ('Sterne', 'dark', 'https://caelum.s-ul.eu/5tOyTlUz.png', 'I choose **CHOICE**.'),
-                    ('Glaciela', 'water', 'https://caelum.s-ul.eu/BxpULkKc.png', 'I trust **CHOICE**.'),
-                    ('Macherie', 'light', 'https://caelum.s-ul.eu/0gdm92bA.png', 'If that so, **CHOICE**.')
-                ],[
-                    ('Chel', 'ice', 'https://caelum.s-ul.eu/OdzVtlce.png', 'Hey!'),
-                    ('Garvel', 'dark', 'https://caelum.s-ul.eu/nwiMIIZQ.png', 'Know my anger!!!'),
-                    ('Sterne', 'dark', 'https://caelum.s-ul.eu/WCtl3C7n.png', 'OELDEEEEEE!!!!!')
-                ]
-            )
         }
         self.help_general = (
             ('General Info', (
                 'Bot prefix is `=`.',
-                f"Made by <@{owner_userid}>, please contact me for any bug report / data correction / suggestion (depends on viability). Feel free to contact me to request adding aliases to vc / esper / equipment.",
+                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / suggestion (depends on viability). Feel free to contact me to request adding aliases to vc / esper / equipment.",
                 'Currently, only JP data is available. Would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is replaced by thunder because the text contains another element light.',
                 'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
@@ -436,22 +412,28 @@ class WotvUtils:
     def rand(self, ffbe, *arg):
         randstr = ''
         incorrect = 0
+        # check if 1 or 2 numbers are input
         if len(arg) == 1:
             if arg[0].isnumeric():
                 randstr = str(random.randint(0, int(arg[0])))
         elif len(arg) == 2:
             if arg[0].isnumeric() and arg[1].isnumeric():
                 randstr = str(random.randint(int(arg[0]), int(arg[1])))
+        # if not numbers
         if randstr == '':
             if len(arg) > 1:
+                # random choice of strings
                 randstr = random.choice(arg)
             else:
+                # insufficient input
                 incorrect = 1
-        if ffbe:
-            npc_tup = random.choice(self.dicts['random_npc_ffbe'][incorrect])
+        if ffbe: # return only non-WOTV characters if server is FFBE
+            df = dfwotv.rand[dfwotv.rand['FFBE'] == 1]
         else:
-            npc_tup = random.choice((self.dicts['random_npc_ffbe'][incorrect] + self.dicts['random_npc'][incorrect]))
-        return incorrect, (*npc_tup[0:3], npc_tup[3].replace('CHOICE', randstr))
+            df = dfwotv.rand
+        df_index = df[df['Incorrect'] == incorrect].sample().index[0]
+        df_row = df.iloc[df_index]
+        return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'], df_row['String'].replace('CHOICE', randstr))
     def ramada(self):
         # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
@@ -482,6 +464,7 @@ class WotvUtils:
     def math(self, mathstr):
         # Custom math command (recursive)
         while True:
+            # Handle brackets
             lbrackets = []
             for i, mathchar in enumerate(mathstr):
                 if mathchar == '(':
@@ -495,8 +478,10 @@ class WotvUtils:
                         lbrackets.pop()
             else:
                 break
+            # recursion for outer brackets
             mathstr = mathstr[0:bstart] + self.math(mathstr[bstart+1:bend]) + mathstr[bend+1:]
         for opstr, opfunc in self.opdicts.items():
+            # check which operation
             op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
             if len(op_index_list) > 0:
                 op_index = op_index_list[-1]

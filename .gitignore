@@ -136,5 +136,4 @@ discord-bot-aira
 # Sensitive info
 credentials.json
 token.txt
-owner_userid.txt
-owner_logschannel.txt
+id_dict.py
