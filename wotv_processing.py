@@ -136,16 +136,27 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?'),
-            'random_npc': ((
-                    ('Lasswell', 'ice', 'https://caelum.s-ul.eu/HR4roxj1.png'),
-                    ('Tyytas', 'dark', 'https://caelum.s-ul.eu/j9SO6eQ7.png')
-                ),(
-                    ('Fina', 'light', 'https://caelum.s-ul.eu/wyOCFKXg.png'),
-                    ('Chel', 'ice', 'https://caelum.s-ul.eu/OdzVtlce.png')
-                ),(
-                    ('Rain', 'fire', 'https://caelum.s-ul.eu/vehb4Xij.png'),
-                    ('Howlet', 'wind', 'https://caelum.s-ul.eu/Buf87Axy.png')
-                )
+            'random_npc_ffbe': ([
+                    ('Rain', 'fire', 'https://caelum.s-ul.eu/vehb4Xij.png', 'How about **CHOICE**?'),
+                    ('Lasswell', 'ice', 'https://caelum.s-ul.eu/HR4roxj1.png', '...I pick **CHOICE**.')
+                ],[
+                    ('Fina', 'light', 'https://caelum.s-ul.eu/wyOCFKXg.png', 'Hey!'),
+                ]
+            ),
+            'random_npc': ([
+                    ('Howlet', 'wind', 'https://caelum.s-ul.eu/Buf87Axy.png', 'Let\'s go with **CHOICE**.'),
+                    ('Tyytas', 'dark', 'https://caelum.s-ul.eu/j9SO6eQ7.png', 'I pick **CHOICE**.'),
+                    ('Dario', 'wind', 'https://caelum.s-ul.eu/EbtfeYQE.png', '**CHOICE** seems fine.'),
+                    ('Vinera', 'dark', 'https://caelum.s-ul.eu/G1hxqHry.png', 'I guess **CHOICE**.'),
+                    ('Mont', 'earth', 'https://caelum.s-ul.eu/34Y8ncXD.png', 'I\'ll go with **CHOICE**.'),
+                    ('Sterne', 'dark', 'https://caelum.s-ul.eu/5tOyTlUz.png', 'I choose **CHOICE**.'),
+                    ('Glaciela', 'water', 'https://caelum.s-ul.eu/BxpULkKc.png', 'I trust **CHOICE**.'),
+                    ('Macherie', 'light', 'https://caelum.s-ul.eu/0gdm92bA.png', 'If that so, **CHOICE**.')
+                ],[
+                    ('Chel', 'ice', 'https://caelum.s-ul.eu/OdzVtlce.png', 'Hey!'),
+                    ('Garvel', 'dark', 'https://caelum.s-ul.eu/nwiMIIZQ.png', 'Know my anger!!!'),
+                    ('Sterne', 'dark', 'https://caelum.s-ul.eu/WCtl3C7n.png', 'OELDEEEEEE!!!!!')
+                ]
             )
         }
         self.help_general = (
@@ -422,17 +433,25 @@ class WotvUtils:
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
-    def rand(self, *arg):
+    def rand(self, ffbe, *arg):
+        randstr = ''
+        incorrect = 0
         if len(arg) == 1:
             if arg[0].isnumeric():
-                return random.randint(0, int(arg[0])), random.choice(self.dicts['random_npc'][0])
+                randstr = str(random.randint(0, int(arg[0])))
         elif len(arg) == 2:
             if arg[0].isnumeric() and arg[1].isnumeric():
-                return random.randint(int(arg[0]), int(arg[1])), random.choice(self.dicts['random_npc'][0])
-        if len(arg) > 1:
-            return random.choice(arg), random.choice(self.dicts['random_npc'][2])
+                randstr = str(random.randint(int(arg[0]), int(arg[1])))
+        if randstr == '':
+            if len(arg) > 1:
+                randstr = random.choice(arg)
+            else:
+                incorrect = 1
+        if ffbe:
+            npc_tup = random.choice(self.dicts['random_npc_ffbe'][incorrect])
         else:
-            return '', random.choice(self.dicts['random_npc'][1])
+            npc_tup = random.choice((self.dicts['random_npc_ffbe'][incorrect] + self.dicts['random_npc'][incorrect]))
+        return incorrect, (*npc_tup[0:3], npc_tup[3].replace('CHOICE', randstr))
     def ramada(self):
         # random fortune generator for star reading
         choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]

@@ -56,7 +56,7 @@ class Roster:
                         print(f"Day {self.day_count}: {row['Unit']} -> {STAGE_NAME[self.unitlb.loc[row['Unit'], 'Stage']]}")
                 if hqcount == 10:
                     break
-    def progress(self, days=360):
+    def progress(self, days=180):
         for _ in range(days):
             self.daily()
 

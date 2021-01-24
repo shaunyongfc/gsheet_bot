@@ -170,16 +170,18 @@ async def wotvhelp(ctx, *arg):
 async def wotvrand(ctx, *arg):
     await bot.get_channel(logs_channel).send(embed = logs_embed(ctx.message))
     embed = discord.Embed()
-    randstr, npctup = wotv_utils.rand(*arg)
+    if ctx.guild.id in [205384125513859074, 790520321894907915]:
+        ffbe = 1
+    else:
+        ffbe = 0
+    incorrect, npctup = wotv_utils.rand(ffbe, *arg)
     embed.title = f"Random {npctup[0]}"
     embed.colour = wotv_utils.dicts['colours'][npctup[1]]
     embed.set_thumbnail(url=npctup[2])
-    if isinstance(randstr, int):
-        embed.description = f"...I pick **{randstr}**."
-    elif randstr == '':
-        embed.description = f"Hey! Give us either:\n- one or two numbers\n- two or more choices"
+    if incorrect:
+        embed.description = f"{npctup[3]} Give us either:\n- one or two numbers\n- two or more choices"
     else:
-        embed.description = f"How about **{randstr}**?"
+        embed.description = npctup[3]
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['fortune', 'stars', 'ramada'])
