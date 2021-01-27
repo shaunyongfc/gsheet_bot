@@ -56,6 +56,9 @@ async def ping(ctx):
 @bot.command(aliases=['calc', 'eval'])
 async def math(ctx, *arg):
     # Standard math command
+    if len(arg) == 0:
+        await ctx.send('Try adding some mathematical formula.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     argstr = ' '.join(arg).strip('`')
     mathstr = wotv_utils.math(argstr)
@@ -243,8 +246,46 @@ async def wotvnews(ctx, *arg):
     except IndexError:
         await ctx.send('https://site.wotvffbe.com//whatsnew')
 
+@bot.command(aliases=['param', 'acc', 'eva', 'crit'])
+async def wotvparam(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help`.')
+        return
+    await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
+    # Calculate acc, eva, crit and crit avoid from dex, agi, luck, eq stats
+    embed = discord.Embed(
+        colour = wotv_utils.dicts['embed']['default_colour']
+    )
+    params = {k: v[0] for k, v in wotv_utils.dicts['paramcalc'].items()}
+    args = ' '.join(arg)
+    embed.title = args
+    # convert arg list to split with | instead
+    arg = [a.lower().strip() for a in args.split('|')]
+    # Check for shortcuts
+    for argstr in arg:
+        re_match = wotv_utils.revalues.search(argstr)
+        paramval = int(re_match.group())
+        paramstr = argstr[0:re_match.start()].strip()
+        for k, v in wotv_utils.dicts['paramcalc'].items():
+            if paramstr in v[1]:
+                params[k] = paramval
+    for param in ('agi', 'dex', 'luck'):
+        params[param] = max(params[param], 0)
+    results = (
+        ('ACC', (11*params['dex']**0.2/20 + params['luck']**0.96/200 - 1) * 100 + params['acc']),
+        ('EVA', (11*params['agi']**0.9/1000 + params['luck']**0.96/200 - 1) * 100 + params['eva']),
+        ('CRIT', (params['dex']**0.35/4 - 1) * 100 + params['crit']),
+        ('C. AVO', (params['luck']**0.37/5 - 1) * 100 + params['c. avo'])
+    )
+    embed.add_field(name='Inputs', value='\n'.join([f"**{k.title()}** {v}" for k, v in params.items()]), inline=True)
+    embed.add_field(name='Results', value='\n'.join([f"**{k}** {v: .1f}%" for k, v in results]), inline=True)
+    await ctx.send(embed = embed)
+
 @bot.command(aliases=['we', 'eq'])
 async def wotveq(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help eq`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -333,7 +374,7 @@ async def wotveq(ctx, *arg):
             if rowfound == 0:
                 if row == '':
                     embed.title = ' '.join(arg)
-                    embed.description = 'No match found.'
+                    embed.description = 'No match found. Or did you mean to use `=eq l`, `=eq t` or `=es`?'
                 else:
                     embed.title = ' '.join(arg)
                     embed.description = 'Too many results. Please try the following:\n' + row
@@ -359,6 +400,9 @@ async def wotveq(ctx, *arg):
 
 @bot.command(aliases=['wes', 'eqs', 'es'])
 async def wotveqsearch(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help eq`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -393,6 +437,9 @@ async def wotveqsearch(ctx, *arg):
 
 @bot.command(aliases=['wvs', 'vcs', 'vs'])
 async def wotvvcsearch(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help vc`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -418,11 +465,6 @@ async def wotvvcsearch(ctx, *arg):
     embed.title = args.title()
     args = args.lower()
     args = args.replace('lightning', 'thunder')
-    # Fluff to change embed colour if requested effect is elemental
-    for k, v in wotv_utils.dicts['colours'].items():
-        if k in args:
-            embed.colour = v
-            break
     # Search each vc
     for _, row in df.iterrows():
         for col in effects_dict.keys():
@@ -443,8 +485,10 @@ async def wotvvcsearch(ctx, *arg):
                         eff_suffix = ' ' + match_numbers[0]
                     effects_dict[col].append(f"{eff_prefix}{wotv_utils.name_str(row)}{eff_suffix}")
     # Print from each list if non-empty
+    empty_list = 1
     for k, v in effects_dict.items():
         if len(v) > 0:
+            empty_list = 0
             field_value = '\n'.join(v)
             if len(field_value) < 1020:
                 embed.add_field(name=k, value=field_value, inline=False)
@@ -463,7 +507,18 @@ async def wotvvcsearch(ctx, *arg):
                         field_name = f"{k} (cont.)"
                 field_value = '\n'.join(v[checkpoint:])
                 embed.add_field(name=field_name, value=field_value)
-    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
+    if empty_list:
+        embed.description = 'No match found. Try checking `=help vc`. Or did you mean to use `=vc`?'
+    else:
+        embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
+    # Fluff to change embed colour if requested effect is elemental
+    for k, v in wotv_utils.dicts['colours'].items():
+        if k in args:
+            embed.colour = v
+            embed.add_field(name='Note:',
+                value=f"`=ve {k}` instead to list element-locked effects."
+            )
+            break
     try:
         await ctx.send(embed = embed)
     except discord.HTTPException:
@@ -471,6 +526,9 @@ async def wotvvcsearch(ctx, *arg):
 
 @bot.command(aliases=['wve', 'vce', 've'])
 async def wotvvcelement(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help vc`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed()
     # Preliminary code for global implementation
@@ -523,6 +581,9 @@ async def wotvvcelement(ctx, *arg):
 
 @bot.command(aliases=['wv', 'vc'])
 async def wotvvc(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help vc`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -538,7 +599,7 @@ async def wotvvc(ctx, *arg):
     if rowfound == 0:
         if row == '':
             embed.title = ' '.join(arg)
-            embed.description = 'No match found.'
+            embed.description = 'No match found. Or did you mean to use `=vs` or `=ve`?'
         else:
             embed.title = ' '.join(arg)
             embed.description = 'Too many results. Please try the following:\n' + row
@@ -574,6 +635,9 @@ async def wotvvc(ctx, *arg):
 
 @bot.command(aliases=['esper'])
 async def wotvesper(ctx, *arg):
+    if len(arg) == 0:
+        await ctx.send('Try `=help esper`.')
+        return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     embed = discord.Embed(
         colour = wotv_utils.dicts['embed']['default_colour']
@@ -617,7 +681,12 @@ async def wotvesper(ctx, *arg):
             if len(argstr.split()) == 1:
                 arg[i] = wotv_utils.shortcut_convert(argstr, 'Esper')
         # Function to find which column the said effect should be
-        col, first_arg = wotv_utils.esper_findcol(arg[0])
+        while len(arg) > 0:
+            col, first_arg = wotv_utils.esper_findcol(arg[0])
+            if col == 'NOTFOUND':
+                arg = arg[1:]
+            else:
+                break
         if first_arg == 'STAT':
             row_df = df.nlargest(20, col)
         else:
@@ -633,7 +702,9 @@ async def wotvesper(ctx, *arg):
                 if argstr.upper() in wotv_utils.dicts['esper_stats']:
                     tuples_list.append((argstr.upper(), 'STAT'))
                 else:
-                    tuples_list.append(wotv_utils.esper_findcol(argstr))
+                    tup = wotv_utils.esper_findcol(argstr)
+                    if tup[0] != 'NOTFOUND':
+                        tuples_list.append(tup)
         list_lists = []
         for index, row in row_df.iterrows():
             row_list = [index] # Initialise for each row with only name
@@ -664,7 +735,7 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         else:
             transpose_list = list(map(list, zip(*list_lists)))
-            esper_list = [wotv_utils.name_str(row_df.loc[a]) for a in transpose_list[0]]
+            esper_list = [wotv_utils.name_str(row_df.loc[a], alias=0) for a in transpose_list[0]]
             field_value = '\n'.join(esper_list)
             checkpoint_list = [0]
             # Split if too long
@@ -737,11 +808,15 @@ async def wotvesper(ctx, *arg):
                     row_df = df[df['Aliases'].str.contains(argstr)]
                 if len(row_df) == 1:
                     row_list.append(row_df.iloc[0])
-                    list_espers.append(wotv_utils.name_str(row_df.iloc[0]))
+                    list_espers.append(wotv_utils.name_str(row_df.iloc[0], alias=0))
         if len(list_espers) > 2:
             # Force into mobile mode otherwise can't fit
             mobile_bool = 1
-        tuples_list = [wotv_utils.esper_findcol(a) for a in extra_stats]
+        tuples_list = []
+        for colstat in extra_stats:
+            tup = wotv_utils.esper_findcol(colstat)
+            if tup[0] != 'NOTFOUND':
+                tuples_list.append(tup)
         list_stats = []
         list_effects = {a: dict() for a in wotv_utils.dicts['esper_colsuffix'].keys()}
         # Process each esper
@@ -784,7 +859,7 @@ async def wotvesper(ctx, *arg):
         if rowfound == 0:
             if row == '':
                 embed.title = ' '.join(arg)
-                embed.description = 'No match found.'
+                embed.description = 'No match found. Or maybe did you mean to use `=esper r` or `=esper c`?'
             else:
                 embed.title = ' '.join(arg)
                 embed.description = 'Too many results. Please try the following:\n' + row

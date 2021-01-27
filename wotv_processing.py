@@ -101,7 +101,19 @@ class WotvUtils:
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png',
                 'footer': 'Data Source: WOTV-CALC (Bismark)'
             },
+            'paramcalc': {
+                'agi': (50, ('agi', 'speed', 'spd', 'agility')),
+                'dex': (200, ('dex', 'dexterity')),
+                'luck': (200, ('luck', 'luc', 'luk')),
+                'acc': (0, ('acc', 'accuracy', 'hit')),
+                'eva': (0, ('eva', 'evasion', 'evade', 'avoid')),
+                'crit': (0, ('crit', 'critical', 'crit rate', 'critical rate')),
+                'c. avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo'))
+            },
             'changelog': (
+                ('27th January 2021', (
+                    'Parameter calculation - `=param` or `=(acc/eva/crit)` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance.',
+                )),
                 ('21st January 2021', (
                     'Random function - `=rand` or `=choice` to have bot pick a random number within given range or a random choice.',
                 )),
@@ -144,6 +156,14 @@ class WotvUtils:
                 'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
             )),
             ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=math/calc`, `=rand/choice`',)),
+            ('Parameter Calculation', (
+                '**= param / acc / eva / crit** (will return the same result regardless of which you use)',
+                'Input AGI, DEX, LUCK and/or flat sources of ACC, EVA, CRIT, CRIT AVOID to calculate actual accuracy, evasion, crit, crit avoid in battle.',
+                'Arguments separated by `|` for each stat.',
+                'Parameters not input (or negative agi/dex/luck) will have their default values used: agi 50, dex/luck 200, others 0.',
+                'e.g. `=param dex 300 | luck 400 | eva 80`',
+                'Not to be confused with `=calc` which is simple math calculation command.'
+            )),
             ('Equipment', ('Enter `help eq` for more info.',)),
             ('VC', ('Enter `=help vc` for more info.',)),
             ('Esper', ('Enter `=help esper` for more info.',)),
@@ -192,6 +212,7 @@ class WotvUtils:
             )),
             ('VC Info', ('**= vc / wvc / wotvvc**',
                 'Argument either in full Japanese name or short English nickname bracketed in other commands.',
+                'Note that official localised names are not recognised.',
                 'e.g. `=vc omega`'
             )),
             ('VC Search', ('**= vs / vcs / wvs /wotvvcsearch**',
@@ -236,11 +257,13 @@ class WotvUtils:
                 'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
             )),
             ('Note on effect convention', ('Arguments of effects in rank or compare have the following conventions:',
+                ' > - hp/tp/ap/atk/mag/agi/dex/luck (base)',
                 ' > - slash/pierce/strike/missile/magic atk/res',
                 ' > - fire/ice/(etc) atk/res'
-                ' > - def/spr/tp%/ap%',
-                ' > - atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
-                ' > - crit rate/evade/damage'))
+                ' > - def/spr/hp%/tp%/ap%/atk%/mag% (node)',
+                ' > - accuracy/evasion',
+                ' > - crit rate/evade/damage',
+                ' > - poison/stop/(etc) res'))
         )
         self.update_ramada()
         self.weekly_init()
@@ -338,6 +361,7 @@ class WotvUtils:
             return 'Limited', 'y'
         if argstr.upper() in self.dicts['esper_stats']:
             return argstr.upper(), 'STAT'
+        col = 'NOTFOUND'
         args = argstr.split()
         if args[-1] in self.dicts['esper_suffix'].keys():
             col = self.dicts['esper_suffix'][args[-1]]
