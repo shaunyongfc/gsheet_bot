@@ -101,9 +101,9 @@ class WotvUtils:
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png'
             },
             'paramcalc': {
-                'agi': (50, ('agi', 'speed', 'spd', 'agility')),
-                'dex': (200, ('dex', 'dexterity')),
-                'luck': (200, ('luck', 'luc', 'luk')),
+                'agi': (70, ('agi', 'speed', 'spd', 'agility')),
+                'dex': (250, ('dex', 'dexterity')),
+                'luck': (250, ('luck', 'luc', 'luk')),
                 'acc': (0, ('acc', 'accuracy', 'hit')),
                 'eva': (0, ('eva', 'evasion', 'evade', 'avoid')),
                 'crit': (0, ('crit', 'critical', 'crit rate', 'critical rate')),

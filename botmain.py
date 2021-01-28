@@ -274,7 +274,7 @@ async def wotvparam(ctx, *arg):
                     if k not in ('agi', 'dex', 'luck') or paramval >= 0:
                         # disallowing negative values for the three stats
                         params[k] = paramval
-                break
+                    break
         except AttributeError:
             pass
     # actual calculations
