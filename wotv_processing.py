@@ -109,6 +109,11 @@ class WotvUtils:
                 'crit': (0, ('crit', 'critical', 'crit rate', 'critical rate')),
                 'c. avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo'))
             },
+            'calcurl': (
+                (' ', '-'),
+                ('é', 'e'),
+                ('\'', '')
+            ),
             'changelog': (
                 ('27th January 2021', (
                     'Parameter calculation - `=param` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance. (`=help param` for more info)',
@@ -178,11 +183,11 @@ class WotvUtils:
             )),
             ('Default Values',
                 ('Parameters not input (or negative agi/dex/luck) will have their default values used.',
-                'Current default values: Agi 50, Dex 200, Luck 200, others 0.'
+                f"Current default values: {', '.join([k + ' ' + str(v[0]) for k, v in self.dicts['paramcalc'].items()])}."
             )),
             ('Disclaimer and Sources',
                 ('Formulae used: Meow and Shalzuth.',
-                '[Article regarding Accurady and Evasion](https://wotv.info/accuracy-and-evasion-debunked-datamine-diary-2/)',
+                '[Article regarding Accuracy and Evasion](https://wotv.info/accuracy-and-evasion-debunked-datamine-diary-2/)',
                 '[Article regarding Crit and Crit Avoidance](https://wotv.info/crit-crit-avoidance-formula/)'
             ))
         )
@@ -211,7 +216,7 @@ class WotvUtils:
             )),
             ('Equipment by acquisition method', ('**= eq a**',
                 'Argument is one of the acquisition methods that can be checked by command above.',
-                'e.g. `=eq t accessory`, `=eq a raid`'
+                'e.g. `=eq a key`, `=eq a raid`'
             )),
             ('Equipment by material', ('**= eq**',
                 'Argument is one of the materials that can be checked by the first command.',
@@ -438,6 +443,12 @@ class WotvUtils:
                 else:
                     namestr += f" ({engstr})"
         return namestr
+    def calc_url(self, category, namestr):
+        calc_url = f"https://wotv-calc.com/JP/{category}/"
+        namestr = namestr.lower()
+        for a, b in self.dicts['calcurl']:
+            namestr = namestr.replace(a, b)
+        return calc_url + namestr
     def find_row(self, df, arg):
         # tolerance processing for query to find the correct entry
         if isinstance(arg, str):

@@ -382,7 +382,7 @@ async def wotveq(ctx, *arg):
             if rowfound == 0:
                 if row == '':
                     embed.title = ' '.join(arg)
-                    embed.description = 'No match found. Or did you mean to use `=eq l`, `=eq t` or `=es`?'
+                    embed.description = 'No match found. Or did you mean to use `=es` or `=eq l/t/a`?'
                 else:
                     embed.title = ' '.join(arg)
                     embed.description = 'Too many results. Please try the following:\n' + row
@@ -403,8 +403,7 @@ async def wotveq(ctx, *arg):
                             engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
                             embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
-            calc_url = f"https://wotv-calc.com/JP/equipment/{row['Aliases'].split(' / ')[0].lower().replace(' ', '-')}"
-            embed.add_field(name='WOTV CALC', value=calc_url, inline=False)
+                embed.add_field(name='WOTV CALC', value=wotv_utils.calc_url('equipment', row['Aliases'].split(' / ')[0]), inline=False)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wes', 'eqs', 'es'])
@@ -438,6 +437,7 @@ async def wotveqsearch(ctx, *arg):
             for eff in eff_list:
                 if args in eff.lower():
                     embed.add_field(name=wotv_utils.name_str(row), value=f"- {row['Special']}")
+                    break
     try:
         await ctx.send(embed = embed)
     except discord.HTTPException:
@@ -863,7 +863,7 @@ async def wotvesper(ctx, *arg):
         if rowfound == 0:
             if row == '':
                 embed.title = ' '.join(arg)
-                embed.description = 'No match found. Or maybe did you mean to use `=esper r` or `=esper c`?'
+                embed.description = 'No match found. Or maybe did you mean to use `=esper r/c`?'
             else:
                 embed.title = ' '.join(arg)
                 embed.description = 'Too many results. Please try the following:\n' + row
@@ -897,8 +897,7 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name='Value', value='\n'.join(field_value_list2), inline=True)
             if row['Url'] != '':
                 embed.set_thumbnail(url=row['Url'])
-            calc_url = f"https://wotv-calc.com/JP/esper/{row.name.lower().replace(' ', '-')}"
-            embed.add_field(name='WOTV CALC', value=calc_url, inline=False)
+            embed.add_field(name='WOTV CALC', value=wotv_utils.calc_url('esper', row.name), inline=False)
     await ctx.send(embed = embed)
 
 #####################################################
