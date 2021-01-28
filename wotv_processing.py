@@ -98,8 +98,7 @@ class WotvUtils:
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
                 'gl_author_name': 'FFBE: War of the Visions',
-                'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png',
-                'footer': 'Data Source: WOTV-CALC (Bismark)'
+                'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png'
             },
             'paramcalc': {
                 'agi': (50, ('agi', 'speed', 'spd', 'agility')),
@@ -112,7 +111,7 @@ class WotvUtils:
             },
             'changelog': (
                 ('27th January 2021', (
-                    'Parameter calculation - `=param` or `=(acc/eva/crit)` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance.',
+                    'Parameter calculation - `=param` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance. (`=help param` for more info)',
                 )),
                 ('21st January 2021', (
                     'Random function - `=rand` or `=choice` to have bot pick a random number within given range or a random choice.',
@@ -150,36 +149,52 @@ class WotvUtils:
         self.help_general = (
             ('General Info', (
                 'Bot prefix is `=`.',
-                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / suggestion (depends on viability). Feel free to contact me to request adding aliases to vc / esper / equipment.",
-                'Currently, only JP data is available. Would need collaborator(s) to implement GL data. Please contact me if interested.',
+                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / adding aliases / suggestion (depends on viability).",
+                'Only JP data is available at the moment. I only play JP and do not wish to maintain GL data, so I would need collaborator(s) to implement GL data. Please contact me if interested.',
                 'For programming reason, element name lightning is replaced by thunder because the text contains another element light.',
                 'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
             )),
-            ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=math/calc`, `=rand/choice`',)),
-            ('Parameter Calculation', (
-                '**= param / acc / eva / crit** (will return the same result regardless of which you use)',
-                'Input AGI, DEX, LUCK and/or flat sources of ACC, EVA, CRIT, CRIT AVOID to calculate actual accuracy, evasion, crit, crit avoid in battle.',
-                'Arguments separated by `|` for each stat.',
-                'Parameters not input (or negative agi/dex/luck) will have their default values used: agi 50, dex/luck 200, others 0.',
-                'e.g. `=param dex 300 | luck 400 | eva 80`',
-                'Not to be confused with `=calc` which is simple math calculation command.'
+            ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=rand/choice`',)),
+            ('WOTV Commands', (
+                'Enter their respective specific help commands for more info.',
+                '- **Parameter Calculation** `=help param`',
+                '- **Equipment** `=help eq`',
+                '- **Vision Card** `=help vc`',
+                '- **Esper** `=help esper`'
             )),
-            ('Equipment', ('Enter `help eq` for more info.',)),
-            ('VC', ('Enter `=help vc` for more info.',)),
-            ('Esper', ('Enter `=help esper` for more info.',)),
+            ('Simple Calculation', ('Enter `=math/calc` with a mathematical expression to calculate. e.g. `=calc 1+1`',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
-            'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.'))
+            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.'))
+        )
+        self.help_param = (
+            ('Parameter Calculation', (
+                '**= param / acc / eva / crit** (will return the same result regardless of which you use)',
+                'Input AGI, DEX, LUCK and/or flat sources of ACC, EVA, CRIT, CRIT AVOID to calculate actual accuracy, evasion, crit, crit avoid in battle.',
+                'Arguments separated by `|` for each stat followed by their values.',
+                'e.g. `=param dex 300 | luck 400 | eva 80`',
+                'Note: Not to be confused with `=calc` which is simple math calculation command.'
+            )),
+            ('Default Values',
+                ('Parameters not input (or negative agi/dex/luck) will have their default values used.',
+                'Current default values: Agi 50, Dex 200, Luck 200, others 0.'
+            )),
+            ('Disclaimer and Sources',
+                ('Formulae used: Meow and Shalzuth.',
+                '[Article regarding Accurady and Evasion](https://wotv.info/accuracy-and-evasion-debunked-datamine-diary-2/)',
+                '[Article regarding Crit and Crit Avoidance](https://wotv.info/crit-crit-avoidance-formula/)'
+            ))
         )
         self.help_eq = (
-            ('General Info (Equipment)', (
+            ('Equipment Help', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
             ('Equipment by name', ('**= eq**',
                 'Argument is by equipment name (subject to name availability).',
-                'e.g. `=eq ribbon`'
+                'e.g. `=eq ribbon`',
+                'Note that the link to WOTV-CALC may not necessarily work...'
             )),
             ('Equipment by effect', ('**= es / eqs**',
                 'Argument is specific effect names.',
@@ -202,10 +217,15 @@ class WotvUtils:
                 'Argument is one of the materials that can be checked by the first command.',
                 'It shares the same command as equipment by name, so needs to be exact match (among the aliases).',
                 'e.g. `=eq heart`, `=eq fire`'
+            )),
+            ('Disclaimer and Sources',
+                ('SQEX and Gumi (obviously).',
+                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/equipments) (Bismark). Special thanks to Shalzuth for assets etc.',
+                'Some recent releases are taken directly from in-game info and news.'
             ))
         )
         self.help_vc = (
-            ('General Info (Vision Cards)', (
+            ('Vision Card Help', (
                 self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
                 self.dicts['emotes']['allele'] + ' ALL icon indicates unconditional effects.',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
@@ -217,29 +237,40 @@ class WotvUtils:
             )),
             ('VC Search', ('**= vs / vcs / wvs /wotvvcsearch**',
                 'Argument in specific effect names with following conventions:',
-                ' > - slash/pierce/strike/missile/magic atk/res/pen',
-                ' > - fire/ice/(etc) atk/res'
-                ' > - def/spr up/pen',
-                ' > - atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
-                ' > - single/area res',
-                ' > - crit rate/evade/damage',
-                ' > - ap gain, max damage, etc',
+                '- slash/pierce/strike/missile/magic atk/res/pen',
+                '- fire/ice/(etc) atk/res'
+                '- def/spr up/pen',
+                '- atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
+                '- single/area res',
+                '- crit rate/evade/damage',
+                '- ap gain, max damage, etc',
                 'e.g. `=vs pierce atk`'
             )),
             ('VC Element', ('**= ve / vce / wve / wotvvcelement**',
                 'Argument in element (e.g. fire).',
                 'e.g. `=ve light`'
+            )),
+            ('Disclaimer and Sources',
+                ('Data source: [WOTV-CALC](https://wotv-calc.com/JP/espers) (Bismark).',
+                'Special thanks to Shalzuth for assets etc.',
+                'Some recent releases are taken directly from in-game info and news.'
+            )),
+            ('Disclaimer and Sources',
+                ('SQEX and Gumi (obviously).',
+                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/vc) (Bismark). Special thanks to Shalzuth for assets etc.',
+                'Some recent releases are taken directly from in-game info and news.'
             ))
         )
         self.help_esper = (
-            ('General Info (Espers)', (
+            ('Esper Help', (
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.',
                 self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
                 'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
             )),
             ('Esper Info', ('**= esper**',
-                'Argument either in full Japanese name or short English nickname bracketed in other commands.',
-                'e.g. `=esper omega`'
+                'Argument in standard English names.',
+                'e.g. `=esper omega`',
+                'Note that the link to WOTV-CALC may not necessarily work...'
             )),
             ('Esper Rank', ('**= esper r / esper rank**',
                 'Arguments separated by `|` for each stat / effect.',
@@ -257,13 +288,19 @@ class WotvUtils:
                 'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
             )),
             ('Note on effect convention', ('Arguments of effects in rank or compare have the following conventions:',
-                ' > - hp/tp/ap/atk/mag/agi/dex/luck (base)',
-                ' > - slash/pierce/strike/missile/magic atk/res',
-                ' > - fire/ice/(etc) atk/res'
-                ' > - def/spr/hp%/tp%/ap%/atk%/mag% (node)',
-                ' > - accuracy/evasion',
-                ' > - crit rate/evade/damage',
-                ' > - poison/stop/(etc) res'))
+                '- hp/tp/ap/atk/mag/agi/dex/luck (base)',
+                '- slash/pierce/strike/missile/magic atk/res',
+                '- fire/ice/(etc) atk/res',
+                '- def/spr/hp%/tp%/ap%/atk%/mag% (node)',
+                '- accuracy/evasion',
+                '- crit rate/evade/damage',
+                '- poison/stop/(etc) res'
+            )),
+            ('Disclaimer and Sources',
+                ('SQEX and Gumi (obviously).',
+                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/espers) (Bismark). Special thanks to Shalzuth for assets etc.',
+                'Some recent releases are taken directly from in-game info and news.'
+            ))
         )
         self.update_ramada()
         self.weekly_init()
@@ -446,6 +483,8 @@ class WotvUtils:
         # if not numbers
         if randstr == '':
             if len(arg) > 1:
+                if '|' in arg:
+                    arg = [a.strip() for a in ' '.join(arg).split('|')]
                 # random choice of strings
                 randstr = random.choice(arg)
             else:
@@ -478,9 +517,9 @@ class WotvUtils:
             rarity_str += f" ({' '.join(implication_lists)})"
             rate_lists.append(rarity_str)
         self.help_ramada = (
-            ('General Info (Ramada Star Reading)',
+            ('Ramada Star Reading Help',
                 ('A fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune.',
-                'Disclaimer: This has nothing to do with in-game mechanics or lore. Basically RNG.',
+                'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.',
                 'Note that the rate may change from time to time. Any feedback is welcome.'
             )),
             ('Current rate:', rate_lists)

@@ -148,7 +148,7 @@ async def delmsg(ctx, *arg):
 ################################
 
 bot.remove_command('help')
-@bot.command(aliases=['help', 'about'])
+@bot.command(aliases=['help', 'about', 'info', 'aboutme', 'readme'])
 async def wotvhelp(ctx, *arg):
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     # Customised bot help function
@@ -168,6 +168,8 @@ async def wotvhelp(ctx, *arg):
             help_tuples = wotv_utils.help_esper
         elif arg[0].lower() == 'eq':
             help_tuples = wotv_utils.help_eq
+        elif arg[0].lower() == 'param':
+            help_tuples = wotv_utils.help_param
         elif arg[0].lower() in ['stars', 'ramada']:
             help_tuples = wotv_utils.help_ramada
     for a, b in help_tuples:
@@ -249,7 +251,7 @@ async def wotvnews(ctx, *arg):
 @bot.command(aliases=['param', 'acc', 'eva', 'crit'])
 async def wotvparam(ctx, *arg):
     if len(arg) == 0:
-        await ctx.send('Try `=help`.')
+        await ctx.send('Try `=help param`.')
         return
     await bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
     # Calculate acc, eva, crit and crit avoid from dex, agi, luck, eq stats
@@ -261,22 +263,28 @@ async def wotvparam(ctx, *arg):
     embed.title = args
     # convert arg list to split with | instead
     arg = [a.lower().strip() for a in args.split('|')]
-    # Check for shortcuts
     for argstr in arg:
+        # find position and value of number
         re_match = wotv_utils.revalues.search(argstr)
-        paramval = int(re_match.group())
-        paramstr = argstr[0:re_match.start()].strip()
-        for k, v in wotv_utils.dicts['paramcalc'].items():
-            if paramstr in v[1]:
-                params[k] = paramval
-    for param in ('agi', 'dex', 'luck'):
-        params[param] = max(params[param], 0)
+        try:
+            paramval = int(re_match.group())
+            paramstr = argstr[0:re_match.start()].strip()
+            for k, v in wotv_utils.dicts['paramcalc'].items():
+                if paramstr in v[1]:
+                    if k not in ('agi', 'dex', 'luck') or paramval >= 0:
+                        # disallowing negative values for the three stats
+                        params[k] = paramval
+                break
+        except AttributeError:
+            pass
+    # actual calculations
     results = (
         ('ACC', (11*params['dex']**0.2/20 + params['luck']**0.96/200 - 1) * 100 + params['acc']),
         ('EVA', (11*params['agi']**0.9/1000 + params['luck']**0.96/200 - 1) * 100 + params['eva']),
         ('CRIT', (params['dex']**0.35/4 - 1) * 100 + params['crit']),
         ('C. AVO', (params['luck']**0.37/5 - 1) * 100 + params['c. avo'])
     )
+    # presenting results
     embed.add_field(name='Inputs', value='\n'.join([f"**{k.title()}** {v}" for k, v in params.items()]), inline=True)
     embed.add_field(name='Results', value='\n'.join([f"**{k}** {v: .1f}%" for k, v in results]), inline=True)
     await ctx.send(embed = embed)
@@ -395,7 +403,8 @@ async def wotveq(ctx, *arg):
                             engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
                             embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
-    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
+            calc_url = f"https://wotv-calc.com/JP/equipment/{row['Aliases'].split(' / ')[0].lower().replace(' ', '-')}"
+            embed.add_field(name='WOTV CALC', value=calc_url, inline=False)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wes', 'eqs', 'es'])
@@ -429,7 +438,6 @@ async def wotveqsearch(ctx, *arg):
             for eff in eff_list:
                 if args in eff.lower():
                     embed.add_field(name=wotv_utils.name_str(row), value=f"- {row['Special']}")
-    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     try:
         await ctx.send(embed = embed)
     except discord.HTTPException:
@@ -509,8 +517,6 @@ async def wotvvcsearch(ctx, *arg):
                 embed.add_field(name=field_name, value=field_value)
     if empty_list:
         embed.description = 'No match found. Try checking `=help vc`. Or did you mean to use `=vc`?'
-    else:
-        embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     # Fluff to change embed colour if requested effect is elemental
     for k, v in wotv_utils.dicts['colours'].items():
         if k in args:
@@ -576,7 +582,6 @@ async def wotvvcelement(ctx, *arg):
                         field_name = f"{k} (cont.)"
                 field_value = '\n'.join(v[checkpoint:])
                 embed.add_field(name=field_name, value=field_value)
-    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wv', 'vc'])
@@ -630,7 +635,6 @@ async def wotvvc(ctx, *arg):
             embed.set_thumbnail(url=row['Url'])
         if embed_colour != '':
             embed.colour = wotv_utils.dicts['colours'][embed_colour]
-        embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['esper'])
@@ -644,21 +648,21 @@ async def wotvesper(ctx, *arg):
     )
     # Preliminary code for global implementation
     #if arg[0] in ['global', 'gl']:
+        #global_bool = 1
         #embed.set_author(
         #    name = wotv_utils.dicts['embed']['gl_author_name'],
         #    url = 'https://wotv-calc.com/espers',
         #    icon_url = wotv_utils.dicts['embed']['author_icon_url']
         #)
-        #global_bool = 1
         #df = dfwotv.glesper
         #arg = arg[1:]
     #else:
+        #global_bool = 0
     embed.set_author(
         name = wotv_utils.dicts['embed']['author_name'],
         url = 'https://wotv-calc.com/JP/espers',
         icon_url = wotv_utils.dicts['embed']['author_icon_url']
     )
-    global_bool = 0
     df = dfwotv.esper
     # Check arguments
     if arg[0] in ['m', 'mobile']:
@@ -893,12 +897,8 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name='Value', value='\n'.join(field_value_list2), inline=True)
             if row['Url'] != '':
                 embed.set_thumbnail(url=row['Url'])
-            if global_bool:
-                calc_url = f"https://wotv-calc.com/esper/{row.name.lower().replace(' ', '-')}"
-            else:
-                calc_url = f"https://wotv-calc.com/JP/esper/{row.name.lower().replace(' ', '-')}"
+            calc_url = f"https://wotv-calc.com/JP/esper/{row.name.lower().replace(' ', '-')}"
             embed.add_field(name='WOTV CALC', value=calc_url, inline=False)
-    embed.set_footer(text=wotv_utils.dicts['embed']['footer'])
     await ctx.send(embed = embed)
 
 #####################################################
