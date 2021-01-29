@@ -403,7 +403,7 @@ async def wotveq(ctx, *arg):
                             engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
                             embed_text_list.append(f"- {row[col]} ({engstr})")
                 embed.add_field(name='List of materials', value='\n'.join(embed_text_list), inline=True)
-                embed.add_field(name='WOTV CALC', value=wotv_utils.calc_url('equipment', row['Aliases'].split(' / ')[0]), inline=False)
+                embed.add_field(name='WOTV-CALC', value=wotv_utils.calc_url('equipment', row['Aliases'].split(' / ')[0]), inline=False)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['wes', 'eqs', 'es'])
@@ -635,6 +635,8 @@ async def wotvvc(ctx, *arg):
             embed.set_thumbnail(url=row['Url'])
         if embed_colour != '':
             embed.colour = wotv_utils.dicts['colours'][embed_colour]
+        if row['English'] != '':
+            embed.add_field(name='WOTV-CALC', value=wotv_utils.calc_url('card', row['English']), inline=False)
     await ctx.send(embed = embed)
 
 @bot.command(aliases=['esper'])
@@ -897,7 +899,7 @@ async def wotvesper(ctx, *arg):
                 embed.add_field(name='Value', value='\n'.join(field_value_list2), inline=True)
             if row['Url'] != '':
                 embed.set_thumbnail(url=row['Url'])
-            embed.add_field(name='WOTV CALC', value=wotv_utils.calc_url('esper', row.name), inline=False)
+            embed.add_field(name='WOTV-CALC', value=wotv_utils.calc_url('esper', row.name), inline=False)
     await ctx.send(embed = embed)
 
 #####################################################

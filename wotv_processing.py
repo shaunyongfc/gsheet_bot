@@ -1,5 +1,6 @@
 import re
 import random
+import pandas as pd
 from gsheet_handler import dfwotv
 from id_dict import id_dict
 
@@ -41,6 +42,7 @@ class WotvUtils:
     def __init__(self):
         self.reconditions = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
         self.revalues = re.compile(r'-?\d+$') # regex for numbers
+        self.resymbols = re.compile(r'[^\w ]')
         self.opdicts = {
             '+': (lambda a, b: a + b),
             '-': (lambda a, b: a - b),
@@ -110,9 +112,8 @@ class WotvUtils:
                 'c. avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo'))
             },
             'calcurl': (
-                (' ', '-'),
                 ('é', 'e'),
-                ('\'', '')
+                (' ', '-')
             ),
             'changelog': (
                 ('27th January 2021', (
@@ -236,8 +237,7 @@ class WotvUtils:
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
             ('VC Info', ('**= vc / wvc / wotvvc**',
-                'Argument either in full Japanese name or short English nickname bracketed in other commands.',
-                'Note that official localised names are not recognised.',
+                'Argument either in Japanese name, English name or short nicknames (aliases) bracketed in other commands.',
                 'e.g. `=vc omega`'
             )),
             ('VC Search', ('**= vs / vcs / wvs /wotvvcsearch**',
@@ -256,11 +256,6 @@ class WotvUtils:
                 'e.g. `=ve light`'
             )),
             ('Disclaimer and Sources',
-                ('Data source: [WOTV-CALC](https://wotv-calc.com/JP/espers) (Bismark).',
-                'Special thanks to Shalzuth for assets etc.',
-                'Some recent releases are taken directly from in-game info and news.'
-            )),
-            ('Disclaimer and Sources',
                 ('SQEX and Gumi (obviously).',
                 'Data source: [WOTV-CALC](https://wotv-calc.com/JP/vc) (Bismark). Special thanks to Shalzuth for assets etc.',
                 'Some recent releases are taken directly from in-game info and news.'
@@ -273,11 +268,12 @@ class WotvUtils:
                 'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
             )),
             ('Esper Info', ('**= esper**',
-                'Argument in standard English names.',
+                'Argument in standard English name or Japanese name.',
                 'e.g. `=esper omega`',
                 'Note that the link to WOTV-CALC may not necessarily work...'
             )),
             ('Esper Rank', ('**= esper r / esper rank**',
+                'Actually search/filter and sort functions in one. Also callable with `=esper f` or `=esper s`',
                 'Arguments separated by `|` for each stat / effect.',
                 'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
                 'Filter 3-star espers by `=esper r awaken` (/ `3-star`) but will not be sorted.',
@@ -445,10 +441,11 @@ class WotvUtils:
         return namestr
     def calc_url(self, category, namestr):
         calc_url = f"https://wotv-calc.com/JP/{category}/"
-        namestr = namestr.lower()
+        urlstr = namestr.lower()
+        urlstr = self.resymbols.sub('', urlstr)
         for a, b in self.dicts['calcurl']:
-            namestr = namestr.replace(a, b)
-        return calc_url + namestr
+            urlstr = urlstr.replace(a, b)
+        return f"[{namestr}]({calc_url + urlstr})"
     def find_row(self, df, arg):
         # tolerance processing for query to find the correct entry
         if isinstance(arg, str):
@@ -469,13 +466,25 @@ class WotvUtils:
                     for _, row in df_aliases.iterrows():
                         if argstr in [a.lower() for a in row['Aliases'].split(' / ')]:
                             return 1, row
+            else:
+                df_aliases = pd.DataFrame()
+            if 'English' in df.columns: # VC only
+                df_english = df[df['English'].str.lower().str.contains(' '.join(arg).lower())]
+                if len(df_english) > 0:
+                    for _, row in df_english.iterrows():
+                        if argstr == row['English'].lower():
+                            return 1, row
+            else:
+                df_english = pd.DataFrame()
             df_name = df[df.index.str.lower().str.contains(argstr.lower())]
             if len(df_name) == 1:
                 return 1, df_name.iloc[0]
+            elif len(df_english) == 1:
+                return 1, df_english.iloc[0]
             elif len(df_aliases) == 1:
                 return 1, df_aliases.iloc[0]
             else:
-                suggestion_list = df_name.index.tolist()
+                suggestion_list = df_name.index.tolist() + df_english['English'].tolist()
                 for alias_list in df_aliases['Aliases'].tolist():
                     for suggestion in alias_list.split(' / '):
                         if suggestion != '':
