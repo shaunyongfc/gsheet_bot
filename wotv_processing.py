@@ -107,7 +107,14 @@ class WotvUtils:
                 ))
             ),
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
-            'ramada_implication': ('up', 'neutral', 'down')
+            'ramada_implication': ('up', 'neutral', 'down'),
+            'event_tuples': (
+                (('gacha', 'banner', 'stepup', 'step up', 'summon'), 'visiore'),
+                (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
+                (('event', 'raid', 'tower', 'box'), 'event'),
+                (('shop',), 'shop'),
+                (('update', 'change', 'patch', 'upgrade'), 'update')
+            )
         }
         self.help_general = (
             ('General Info', (
@@ -146,11 +153,15 @@ class WotvUtils:
             )),
             ('Date and Time', (
                 '`=events date` or `=events time`',
-                'Same as above but instead of countdowns, the ending time of on-going events and starting time of up-coming events are returned.'
+                'Same as above but instead of countdowns, returns the ending time (in JST) of on-going events and starting time (in JST) of up-coming events.'
+            )),
+            ('On-going', (
+                '`=events ongoing` or `=events on-going`',
+                'Returns a list of on-going events with their starting times AND their ending times (in JST) .'
             )),
             ('Up-coming', (
                 '`=events upcoming` or `=events up-coming`',
-                'Returns a list of up-coming events with their starting times AND their ending times.'
+                'Returns a list of up-coming events with their starting times AND their ending times (in JST) .'
             ))
         )
         self.help_param = (
@@ -365,7 +376,11 @@ class WotvUtils:
             ('gil', '799228097185579028'),
             ('visiore', '799228097169457163'),
             ('up', '800158793983852584'),
-            ('down', '800158794007969892')
+            ('down', '800158794007969892'),
+            ('update', '805305947740176425'),
+            ('event', '805305947722743830'),
+            ('recipe', '805305947898642473'),
+            ('shop', '805305948003368970')
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
