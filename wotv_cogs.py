@@ -29,6 +29,9 @@ class WotvGeneral(commands.Cog):
                 # Update the set of effects per column in Esper
                 wotv_utils.dicts['esper_sets'] = wotv_utils.esper_sets(dfwotv.esper)
                 await ctx.send('Esper keyword sets updated.')
+            elif arg[0] == 'events':
+                dfwotv.sync_events()
+                await ctx.send('Google sheet synced for WOTV events.')
 
     @commands.command(aliases=['help', 'about', 'info', 'aboutme', 'readme'])
     async def wotvhelp(self, ctx, *arg):
@@ -101,7 +104,7 @@ class WotvGeneral(commands.Cog):
             else:
                 replystr = '**Up-coming Events**'
                 for event in events_upcoming:
-                    replystr += f"\n:calendar: {event[0]} - *{event[1]} to {event[2]}*"
+                    replystr += f"\n:calendar: {event[0]} - `{event[1]} to {event[2]}`"
         else:
             events = {
                 'on-going': [],
@@ -110,7 +113,7 @@ class WotvGeneral(commands.Cog):
             for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
                 if datetime.now() < datetime.strptime(row['Start'], mydtformat):
                     events['up-coming'].append((row['Event'], row['Start']))
-                elif datetime.strptime(row['End'], mydtformat) < datetime.now():
+                elif datetime.now() < datetime.strptime(row['End'], mydtformat):
                     events['on-going'].append((row['Event'], row['End']))
             replystr = ''
             for k, v in events.items():
@@ -122,7 +125,7 @@ class WotvGeneral(commands.Cog):
                     replystr += f"**{k.capitalize()} Events**"
                     for event in v:
                         if dt_bool:
-                            replystr += f"\n:alarm_clock: {event[0]} - *{event[1]}*"
+                            replystr += f"\n:alarm_clock: {event[0]} - `{event[1]}`"
                         else:
                             replystr += f"\n:alarm_clock: {event[0]} -"
                             eventdd = datetime.strptime(event[1], mydtformat) - datetime.now()
@@ -133,9 +136,9 @@ class WotvGeneral(commands.Cog):
                             )
                             for eventddstr, eventddnum in eventddsplit:
                                 if eventddnum > 1:
-                                    replystr += f" *{eventddnum} {eventddstr}s*"
+                                    replystr += f" `{eventddnum} {eventddstr}s`"
                                 elif eventddnum == 1:
-                                    replystr += f" *{eventddnum} {eventddstr}*"
+                                    replystr += f" `{eventddnum} {eventddstr}`"
         await ctx.send(replystr)
 
     @commands.command(aliases=['rand', 'random', 'choice'])
