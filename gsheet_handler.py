@@ -40,42 +40,9 @@ dfwotv = DfHandlerWotv()
 class DfHandlerGen():
     # Object handling general sheets related operations
     def __init__(self):
-        self.res = re.compile(r'&\w+') # regex for shortcuts
         self.sync()
     def sync(self):
         self.shortcuts = pd.DataFrame(ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
-    def add_shortcut(self, *arg):
-        if len(arg) == 3:
-            try:
-                int(arg[2])
-                ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
-                self.sync()
-                return 'Added.'
-            except ValueError:
-                return 'Non-integer id.'
-        else:
-            return 'Incorrect arguments.'
-    def get_shortcut(self, name):
-        row_index = self.shortcuts[self.shortcuts['Name'] == name].index.tolist()[0]
-        row = self.shortcuts.iloc[row_index]
-        if row['Type'] == 'channel':
-            return row['id']
-        elif row['Type'] == 'user':
-            return f"<@{row['id']}>"
-        elif row['Type'] == 'emote':
-            return f"<:{row['Name']}:{row['id']}>"
-        elif row['Type'] == 'aemote':
-            return f"<a:{row['Name']}:{row['id']}>"
-        elif row['Type'] == 'role':
-            return f"<@&{row['id']}>"
-    def msg_process(self, argstr):
-        re_matches = self.res.findall(argstr)
-        for re_match in re_matches:
-            try:
-                argstr = argstr.replace(re_match, self.get_shortcut(re_match[1:]))
-            except IndexError:
-                pass
-        return argstr
 
 dfgen = DfHandlerGen()
 

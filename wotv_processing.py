@@ -1,59 +1,14 @@
-import re
-import random
+import re, random
 import pandas as pd
-from gsheet_handler import dfwotv
-from id_dict import id_dict
-
-# raw code of emotes uploaded into Discord
-wotv_emotes_raw = (
-    ('weapon', '799182037348909077'),
-    ('armor', '799182037696905276'),
-    ('accessory', '799182037248114689'),
-    ('ur', '799226625631322152'),
-    ('ssr', '799226625199570965'),
-    ('sr', '799226625715208212'),
-    ('r', '799226625371537449'),
-    ('mr', '799226833635508224'),
-    ('fire', '791969566023745547'),
-    ('ice', '791969566308958219'),
-    ('wind', '791969566409752576'),
-    ('earth', '791969566477385738'),
-    ('thunder', '791969566245781535'),
-    ('water', '791969566254825523'),
-    ('light', '791969565826613259'),
-    ('dark', '791969566246436884'),
-    ('neutral', '791969566233853952'),
-    ('allele', '799186663229227038'),
-    ('limited', '799155023249408001'),
-    ('esper', '799155023086878740'),
-    ('kame', '799186663041531907'),
-    ('pink', '799230682470678559'),
-    ('pot', '799231267651584010'),
-    ('gil', '799228097185579028'),
-    ('visiore', '799228097169457163'),
-    ('up', '800158793983852584'),
-    ('down', '800158794007969892')
-)
-wotv_aemotes_raw = (
-    ('elements', '796963642418790451'),
-)
 
 class WotvUtils:
-    def __init__(self):
+    def __init__(self, dfwotv, id_dict):
+        self.dfwotv = dfwotv
         self.reconditions = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
         self.revalues = re.compile(r'-?\d+$') # regex for numbers
         self.resymbols = re.compile(r'[^\w ]')
-        self.opdicts = {
-            '+': (lambda a, b: a + b),
-            '-': (lambda a, b: a - b),
-            '*': (lambda a, b: a * b),
-            '/': (lambda a, b: a / b),
-            '%': (lambda a, b: a % b),
-            '^': (lambda a, b: a ** b),
-            '**': (lambda a, b: a ** b),
-        }
         self.dicts = {
-            'mat_sets': self.mat_sets(dfwotv.eq),
+            'mat_sets': self.mat_sets(self.dfwotv.eq),
             'eq_lists': {
                 'Type': ['t'],
                 'Acquisition': ['a'],
@@ -70,7 +25,7 @@ class WotvUtils:
                 ('ninjablade', 'ninja blade'),
                 ('armour', 'armor')
             ),
-            'esper_sets': self.esper_sets(dfwotv.esper),
+            'esper_sets': self.esper_sets(self.dfwotv.esper),
             'esper_suffix': {
                 'atk': 'ATK Up',
                 'killer': 'Killer',
@@ -149,16 +104,18 @@ class WotvUtils:
                 ))
             ),
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
-            'ramada_implication': ('up', 'neutral', 'down'),
-            'math_errors': ('Zero Division Error', 'Overflow Error', '... Excuse me?'),
+            'ramada_implication': ('up', 'neutral', 'down')
         }
         self.help_general = (
             ('General Info', (
-                'Bot prefix is `=`.',
-                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / adding aliases / suggestion (depends on viability).",
-                'Only JP data is available at the moment. I only play JP and do not wish to maintain GL data, so I would need collaborator(s) to implement GL data. Please contact me if interested.',
+                'Bot prefix is `=`. Only JP data is available at the moment.',
+                'Bot commands are case sensitive. Please do NOT capitalize the commands.',
                 'For programming reason, element name lightning is replaced by thunder because the text contains another element light.',
                 'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
+            )),
+            ('About', (
+                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / adding aliases / suggestion (depends on viability).",
+                'I only play JP and do not wish to maintain GL data. To implement GL data, I would need collaborator(s). Please contact me if interested.'
             )),
             ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=rand/choice`',)),
             ('WOTV Commands', (
@@ -358,6 +315,39 @@ class WotvUtils:
         return dict_sets
     def emotes_init(self):
         # only runs once to generate the dictonary entry
+        # raw code of emotes uploaded into Discord
+        wotv_emotes_raw = (
+            ('weapon', '799182037348909077'),
+            ('armor', '799182037696905276'),
+            ('accessory', '799182037248114689'),
+            ('ur', '799226625631322152'),
+            ('ssr', '799226625199570965'),
+            ('sr', '799226625715208212'),
+            ('r', '799226625371537449'),
+            ('mr', '799226833635508224'),
+            ('fire', '791969566023745547'),
+            ('ice', '791969566308958219'),
+            ('wind', '791969566409752576'),
+            ('earth', '791969566477385738'),
+            ('thunder', '791969566245781535'),
+            ('water', '791969566254825523'),
+            ('light', '791969565826613259'),
+            ('dark', '791969566246436884'),
+            ('neutral', '791969566233853952'),
+            ('allele', '799186663229227038'),
+            ('limited', '799155023249408001'),
+            ('esper', '799155023086878740'),
+            ('kame', '799186663041531907'),
+            ('pink', '799230682470678559'),
+            ('pot', '799231267651584010'),
+            ('gil', '799228097185579028'),
+            ('visiore', '799228097169457163'),
+            ('up', '800158793983852584'),
+            ('down', '800158794007969892')
+        )
+        wotv_aemotes_raw = (
+            ('elements', '796963642418790451'),
+        )
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
             wotv_emotes[k] = f"<:wotv_{k}:{v}>"
@@ -382,7 +372,7 @@ class WotvUtils:
     def shortcut_convert(self, argstr, col='VC'):
         # convert shortcut if in the sheet
         try:
-            args = dfwotv.shortcut.loc[argstr.lower()][col]
+            args = self.dfwotv.shortcut.loc[argstr.lower()][col]
             if args != '':
                 return args
             else:
@@ -511,23 +501,23 @@ class WotvUtils:
                 # insufficient input
                 incorrect = 1
         if ffbe: # return only non-WOTV characters if server is FFBE
-            df = dfwotv.rand[dfwotv.rand['FFBE'] == 1]
+            df = self.dfwotv.rand[self.dfwotv.rand['FFBE'] == 1]
         else:
-            df = dfwotv.rand
+            df = self.dfwotv.rand
         df_index = df[df['Incorrect'] == incorrect].sample().index[0]
         df_row = df.loc[df_index]
         return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'], df_row['String'].replace('CHOICE', randstr))
     def ramada(self):
         # random fortune generator for star reading
-        choice = random.choices(dfwotv.stars.index.tolist(), weights=dfwotv.stars['Weight'].tolist())[0]
-        row = dfwotv.stars.iloc[choice]
+        choice = random.choices(self.dfwotv.stars.index.tolist(), weights=self.dfwotv.stars['Weight'].tolist())[0]
+        row = self.dfwotv.stars.iloc[choice]
         row_deco = self.dicts['emotes'][row['Rarity'].lower()] + self.dicts['emotes'][row['Emote']]
         return row['Fortune'], row_deco, row['Url']
     def update_ramada(self):
         # Generate current rate dynamically directly from data
         rate_lists = []
         for rarity in self.dicts['ramada_rarity']:
-            df_row1 = dfwotv.stars[dfwotv.stars['Rarity'] == rarity]
+            df_row1 = self.dfwotv.stars[self.dfwotv.stars['Rarity'] == rarity]
             rarity_str = f"{self.dicts['emotes'][rarity.lower()]}: {df_row1['Weight'].sum()}%"
             implication_lists = []
             for implication in self.dicts['ramada_implication']:
@@ -544,45 +534,3 @@ class WotvUtils:
             )),
             ('Current rate:', rate_lists)
         )
-    def math(self, mathstr):
-        # Custom math command (recursive)
-        while True:
-            # Handle brackets
-            lbrackets = []
-            for i, mathchar in enumerate(mathstr):
-                if mathchar == '(':
-                    lbrackets.append(i)
-                elif mathchar == ')':
-                    if len(lbrackets) == 1:
-                        bstart = lbrackets.pop()
-                        bend = i
-                        break
-                    elif len(lbrackets) > 0:
-                        lbrackets.pop()
-            else:
-                break
-            # recursion for outer brackets
-            mathstr = mathstr[0:bstart] + self.math(mathstr[bstart+1:bend]) + mathstr[bend+1:]
-        for opstr, opfunc in self.opdicts.items():
-            # check which operation
-            op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
-            if len(op_index_list) > 0:
-                op_index = op_index_list[-1]
-                try:
-                    leftstr = self.math(mathstr[:op_index]).strip()
-                    rightstr = self.math(mathstr[op_index+1:]).strip()
-                    mathstr = str(opfunc(float(leftstr), float(rightstr)))
-                except ValueError:
-                    if self.dicts['math_errors'][0] in [leftstr, rightstr]:
-                        mathstr = self.dicts['math_errors'][0]
-                    elif self.dicts['math_errors'][1] in [leftstr, rightstr]:
-                        mathstr = self.dicts['math_errors'][1]
-                    else:
-                        mathstr = self.dicts['math_errors'][2]
-                except ZeroDivisionError:
-                    mathstr = self.dicts['math_errors'][0]
-                except OverflowError:
-                    mathstr = self.dicts['math_errors'][1]
-        return mathstr
-
-wotv_utils = WotvUtils()

@@ -35,3 +35,4 @@ def wotvsummary_update(spreadsheet, summarydf):
 
 if __name__ == '__main__':
     wotvsummary_update(myspreadsheet, wotvsummary_process(myspreadsheet))
+    print('Sheet updated!')
