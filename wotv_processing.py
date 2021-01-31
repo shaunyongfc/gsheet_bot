@@ -64,7 +64,7 @@ class WotvUtils:
                 'acc': (0, ('acc', 'accuracy', 'hit')),
                 'eva': (0, ('eva', 'evasion', 'evade', 'avoid')),
                 'crit': (0, ('crit', 'critical', 'crit rate', 'critical rate')),
-                'c. avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo'))
+                'c.avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo', 'c.avo'))
             },
             'calcurl': (
                 ('é', 'e'),
@@ -153,15 +153,12 @@ class WotvUtils:
             )),
             ('Date and Time', (
                 '`=events date` or `=events time`',
-                'Same as above but instead of countdowns, returns the ending time (in JST) of on-going events and starting time (in JST) of up-coming events.'
+                'Same as above but instead of countdowns, returns the starting and ending times (in JST) of on-going events and up-coming events.'
             )),
-            ('On-going', (
-                '`=events ongoing` or `=events on-going`',
-                'Returns a list of on-going events with their starting times AND their ending times (in JST) .'
-            )),
-            ('Up-coming', (
-                '`=events upcoming` or `=events up-coming`',
-                'Returns a list of up-coming events with their starting times AND their ending times (in JST) .'
+            ('Date and Time Embedded', (
+                '`=events embed` or `=events format`',
+                'Returns the same result as `=events date` but in embedded format. May not format correctly if there are lengthy events.',
+                'Not intended to use while in mobile (you can try).'
             ))
         )
         self.help_param = (

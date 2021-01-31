@@ -86,63 +86,49 @@ class WotvGeneral(commands.Cog):
         else:
             await ctx.send('Permission denied.')
 
-    @commands.command(aliases=['events'])
+    @commands.command(aliases=['events', 'calendar', 'timer', 'countdown', 'date'])
     async def wotvevents(self, ctx, *arg):
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         # Check ongoing or upcoming events
         dt_bool = 0
         sp_bool = 0
         if len(arg) > 0:
-            if arg[0] in ('date', 'time'):
+            if arg[0] in ('date', 'time', 'upcoming', 'up-coming', 'ongoing', 'on-going'):
                 dt_bool = 1
-            elif arg[0] in ('upcoming', 'up-coming'):
-                sp_bool = 1
-            elif arg[0] in ('ongoing', 'on-going'):
-                sp_bool = 2
-        if sp_bool > 0: # Upcoming events start and end dates
-            events_sp = []
-            for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
-                if datetime.now() < datetime.strptime(row['End'], mydtformat):
-                    eventprefix = ':calendar:'
-                    for event_keywords, event_emote in wotv_utils.dicts['event_tuples']:
-                        for event_keyword in event_keywords:
-                            if event_keyword in row['Event'].lower():
-                                eventprefix = wotv_utils.dicts['emotes'][event_emote]
-                                break
-                        if eventprefix != ':calendar:':
+            elif arg[0] in ('embed', 'format'):
+                dt_bool = 2
+        events = {
+            'on-going': [],
+            'up-coming': []
+        }
+        for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
+            if datetime.now() < datetime.strptime(row['End'], mydtformat):
+                eventprefix = ':calendar:'
+                for event_keywords, event_emote in wotv_utils.dicts['event_tuples']:
+                    for event_keyword in event_keywords:
+                        if event_keyword in row['Event'].lower():
+                            eventprefix = wotv_utils.dicts['emotes'][event_emote]
                             break
-                    eventname = f"{eventprefix} {row['Event']}"
-                    if datetime.now() < datetime.strptime(row['Start'], mydtformat) and sp_bool == 1:
-                        events_sp.append((eventname, row['Start'], row['End']))
-                    elif datetime.strptime(row['Start'], mydtformat) < datetime.now() < datetime.strptime(row['End'], mydtformat) and sp_bool == 2:
-                        events_sp.append((eventname, row['Start'], row['End']))
-            if len(events_sp) == 0:
-                replystr = f"No {arg[0]} events."
-            else:
-                replystr = f"**{arg[0].capitalize()} Events**"
-                for event in events_sp:
-                    replystr += f"\n{event[0]} - `{event[1]} to {event[2]}`"
+                    if eventprefix != ':calendar:':
+                        break
+                eventname = f"{eventprefix} {row['Event']}"
+                if datetime.now() < datetime.strptime(row['Start'], mydtformat):
+                    events['up-coming'].append((eventname, row['Start'], row['End']))
+                elif datetime.now() < datetime.strptime(row['End'], mydtformat):
+                    events['on-going'].append((eventname, row['Start'], row['End']))
+        replystr = ''
+        if dt_bool == 2:
+            embed = discord.Embed(
+                colour = wotv_utils.dicts['embed']['default_colour']
+            )
+            embed.title = 'WOTV JP Calendar'
+            for k, v in events.items():
+                transpose_list = list(map(list, zip(*v)))
+                embed.add_field(name=k.capitalize(), value='\n'.join(transpose_list[0]))
+                embed.add_field(name='Start', value='\n'.join(transpose_list[1]))
+                embed.add_field(name='End', value='\n'.join(transpose_list[2]))
+            await ctx.send(embed = embed)
         else:
-            events = {
-                'on-going': [],
-                'up-coming': []
-            }
-            for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
-                if datetime.now() < datetime.strptime(row['End'], mydtformat):
-                    eventprefix = ':calendar:'
-                    for event_keywords, event_emote in wotv_utils.dicts['event_tuples']:
-                        for event_keyword in event_keywords:
-                            if event_keyword in row['Event'].lower():
-                                eventprefix = wotv_utils.dicts['emotes'][event_emote]
-                                break
-                        if eventprefix != ':calendar:':
-                            break
-                    eventname = f"{eventprefix} {row['Event']}"
-                    if datetime.now() < datetime.strptime(row['Start'], mydtformat):
-                        events['up-coming'].append((eventname, row['Start']))
-                    elif datetime.now() < datetime.strptime(row['End'], mydtformat):
-                        events['on-going'].append((eventname, row['End']))
-            replystr = ''
             for k, v in events.items():
                 if len(replystr) > 0:
                     replystr += '\n\n'
@@ -151,11 +137,14 @@ class WotvGeneral(commands.Cog):
                 else:
                     replystr += f"**{k.capitalize()} Events**"
                     for event in v:
-                        if dt_bool:
-                            replystr += f"\n{event[0]} - `{event[1]}`"
+                        if dt_bool == 1:
+                            replystr += f"\n{event[0]} - `{event[1]}` to `{event[2]}`"
                         else:
                             replystr += f"\n{event[0]} -"
-                            eventdd = datetime.strptime(event[1], mydtformat) - datetime.now()
+                            if k == 'on-going':
+                                eventdd = datetime.strptime(event[2], mydtformat) - datetime.now()
+                            else:
+                                eventdd = datetime.strptime(event[1], mydtformat) - datetime.now()
                             eventddsplit = (
                                 ('day', eventdd.days),
                                 ('hour', eventdd.seconds // 3600),
@@ -166,7 +155,7 @@ class WotvGeneral(commands.Cog):
                                     replystr += f" `{eventddnum} {eventddstr}s`"
                                 elif eventddnum == 1:
                                     replystr += f" `{eventddnum} {eventddstr}`"
-        await ctx.send(replystr)
+            await ctx.send(replystr)
 
     @commands.command(aliases=['rand', 'random', 'choice'])
     async def wotvrand(self, ctx, *arg):
@@ -274,11 +263,11 @@ class WotvGeneral(commands.Cog):
             ('ACC', (11*params['dex']**0.2/20 + params['luck']**0.96/200 - 1) * 100 + params['acc']),
             ('EVA', (11*params['agi']**0.9/1000 + params['luck']**0.96/200 - 1) * 100 + params['eva']),
             ('CRIT', (params['dex']**0.35/4 - 1) * 100 + params['crit']),
-            ('C. AVO', (params['luck']**0.37/5 - 1) * 100 + params['c. avo'])
+            ('C.AVO', (params['luck']**0.37/5 - 1) * 100 + params['c.avo'])
         )
         # presenting results
-        embed.add_field(name='Inputs', value='\n'.join([f"**{k.title()}** {v}" for k, v in params.items()]), inline=True)
-        embed.add_field(name='Results', value='\n'.join([f"**{k}** {v: .1f}%" for k, v in results]), inline=True)
+        embed.add_field(name='Inputs', value='\n'.join([f"`{k.upper(): <5}` {v}" for k, v in params.items()]), inline=True)
+        embed.add_field(name='Results', value='\n'.join([f"`{k: <5}` {v: .1f}%" for k, v in results]), inline=True)
         await ctx.send(embed = embed)
 
 class WotvEquipment(commands.Cog):
