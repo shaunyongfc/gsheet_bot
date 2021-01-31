@@ -31,7 +31,7 @@ class GeneralUtils():
         if len(arg) == 3:
             try:
                 int(arg[2])
-                ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
+                dfgen.add_shortcut(*arg)
                 return 'Added.'
             except ValueError:
                 return 'Non-integer id.'

@@ -13,6 +13,7 @@ class DfHandlerWotv():
     # Object handling WOTV sheets related operations
     def __init__(self):
         self.sync()
+        self.sync_events()
     def sync(self):
         df = pd.DataFrame(myspreadsheet.worksheet('WOTV_eq').get_all_records())
         self.eq = df.set_index('EQ Name')
@@ -34,6 +35,11 @@ class DfHandlerWotv():
 
         self.stars = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
         self.rand = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
+    def sync_events(self):
+        self.events = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_events').get_all_records())
+    def add_event(self, event):
+        ramadaspreadsheet.worksheet('WOTV_events').append_row(event)
+        self.sync_events()
 
 dfwotv = DfHandlerWotv()
 
@@ -43,6 +49,9 @@ class DfHandlerGen():
         self.sync()
     def sync(self):
         self.shortcuts = pd.DataFrame(ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
+    def add_shortcut(self, *args):
+        ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
+        self.sync()
 
 dfgen = DfHandlerGen()
 

@@ -5,8 +5,10 @@ from gsheet_handler import dfwotv
 from wotv_processing import WotvUtils
 from general_cogs import logs_embed
 from id_dict import id_dict
+from datetime import datetime
 
 wotv_utils = WotvUtils(dfwotv, id_dict)
+mydtformat = '%Y/%m/%d %H:%M'
 
 class WotvGeneral(commands.Cog):
     def __init__(self, bot):
@@ -52,9 +54,89 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_param
             elif arg[0].lower() in ['stars', 'ramada']:
                 help_tuples = wotv_utils.help_ramada
+            elif arg[0].lower() == 'events':
+                help_tuples = wotv_utils.help_events
         for a, b in help_tuples:
             embed.add_field(name=a, value='\n'.join(b), inline=False)
         await ctx.send(embed = embed)
+
+    @commands.command(aliases=['addevent'])
+    async def wotvaddevent(self, ctx, *arg):
+        # Add event to calendar for authorized people
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
+        if ctx.message.author.id in id_dict['Events']:
+            try:
+                arg = [a.strip() for a in ' '.join(arg).split('|')]
+                eventstr = arg[0]
+                eventstart = datetime.strptime(arg[1], mydtformat)
+                eventend = datetime.strptime(arg[2], mydtformat)
+                if eventstart < eventend:
+                    dfwotv.add_event(arg)
+                    await ctx.send('Event added.')
+                else:
+                    await ctx.send('Ending time must be later than starting time.')
+            except (IndexError, ValueError):
+                await ctx.send('Incorrect format.')
+        else:
+            await ctx.send('Permission denied.')
+
+    @commands.command(aliases=['events'])
+    async def wotvevents(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
+        # Check ongoing or upcoming events
+        dt_bool = 0
+        uc_bool = 0
+        if len(arg) > 0:
+            if arg[0] in ('date', 'time'):
+                dt_bool = 1
+            elif arg[0] in ('upcoming', 'up-coming'):
+                uc_bool = 1
+        if uc_bool: # Upcoming events start and end dates
+            events_upcoming = []
+            for _, row in dfwotv.events.iterrows():
+                if datetime.now() < datetime.strptime(row['Start'], mydtformat):
+                    events_upcoming.append((row['Event'], row['Start'], row['End']))
+            if len(events_upcoming) == 0:
+                replystr = 'No up-coming events.'
+            else:
+                replystr = '**Up-coming Events**'
+                for event in events_upcoming:
+                    replystr += f"\n:calendar: {event[0]} - *{event[1]} to {event[2]}*"
+        else:
+            events = {
+                'on-going': [],
+                'up-coming': []
+            }
+            for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
+                if datetime.now() < datetime.strptime(row['Start'], mydtformat):
+                    events['up-coming'].append((row['Event'], row['Start']))
+                elif datetime.strptime(row['End'], mydtformat) < datetime.now():
+                    events['on-going'].append((row['Event'], row['End']))
+            replystr = ''
+            for k, v in events.items():
+                if len(replystr) > 0:
+                    replystr += '\n\n'
+                if len(v) == 0:
+                    replystr += f"No {k} events."
+                else:
+                    replystr += f"**{k.capitalize()} Events**"
+                    for event in v:
+                        if dt_bool:
+                            replystr += f"\n:alarm_clock: {event[0]} - *{event[1]}*"
+                        else:
+                            replystr += f"\n:alarm_clock: {event[0]} -"
+                            eventdd = datetime.strptime(event[1], mydtformat) - datetime.now()
+                            eventddsplit = (
+                                ('day', eventdd.days),
+                                ('hour', eventdd.seconds // 3600),
+                                ('minute', eventdd.seconds % 3600 // 60)
+                            )
+                            for eventddstr, eventddnum in eventddsplit:
+                                if eventddnum > 1:
+                                    replystr += f" *{eventddnum} {eventddstr}s*"
+                                elif eventddnum == 1:
+                                    replystr += f" *{eventddnum} {eventddstr}*"
+        await ctx.send(replystr)
 
     @commands.command(aliases=['rand', 'random', 'choice'])
     async def wotvrand(self, ctx, *arg):

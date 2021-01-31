@@ -71,6 +71,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('31st January 2021', (
+                    '(Beta) Events - `=events` to check on-going or up-coming events. (`=help events` for more info)',
+                )),
                 ('27th January 2021', (
                     'Parameter calculation - `=param` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance. (`=help param` for more info)',
                 )),
@@ -120,6 +123,7 @@ class WotvUtils:
             ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=rand/choice`',)),
             ('WOTV Commands', (
                 'Enter their respective specific help commands for more info.',
+                '- **Events** `=help events`',
                 '- **Parameter Calculation** `=help param`',
                 '- **Equipment** `=help eq`',
                 '- **Vision Card** `=help vc`',
@@ -130,6 +134,24 @@ class WotvUtils:
             ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.'))
+        )
+        self.help_events = (
+            ('Events (Beta)', (
+                '** =events**',
+                'Returns list of up-coming / on-going events (subject to having been keyed...).'
+            )),
+            ('Countdown', (
+                '`=events` (the default)',
+                'Returns a list of on-going events with their remaining time and a list of up-coming events counting down to their starting times.'
+            )),
+            ('Date and Time', (
+                '`=events date` or `=events time`',
+                'Same as above but instead of countdowns, the ending time of on-going events and starting time of up-coming events are returned.'
+            )),
+            ('Up-coming', (
+                '`=events upcoming` or `=events up-coming`',
+                'Returns a list of up-coming events with their starting times AND their ending times.'
+            ))
         )
         self.help_param = (
             ('Parameter Calculation', (
