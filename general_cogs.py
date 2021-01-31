@@ -168,7 +168,7 @@ class GeneralCommands(commands.Cog):
     async def scnew(self, ctx, *arg):
         if ctx.message.author.id == id_dict['Owner']:
         # New shortcut into worksheet
-            await ctx.send(dfgen.add_shortcut(*arg))
+            await ctx.send(general_utils.add_shortcut(*arg))
 
     @commands.command()
     async def sendmsg(self, ctx, *arg):
@@ -178,12 +178,12 @@ class GeneralCommands(commands.Cog):
                 channel = self.bot.get_channel(int(arg[0]))
                 arg = arg[1:]
             except ValueError:
-                channel = self.bot.get_channel(dfgen.get_shortcut(arg[0]))
+                channel = self.bot.get_channel(general_utils.get_shortcut(arg[0]))
                 arg = arg[1:]
             if len(arg) == 0:
                 msg = 'Hi.'
             else:
-                msg = dfgen.msg_process(' '.join(arg))
+                msg = general_utils.msg_process(' '.join(arg))
             await channel.send(msg)
 
     @commands.command()
@@ -196,7 +196,7 @@ class GeneralCommands(commands.Cog):
                 try:
                     channel = self.bot.get_channel(int(arg[0]))
                 except ValueError:
-                    channel = self.bot.get_channel(dfgen.get_shortcut(arg[0]))
+                    channel = self.bot.get_channel(general_utils.get_shortcut(arg[0]))
             try:
                 try:
                     msg = await channel.fetch_message(int(arg[1]))

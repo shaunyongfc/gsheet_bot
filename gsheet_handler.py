@@ -49,7 +49,7 @@ class DfHandlerGen():
         self.sync()
     def sync(self):
         self.shortcuts = pd.DataFrame(ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
-    def add_shortcut(self, *args):
+    def add_shortcut(self, *arg):
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
         self.sync()
 
