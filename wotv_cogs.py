@@ -67,7 +67,7 @@ class WotvGeneral(commands.Cog):
     async def wotvaddevent(self, ctx, *arg):
         # Add event to calendar for authorized people
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
-        if ctx.message.author.id in id_dict['Events']:
+        if ctx.message.author.id in dfwotv.ids['WOTV Events']:
             try:
                 arg = [a.strip() for a in ' '.join(arg).split('|')]
                 eventstr = arg[0]
@@ -123,6 +123,8 @@ class WotvGeneral(commands.Cog):
             )
             embed.title = 'WOTV JP Calendar'
             for k, v in events.items():
+                if len(v) == 0:
+                    continue
                 transpose_list = list(map(list, zip(*v)))
                 embed.add_field(name=k.capitalize(), value='\n'.join(transpose_list[0]))
                 embed.add_field(name='Start', value='\n'.join(transpose_list[1]))
@@ -133,7 +135,7 @@ class WotvGeneral(commands.Cog):
                 if len(replystr) > 0:
                     replystr += '\n\n'
                 if len(v) == 0:
-                    replystr += f"No {k} events."
+                    replystr += f"*No {k} events.*"
                 else:
                     replystr += f"**{k.capitalize()} Events**"
                     for event in v:
@@ -162,7 +164,7 @@ class WotvGeneral(commands.Cog):
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         # Fluff command to pick a number or string from users
         embed = discord.Embed()
-        if ctx.guild.id in id_dict['FFBE Channels']:
+        if ctx.guild.id in dfwotv.ids['FFBE Server']:
             ffbe = 1
         else:
             ffbe = 0

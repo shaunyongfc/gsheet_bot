@@ -12,6 +12,10 @@ ramadaspreadsheet = client.open("Ramada Bot")
 class DfHandlerWotv():
     # Object handling WOTV sheets related operations
     def __init__(self):
+        self.ids = {
+            'WOTV Events': [],
+            'FFBE Server': []
+        }
         self.sync()
         self.sync_events()
     def sync(self):
@@ -35,6 +39,10 @@ class DfHandlerWotv():
 
         self.stars = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
         self.rand = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
+
+        df_ids = pd.DataFrame(ramadaspreadsheet.worksheet('my_ids').get_all_records())
+        for k in self.ids.keys():
+            self.ids[k] = df_ids[df_ids['Type'] == k]['ID'].tolist()
     def sync_events(self):
         self.events = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_events').get_all_records())
     def add_event(self, event):
