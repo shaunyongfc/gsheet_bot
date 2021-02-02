@@ -26,8 +26,9 @@ def wotvsummary_process(spreadsheet):
                 list_roles.append(', '.join(list_units))
             else:
                 list_roles.append('')
+        list_roles.append(len(df_element))
         list_elements.append(list_roles)
-    df = pd.DataFrame.from_records(data=list_elements, index=ELEMENTS, columns=ROLES)
+    df = pd.DataFrame.from_records(data=list_elements, index=ELEMENTS, columns=ROLES + ['Sum'])
     return df
 
 def wotvsummary_update(spreadsheet, summarydf):

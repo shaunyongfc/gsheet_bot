@@ -164,7 +164,7 @@ class GeneralCommands(commands.Cog):
             guild_names = '\n'.join(f"- {a.name}" for a in guilds)
             await ctx.send(f"Connected on {len(guilds)} servers:\n{guild_names}")
 
-    @commands.command()
+    @commands.command(aliases = ['scadd'])
     async def scnew(self, ctx, *arg):
         if ctx.message.author.id == id_dict['Owner']:
         # New shortcut into worksheet

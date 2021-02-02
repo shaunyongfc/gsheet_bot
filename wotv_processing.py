@@ -6,16 +6,16 @@ class WotvUtils:
         self.dfwotv = dfwotv
         self.reconditions = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
         self.revalues = re.compile(r'-?\d+$') # regex for numbers
-        self.resymbols = re.compile(r'[^\w ]')
+        self.resymbols = re.compile(r'[^\w ]') # regex for symbols to be omitted for url
         self.dicts = {
             'mat_sets': self.mat_sets(self.dfwotv.eq),
             'eq_lists': {
-                'Type': ['t'],
-                'Acquisition': ['a'],
-                'Regular': ['n', 'common'],
-                'Rare': ['r'],
-                'Cryst': ['c', 'e', 'element'],
-                'Ore': ['o']
+                'Type': ('t',),
+                'Acquisition': ('a',),
+                'Regular': ('n', 'common'),
+                'Rare': ('r',),
+                'Cryst': ('c', 'e', 'element'),
+                'Ore': ('o',)
             },
             'eq_replace': (
                 ('staff', 'rod'),
@@ -113,7 +113,7 @@ class WotvUtils:
                 (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
                 (('event', 'raid', 'tower', 'box'), 'event'),
                 (('shop',), 'shop'),
-                (('update', 'change', 'patch', 'upgrade'), 'update')
+                (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
             )
         }
         self.help_general = (
@@ -465,6 +465,7 @@ class WotvUtils:
                     namestr += f" ({engstr})"
         return namestr
     def calc_url(self, category, namestr):
+        # generate urls for Bismark's WOTC-CALC
         calc_url = f"https://wotv-calc.com/JP/{category}/"
         urlstr = namestr.lower()
         urlstr = self.resymbols.sub('', urlstr)

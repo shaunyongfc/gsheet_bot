@@ -76,7 +76,7 @@ class WotvGeneral(commands.Cog):
                     eventend = eventstart
                 else:
                     eventend = datetime.strptime(arg[2], mydtformat)
-                if eventstart < eventend:
+                if eventstart <= eventend:
                     dfwotv.add_event(arg)
                     await ctx.send('Event added.')
                 else:
@@ -102,7 +102,7 @@ class WotvGeneral(commands.Cog):
             'up-coming': []
         }
         for _, row in dfwotv.events.iterrows(): # Goes through the dataframe
-            if datetime.now() < datetime.strptime(row['End'], mydtformat):
+            if datetime.now() <= datetime.strptime(row['End'], mydtformat):
                 eventprefix = ':calendar:'
                 for event_keywords, event_emote in wotv_utils.dicts['event_tuples']:
                     for event_keyword in event_keywords:
@@ -112,10 +112,10 @@ class WotvGeneral(commands.Cog):
                     if eventprefix != ':calendar:':
                         break
                 eventname = f"{eventprefix} {row['Event']}"
-                if datetime.now() < datetime.strptime(row['Start'], mydtformat):
-                    events['up-coming'].append((eventname, row['Start'], row['End']))
-                elif datetime.now() < datetime.strptime(row['End'], mydtformat):
+                if datetime.now() <= datetime.strptime(row['End'], mydtformat):
                     events['on-going'].append((eventname, row['Start'], row['End']))
+                elif datetime.now() <= datetime.strptime(row['Start'], mydtformat):
+                    events['up-coming'].append((eventname, row['Start'], row['End']))
         replystr = ''
         if dt_bool == 2:
             embed = discord.Embed(
