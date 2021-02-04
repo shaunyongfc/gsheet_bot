@@ -22,6 +22,7 @@ class Engel:
             ('Log', '')
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'AGI')
+        self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'AGI')
         self.spreadsheet = client.open("Engelbert Bot")
         self.dfdict = dict()
         self.dfsync()
@@ -30,13 +31,23 @@ class Engel:
         # sync online sheet into local data
         for sheetname, indexname in self.sheettuples:
              df = pd.DataFrame(self.spreadsheet.worksheet(sheetname).get_all_records())
-             df['row'] = df.index + 2
              if indexname != '':
                  df = df.set_index(indexname)
              self.dfdict[sheetname] = df
-    def sheetsync(self):
+    def sheetsync(self, logsync=0):
         # sync local data into online sheet
-        set_with_dataframe(self.spreadsheet.worksheet('User'), self.dfdict['User'].drop('row', axis=1), include_index=True)
+        set_with_dataframe(self.spreadsheet.worksheet('User'), self.dfdict['User'], include_index=True)
+        if logsync:
+            set_with_dataframe(self.spreadsheet.worksheet('Log'), self.dfdict['Log'], include_index=False)
+    def new_log(self, event, user, timestamp):
+        # write a new log
+        new_log = {
+            'Event': event,
+            'User': user,
+            'Timestamp': timestamp
+        }
+        self.spreadsheet.worksheet('Log').append_row(list(new_log.values()))
+        self.dfdict['Log'] = self.dfdict['Log'].append(new_log, ignore_index=True)
     def jobjp_init(self):
         # initialize job level - JP table
         basejp = 10
@@ -86,17 +97,27 @@ class Engel:
             else:
                 replystr = f"{damage} damage!"
                 jp_gain += (damage + defenddict['Level']) // 10 # bonus JP for damage
-                self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
-                if self.dfdict['User'].loc[defender, 'HP'] == 0:
+                kill = self.userdamage(defender, damage)
+                if kill:
                     jp_gain += defenddict['Level'] # bonus JP for killing
             if self.dfdict['User'].loc[defender, 'AP'] < defenddict['AP']:
                 self.dfdict['User'].loc[defender, 'AP'] = self.dfdict['User'].loc[defender, 'AP'] + 1
             replystr += (f"\nGained {jp_gain} JP!")
             self.dfdict['User'].loc[attacker, 'JP'] = self.dfdict['User'].loc[attacker, 'JP'] + jp_gain # gains JP
             self.sheetsync()
-        return replystr
-    def regenall(self):
+        print(replystr)
+    def userdamage(self, defender, damage):
+        # function for a user to take damage
+        self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
+        if self.dfdict['User'].loc[defender, 'HP'] == 0:
+            self.new_log('userdead', defender, datetime.strftime(datetime.now(), mydtformat))
+            return 1
+        else:
+            return 0
+    def userregenall(self, now=None):
         # hourly automatic regen for all
+        if now != None:
+            self.new_log('hourlyregen', '', datetime.strftime(now, mydtformat))
         for index, row in self.dfdict['User'].iterrows():
             userdict = self.calcstats(index)
             if row['AP'] < userdict['AP']: # if AP is not full
@@ -111,10 +132,31 @@ class Engel:
             # gains JP passively too
             self.dfdict['User'].loc[index, 'JP'] = self.dfdict['User'].loc[index, 'JP'] + 1 + userdict['Level'] // 10
         self.sheetsync()
-    def hourlyregen(self, now):
-        self.regenall()
-        self.spreadsheet.worksheet('Log').append_row('hourlyregen', [datetime.strftime(now)])
-        self.dfdict['Log'] = pd.DataFrame(self.spreadsheet.worksheet('Log').get_all_records())
+    def userrevive(self, index):
+        # revives dead user and logs it
+        user = self.dfdict['Log'].loc[index, 'User']
+        self.dfdict['User'].loc[user, 'HP'] = self.calcstats(user)['HP']
+        print(f"{user} revived!")
+        self.dfdict['Log'].loc[index, 'Event'] = 'userrevived'
+        self.dfdict['Log'].loc[index, 'Timestamp'] = datetime.strftime(datetime.now(), mydtformat)
+        self.sheetsync(logsync=1)
+    def infouser(self, row):
+        embed = discord.Embed()
+        embed.title = row.name
+        disc_list = []
+        disc_list.append(f"Base: {row['Base']}")
+        userdict = self.calcstats(row.name)
+        disc_list.append(f"HP: {row['HP']}/{userdict['HP']}")
+        disc_list.append(f"AP: {row['AP']}/{userdict['AP']}")
+        disc_list.append(f"JP: {row['JP']}")
+        disc_list.append(f"Total Levels: {userdict['Level']}")
+        embed.description = '\n'.join(disc_list)
+        field_list = []
+        for stat in self.statlist2:
+            field_list.append(f"{stat}: {userdict[stat]}")
+        embed.add_field(name='Stats', value='\n'.join(field_list))
+        return embed
+
 
 engel = Engel()
 mydtformat = '%Y/%m/%d %H:%M'
@@ -122,17 +164,79 @@ mydtformat = '%Y/%m/%d %H:%M'
 class Engelbert(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        #self.hourlyregen.start()
+        self.timercheck.start()
 
     @tasks.loop(minutes=1.0)
-    async def hourlyregen(self):
+    async def timercheck(self):
+        # check timer every minute
         now = datetime.now()
         df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'hourlyregen']
-        thres = datetime.strptime(df[-1]['Timestamp'], mydtformat) + timedelta(hours=1)
+        thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(hours=1)
         if now.minute == 0 or now > thres:
-            engel.hourlyregen()
+            engel.userregenall(now)
+        df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userdead']
+        thres = now  - timedelta(hours=5)
+        for index, row in df.iterrows():
+            thres = datetime.strptime(row['Timestamp'], mydtformat) + timedelta(hours=6)
+            if now > thres:
+                engel.userrevive(index)
 
     @commands.command(aliases=['engel', 'pet', 'tamagotchi', 'tama'])
     async def engelbert(self, ctx, *arg):
+        # main function
         if len(arg) == 0:
-            pass
+            await ctx.send('Nice try 1.') # to be implemented with proper help function
+        else:
+            if arg[0] == 'info':
+                if len(arg) == 1:
+                    # own info
+                    try:
+                        row = engel.dfdict['User'].loc[ctx.author.id]
+                        await ctx.send(engel.infouser(row))
+                    except KeyError:
+                        await ctx.send('Nice try 2.') # to be implemented with proper starter stuff
+                else:
+                    try:
+                        # to be implemented with finding member
+                        row = engel.dfdict['User'].loc[arg[1]]
+                        await ctx.send(embed = engel.infouser(row))
+                    except KeyError:
+                        await ctx.send('Nice try 3.') # to be implemented with proper suggestion
+            elif arg[0] == 'base':
+                if len(arg) == 1:
+                    # list of bases
+                    pass
+                else:
+                    # various operations
+                    # find base and info
+                    # change base
+                    # start of tamagotchi
+                    pass
+            elif arg[0] == 'job':
+                if len(arg) == 1:
+                    # list of jobs
+                    pass
+                else:
+                    # various operations
+                    # find job and info
+                    # level job
+                    # reset job
+                    pass
+            elif arg[0] == 'attack':
+                if len(arg) == 1:
+                    # ???
+                    pass
+                else:
+                    # find member of said name to attack
+                    pass
+            elif arg[0] == 'raid':
+                # to be implemented
+                if len(arg) == 1:
+                    # available raids
+                    pass
+                else:
+                    # find raid and info
+                    # attack raid
+                    pass
+            else:
+                await ctx.send('Nice try.') # to be implemented with proper help function
