@@ -278,10 +278,10 @@ class WotvEquipment(commands.Cog):
 
     @commands.command(aliases=['we', 'eq'])
     async def wotveq(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help eq`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )
@@ -395,10 +395,10 @@ class WotvEquipment(commands.Cog):
 
     @commands.command(aliases=['wes', 'eqs', 'es'])
     async def wotveqsearch(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help eq`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )
@@ -436,10 +436,10 @@ class WotvVc(commands.Cog):
 
     @commands.command(aliases=['wvs', 'vcs', 'vs'])
     async def wotvvcsearch(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help vc`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )
@@ -523,10 +523,10 @@ class WotvVc(commands.Cog):
 
     @commands.command(aliases=['wve', 'vce', 've'])
     async def wotvvcelement(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help vc`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed()
         # Preliminary code for global implementation
         df = dfwotv.vc
@@ -577,10 +577,10 @@ class WotvVc(commands.Cog):
 
     @commands.command(aliases=['wv', 'vc'])
     async def wotvvc(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help vc`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )
@@ -636,10 +636,10 @@ class WotvEsper(commands.Cog):
 
     @commands.command(aliases=['esper'])
     async def wotvesper(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:
             await ctx.send('Try `=help esper`.')
             return
-        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )

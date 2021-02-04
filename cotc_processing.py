@@ -1,4 +1,15 @@
-# from gsheet_handler import dfcotc
+import pandas as pd
+from gsheet_handler import myspreadsheet
+
+class DfHandlerCotc():
+    # Object handling COTC sheets related operations
+    def __init__(self):
+        self.sync()
+    def sync(self):
+        df_cotc = pd.DataFrame(myspreadsheet.worksheet('COTC_owned').get_all_records())
+        self.cotc = df_cotc.set_index('トラベラー')
+
+dfcotc = DfHandlerCotc()
 
 def get_cotc_emotes():
     cotc_emotes_raw = {

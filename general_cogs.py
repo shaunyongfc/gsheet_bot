@@ -122,6 +122,10 @@ class TestCommands(commands.Cog):
         embed.description = 'abcd'
         await ctx.send(embed = embed)
 
+    @commands.command()
+    async def testcommand(self, ctx, member: discord.Member):
+        await ctx.send(member.id)
+
 class GeneralCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

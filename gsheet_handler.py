@@ -62,13 +62,3 @@ class DfHandlerGen():
         self.sync()
 
 dfgen = DfHandlerGen()
-
-class DfHandlerCotc():
-    # Object handling COTC sheets related operations
-    def __init__(self):
-        self.sync()
-    def sync(self):
-        df_cotc = pd.DataFrame(myspreadsheet.worksheet('COTC_owned').get_all_records())
-        self.cotc = df_cotc.set_index('トラベラー')
-
-dfcotc = DfHandlerCotc()

@@ -1,8 +1,7 @@
 import discord
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import dfcotc
-from cotc_processing import cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
+from cotc_processing import dfcotc, cotc_dicts, get_cotc_label, get_sorted_df, get_support_df
 
 class CotcGeneral(commands.Cog):
     def __init__(self, bot):

@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 from general_cogs import GeneralCommands, TestCommands
 from wotv_cogs import WotvGeneral, WotvEquipment, WotvVc, WotvEsper
-from cotc_cogs import CotcGeneral
+#from cotc_cogs import CotcGeneral
+from engelbert import Engelbert
 
 bot = commands.Bot(command_prefix='+')
 
@@ -17,7 +18,8 @@ bot.add_cog(WotvGeneral(bot))
 bot.add_cog(WotvEquipment(bot))
 bot.add_cog(WotvVc(bot))
 bot.add_cog(WotvEsper(bot))
-bot.add_cog(CotcGeneral(bot))
+#bot.add_cog(CotcGeneral(bot))
+bot.add_cog(Engelbert(bot))
 
 with open(f"token.txt") as fp:
     token = fp.read().rstrip('\n')
