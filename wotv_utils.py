@@ -510,7 +510,9 @@ class WotvUtils:
             elif len(df_aliases) == 1:
                 return 1, df_aliases.iloc[0]
             else:
-                suggestion_list = df_name.index.tolist() + df_english['English'].tolist()
+                suggestion_list = df_name.index.tolist()
+                if len(df_english) > 0:
+                    suggestion_list = suggestion_list + df_english['English'].tolist()
                 for alias_list in df_aliases['Aliases'].tolist():
                     for suggestion in alias_list.split(' / '):
                         if suggestion != '':

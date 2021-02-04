@@ -1,12 +1,13 @@
 import discord
 import pandas as pd
 from discord.ext import commands
-from gsheet_handler import dfwotv
-from wotv_processing import WotvUtils
-from general_cogs import logs_embed
+from gsheet_handler import DfHandlerWotv
+from wotv_utils import WotvUtils
+from general_utils import logs_embed
 from id_dict import id_dict
 from datetime import datetime
 
+dfwotv = DfHandlerWotv()
 wotv_utils = WotvUtils(dfwotv, id_dict)
 mydtformat = '%Y/%m/%d %H:%M'
 

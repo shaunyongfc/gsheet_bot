@@ -49,8 +49,6 @@ class DfHandlerWotv():
         ramadaspreadsheet.worksheet('WOTV_events').append_row(event)
         self.sync_events()
 
-dfwotv = DfHandlerWotv()
-
 class DfHandlerGen():
     # Object handling general sheets related operations
     def __init__(self):
@@ -60,5 +58,3 @@ class DfHandlerGen():
     def add_shortcut(self, *arg):
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
         self.sync()
-
-dfgen = DfHandlerGen()
