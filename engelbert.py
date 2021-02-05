@@ -140,21 +140,53 @@ class Engel:
         self.dfdict['Log'].loc[index, 'Event'] = 'userrevived'
         self.dfdict['Log'].loc[index, 'Timestamp'] = datetime.strftime(datetime.now(), mydtformat)
         self.sheetsync(logsync=1)
+    ############################
+    # discord embed generators #
+    ############################
+    def listbase(self):
+        # generate embed of list of available bases
+        embed = discord.Embed()
+        embed.title = 'List of Bases'
+        df = self.dfdict['Base'][self.dfdict['Base']['Hidden'] == '']
+        job_list = []
+        job_count = 0
+        for index, row in df.iterrows():
+            disc_list = []
+            for stat in self.statlist2:
+                disc_list.append(f"{stat}: {row[stat]}")
+            disc_list.append(f"Starting Job: {row['Job']}")
+            job_list.append(f"**{index}**: {' | '.join(disc_list)}")
+            job_count += 1
+            if job_count % 10 == 0:
+                if job_count // 10 > 0:
+                    embed.add_field(name='Cont.', value='\n'.join(job_list))
+                else:
+                    embed.description = '\n'.join(job_list)
+                job_list = []
+        if len(job_list) > 0:
+            if job_count // 10 > 0:
+                embed.add_field(name='Cont.', value='\n'.join(job_list))
+            else:
+                embed.description = '\n'.join(job_list)
+        return embed
     def infouser(self, row):
+        # generate info embed of specific user
         embed = discord.Embed()
         embed.title = row.name
         disc_list = []
-        disc_list.append(f"Base: {row['Base']}")
+        disc_list.append(f"Base: {row['Base']} (+{userdict['Level']})")
         userdict = self.calcstats(row.name)
         disc_list.append(f"HP: {row['HP']}/{userdict['HP']}")
         disc_list.append(f"AP: {row['AP']}/{userdict['AP']}")
         disc_list.append(f"JP: {row['JP']}")
-        disc_list.append(f"Total Levels: {userdict['Level']}")
         embed.description = '\n'.join(disc_list)
         field_list = []
         for stat in self.statlist2:
             field_list.append(f"{stat}: {userdict[stat]}")
         embed.add_field(name='Stats', value='\n'.join(field_list))
+        thumbnail_url = self.dfdict['Base'].loc[row['Base'], 'Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
         return embed
 
 
@@ -205,7 +237,7 @@ class Engelbert(commands.Cog):
             elif arg[0] == 'base':
                 if len(arg) == 1:
                     # list of bases
-                    pass
+                    await ctx.send(embed = engel.listbase())
                 else:
                     # various operations
                     # find base and info

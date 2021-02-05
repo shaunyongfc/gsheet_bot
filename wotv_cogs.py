@@ -113,10 +113,10 @@ class WotvGeneral(commands.Cog):
                     if eventprefix != ':calendar:':
                         break
                 eventname = f"{eventprefix} {row['Event']}"
-                if datetime.now() <= datetime.strptime(row['End'], mydtformat):
-                    events['on-going'].append((eventname, row['Start'], row['End']))
-                elif datetime.now() <= datetime.strptime(row['Start'], mydtformat):
+                if datetime.now() < datetime.strptime(row['Start'], mydtformat):
                     events['up-coming'].append((eventname, row['Start'], row['End']))
+                elif datetime.now() <= datetime.strptime(row['End'], mydtformat):
+                    events['on-going'].append((eventname, row['Start'], row['End']))
         replystr = ''
         if dt_bool == 2:
             embed = discord.Embed(
