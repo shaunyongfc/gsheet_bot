@@ -47,13 +47,15 @@ class Engel:
         for jobid in dfjob.index:
             if jobid not in self.dfdict['User'].columns:
                 self.dfdict['User'][jobid] = ''
-    def sheetsync(self, logsync=0):
+    def sheetsync(self, logsync=0, raidsync=0):
         # sync local data into online sheet
         df = self.dfdict['User'].copy()
         df.index = df.index.astype(str)
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
         if logsync:
             set_with_dataframe(self.spreadsheet.worksheet('Log'), self.dfdict['Log'], include_index=False)
+        if raidsync:
+            set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
     def new_log(self, event, userid, timestamp):
         # write a new log
         new_log = {
@@ -94,6 +96,15 @@ class Engel:
                     level += self.dfdict['User'].loc[userid, index]
         userdict['Level'] = level
         return userdict
+    def calcstatsraid(self, raid):
+        # calculate raid stats given raid name
+        raiddict = dict()
+        base = self.dfdict['Raid'].loc[raid, 'Base']
+        jobid = self.dfdict['Base'].loc[base, 'Starter']
+        jobrow = self.dfdict['Job'].loc[jobid]
+        for statname in self.statlist:
+            raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * self.dfdict['Raid'].loc[raid, 'Level']
+        return raiddict
     def userattack(self, attacker, defender):
         # perform an attack between users
         if self.dfdict['User'].loc[attacker, 'HP'] == 0:
@@ -113,10 +124,10 @@ class Engel:
             damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
             hitrate = self.calchitrate(defenddict['AGI'] - attackdict['AGI'])
             if hitrate < random.random():
-                result_hit = 0
+                hit = 0
                 kill = 0
             else:
-                result_hit = 1
+                hit = 1
                 jp_gain += (damage + defenddict['Level']) // 5 # bonus JP for damage
                 kill = self.userdamage(defender, damage)
                 if kill:
@@ -125,7 +136,7 @@ class Engel:
             self.dfdict['User'].loc[defender, 'JP'] = self.dfdict['User'].loc[defender, 'JP'] + defender_jp_gain
             self.dfdict['User'].loc[attacker, 'JP'] = self.dfdict['User'].loc[attacker, 'JP'] + jp_gain # gains JP
             self.sheetsync()
-            return (1, damage, hitrate, result_hit, kill, jp_gain, defender_jp_gain)
+            return (1, damage, hitrate, hit, kill, jp_gain, defender_jp_gain)
     def userdamage(self, defender, damage):
         # function for a user to take damage
         self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
@@ -235,8 +246,53 @@ class Engel:
         self.new_log('userbase', user.id, datetime.strftime(datetime.now(), mydtformat))
         self.sheetsync()
         return replystr
+    def raiddamage(self, raid, damage):
+        # function for a raid to take damage
+        self.dfdict['Raid'].loc[raid, 'HP'] = int(max(self.dfdict['Raid'].loc[raid, 'HP'] - damage, 0))
+        if self.dfdict['Raid'].loc[raid, 'HP'] == 0:
+            # levels up the raid and fully recovers
+            self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+            self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstatsraid(raid)['HP']
+            return 1
+        else:
+            return 0
     def raidattack(self, user, raid):
-        pass
+        # perform an attack between an user and a raid
+        if self.dfdict['User'].loc[user, 'HP'] == 0:
+            return (0, 'You are dead!')
+        elif self.dfdict['User'].loc[user, 'AP'] < self.attack_apcost:
+            return (0, 'Not enough AP!')
+        else:
+            # get their status sheets
+            userdict = self.calcstats(user)
+            raiddict = self.calcstatsraid(raid)
+            jp_gain = 3 # base JP gain
+            # consumes AP
+            self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
+            # pick higher potential damage
+            damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
+            hitrate = self.calchitrate(raiddict['AGI'] - userdict['AGI'])
+            if hitrate < random.random():
+                hit = 0
+                kill = 0
+            else:
+                hit = 1
+                jp_gain += (damage + self.dfdict['Raid'].loc[raid, 'Level']) // 3 # bonus JP for damage
+                kill = self.raiddamage(raid, damage)
+                if kill:
+                    jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] # bonus JP for killing
+            raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
+            raid_hitrate = self.calchitrate(userdict['AGI'] - raiddict['AGI'])
+            if raid_hitrate < random.random():
+                raid_hit = 0
+                raid_kill = 0
+            else:
+                raid_hit = 1
+                raid_kill = self.userdamage(user, raid_damage)
+            self.dfdict['User'].loc[user, 'JP'] = self.dfdict['User'].loc[user, 'JP'] + jp_gain # gains JP
+            self.sheetsync(raidsync=1)
+            return (1, damage, hitrate, hit, kill, jp_gain,
+                    raid_damage, raid_hitrate, raid_hit, raid_kill)
     ############################
     # discord embed generators #
     ############################
@@ -261,10 +317,31 @@ class Engel:
             base_list.append(f"**{index}**\n - {' | '.join(desc_list)}")
             base_count += 1
             if base_count % 10 == 0:
-                embed.add_field(name='-', value='\n'.join(job_list))
+                embed.add_field(name='-', value='\n'.join(base_list))
                 base_list = []
         if len(base_list) > 0:
             embed.add_field(name='-', value='\n'.join(base_list))
+        return embed
+    def listraid(self):
+        # generate embed of list of available bases
+        embed = discord.Embed()
+        embed.title = 'List of Bases'
+        desc = (
+            'A raid is a boss to fight.',
+            'Raids will counter attack when you attack them unlike other users.'
+        )
+        embed.description = '\n'.join(desc)
+        df = self.dfdict['Raid']
+        raid_list = []
+        raid_count = 0
+        for index, row in df.iterrows():
+            raid_list.append(f"**{index}** - Level `{row['Level']}`")
+            raid_count += 1
+            if raid_count % 10 == 0:
+                embed.add_field(name='-', value='\n'.join(raid_list))
+                raid_list = []
+        if len(raid_list) > 0:
+            embed.add_field(name='-', value='\n'.join(raid_list))
         return embed
     def listjob(self):
         # generate embed of list of available jobs
@@ -324,7 +401,7 @@ class Engel:
         # generate info embed of specific user
         embed = discord.Embed()
         row = self.dfdict['User'].loc[user.id]
-        embed.title = user.name # convert ID into actual name...
+        embed.title = user.name
         desc_list = []
         userdict = self.calcstats(row.name)
         desc_list.append(f"Base: {row['Base']} (+{userdict['Level']})")
@@ -340,6 +417,24 @@ class Engel:
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
         return embed
+    def inforaid(self, raid):
+        # generate info embed of specific raid
+        embed = discord.Embed()
+        row = self.dfdict['Raid'].loc[raid]
+        embed.title = raid
+        desc_list = []
+        raiddict = self.calcstatsraid(row.name)
+        desc_list.append(f"Raid Level: {row['Level']}")
+        desc_list.append(f"HP: {row['HP']}/{raiddict['HP']}")
+        embed.description = '\n'.join(desc_list)
+        desc_list = []
+        for stat in self.statlist2:
+            desc_list.append(f"{stat}: {raiddict[stat]}")
+        embed.add_field(name='Stats', value='\n'.join(desc_list))
+        thumbnail_url = self.dfdict['Base'].loc[row['Base'], 'Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
+        return embed
     def infoattack(self, attacker, defender):
         # generate result embed of an attack
         result_tup = self.userattack(attacker.id, defender.id)
@@ -348,11 +443,11 @@ class Engel:
             embed.title = 'Attack Failed'
             embed.description = result_tup[1]
         else:
-            _, damage, hitrate, result_hit, kill, jp_gain, defender_jp_gain = result_tup
+            _, damage, hitrate, hit, kill, jp_gain, defender_jp_gain = result_tup
             desc_list = []
             desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
-            if result_hit:
-                desc_list.append(f"You successfully attacked.") # convert ID into actual name...
+            if hit:
+                desc_list.append(f"You successfully attacked.")
             else:
                 desc_list.append(f"You missed.")
             if kill:
@@ -365,6 +460,44 @@ class Engel:
                 desc_list.append(f"AP: {self.dfdict['User'].loc[user.id, 'AP']}")
                 desc_list.append(f"JP: {self.dfdict['User'].loc[user.id, 'JP']}")
                 embed.add_field(name = user.name, value = '\n'.join(desc_list))
+        return embed
+    def infoattackraid(self, user, raid):
+        # generate result embed of an attack
+        result_tup = self.raidattack(user.id, raid)
+        embed = discord.Embed()
+        if result_tup[0] == 0:
+            embed.title = 'Attack Failed'
+            embed.description = result_tup[1]
+        else:
+            _, damage, hitrate, hit, kill, jp_gain, raid_damage, raid_hitrate, raid_hit, raid_kill = result_tup
+            desc_list = []
+            desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
+            if hit:
+                desc_list.append(f"You successfully attacked.")
+            else:
+                desc_list.append(f"You missed.")
+            if kill:
+                desc_list.append(f"{raid} is KO-ed. A new level has now been spawned.")
+            desc_list.append(f"\nYou gained {jp_gain} JP.")
+            embed.description = '\n'.join(desc_list)
+            desc_list = []
+            desc_list.append(f"\n*Info: {raid} has {raid_hitrate * 100:.0f}% of doing {raid_damage} damage to you.*")
+            if raid_hit:
+                desc_list.append(f"{raid} successfully countered.")
+            else:
+                desc_list.append(f"{raid} missed.")
+            if raid_kill:
+                desc_list.append(f"You are KO-ed.")
+            embed.add_field(name = f"{raid} Counter Attack", value = '\n'.join(desc_list), inline = False)
+            desc_list = []
+            desc_list.append(f"HP: {self.dfdict['User'].loc[user.id, 'HP']}")
+            desc_list.append(f"AP: {self.dfdict['User'].loc[user.id, 'AP']}")
+            desc_list.append(f"JP: {self.dfdict['User'].loc[user.id, 'JP']}")
+            embed.add_field(name = user.name, value = '\n'.join(desc_list))
+            desc_list = []
+            desc_list.append(f"Level: {self.dfdict['Raid'].loc[raid, 'Level']}")
+            desc_list.append(f"HP: {self.dfdict['Raid'].loc[raid, 'HP']}")
+            embed.add_field(name = raid, value = '\n'.join(desc_list))
         return embed
 
 engel = Engel()
@@ -456,15 +589,29 @@ class Engelbert(commands.Cog):
                     if defender.id in engel.dfdict['User'].index:
                         await ctx.send(embed = engel.infoattack(user, defender))
                     else:
-                        await ctx.send('Nice try 7.') # to be implemented with proper starter stuff
+                        await ctx.send('Nice try 7.') # to be implemented with proper suggestion
             elif arg[0] == 'raid':
                 # to be implemented
                 if len(arg) == 1:
                     # available raids
-                    pass
+                    await ctx.send(embed = engel.listraid())
+                elif len(arg) > 2:
+                    if arg[1] == 'info':
+                        raid = ' '.join(arg[2:])
+                        if raid in engel.dfdict['Raid'].index:
+                            await ctx.send(embed = engel.inforaid(' '.join(arg[2:])))
+                        else:
+                            await ctx.send('Nice try 7.5') # to be implemented with proper suggestion
+                    elif arg[1] == 'attack':
+                        user = ctx.author
+                        raid = ' '.join(arg[2:])
+                        if raid in engel.dfdict['Raid'].index:
+                            await ctx.send(embed = engel.infoattackraid(user, raid))
+                        else:
+                            await ctx.send('Nice try 8.') # to be implemented with proper suggestion
+                    else:
+                        await ctx.send('Nice try 9.') # to be implemented with proper suggestion
                 else:
-                    # find raid and info
-                    # attack raid
-                    pass
+                    await ctx.send('Nice try 10.') # to be implemented with proper suggestion
             else:
                 await ctx.send('Nice try.') # to be implemented with proper help function
