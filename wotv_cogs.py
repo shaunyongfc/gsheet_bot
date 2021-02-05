@@ -10,6 +10,7 @@ from datetime import datetime
 dfwotv = DfHandlerWotv()
 wotv_utils = WotvUtils(dfwotv, id_dict)
 mydtformat = '%Y/%m/%d %H:%M'
+printdtformat = '%b %d, %H:%M'
 
 class WotvGeneral(commands.Cog):
     def __init__(self, bot):
@@ -75,6 +76,7 @@ class WotvGeneral(commands.Cog):
                 eventstart = datetime.strptime(arg[1], mydtformat)
                 if len(arg) == 2:
                     eventend = eventstart
+                    arg = (*arg, arg[1])
                 else:
                     eventend = datetime.strptime(arg[2], mydtformat)
                 if eventstart <= eventend:
@@ -126,10 +128,16 @@ class WotvGeneral(commands.Cog):
             for k, v in events.items():
                 if len(v) == 0:
                     continue
-                transpose_list = list(map(list, zip(*v)))
-                embed.add_field(name=k.capitalize(), value='\n'.join(transpose_list[0]))
-                embed.add_field(name='Start', value='\n'.join(transpose_list[1]))
-                embed.add_field(name='End', value='\n'.join(transpose_list[2]))
+                namelist = []
+                startlist = []
+                endlist = []
+                for eventname, eventstart, eventend in v:
+                    namelist.append(eventname)
+                    startlist.append(datetime.strftime(datetime.strptime(eventstart, mydtformat), printdtformat))
+                    endlist.append(datetime.strftime(datetime.strptime(eventend, mydtformat), printdtformat))
+                embed.add_field(name=k.capitalize(), value='\n'.join(namelist))
+                embed.add_field(name='Start', value='\n'.join(startlist))
+                embed.add_field(name='End', value='\n'.join(endlist))
             await ctx.send(embed = embed)
         else:
             for k, v in events.items():
@@ -141,7 +149,9 @@ class WotvGeneral(commands.Cog):
                     replystr += f"**{k.capitalize()} Events**"
                     for event in v:
                         if dt_bool == 1:
-                            replystr += f"\n{event[0]} - `{event[1]}` to `{event[2]}`"
+                            eventstart = datetime.strftime(datetime.strptime(event[1], mydtformat), printdtformat)
+                            eventend = datetime.strftime(datetime.strptime(event[2], mydtformat), printdtformat)
+                            replystr += f"\n{event[0]} - `{eventstart}` to `{eventend}`"
                         else:
                             replystr += f"\n{event[0]} -"
                             if k == 'on-going':
