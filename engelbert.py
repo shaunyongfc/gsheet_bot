@@ -142,6 +142,7 @@ class Engel:
         df.index = df.index.astype(str)
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
         if logsync:
+            df = self.dfdict['Log'].copy()
             df['User'] = df['User'].astype(str)
             set_with_dataframe(self.spreadsheet.worksheet('Log'), df, include_index=False)
         if raidsync:
