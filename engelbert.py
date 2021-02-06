@@ -74,13 +74,14 @@ class Engel:
             '- You can battle another player by `=char attack (user ping)`.',
             '- Check out `=charhelp raid` for info about raid.'
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger) with ATK/MAG of attacker and DEF/SPR of defender.',
-            '- There is a chance of `(Defender AGI - Attacker AGI) * 5%` to miss',
+            '- Miss rate is scaled by `AGI diff = (Defender AGI - Attacker AGI)`.',
+            '- For first 10 AGI diff, miss rate increases by 4% per point. The increase rate reduces by 1% every 10 AGI diff until miss rate 100% at 40 AGI diff.'
         )
         self.manual['Base'] = (
             'A base determines your base stats and your info picture where available. '
             'Your first base also gives you a free job level. '
-            'Your base can be reset every 24 hours.'
-            'Element and/or other features may be implemented in future.'
+            'Your base can be reset every 24 hours. '
+            'Element and/or other features may be implemented in future. '
         )
         self.indepth['Base'] = (
             'Type `=char base` to find list of bases and their bases stats.',
@@ -91,7 +92,7 @@ class Engel:
             'Leveling a job costs JP and raises your stats according to the job. '
             'Higher levels require more JP to level. '
             'Job levels can be reset into JP every 24 hours. '
-            'Skills or other features may be implemented in future.'
+            'Skills or other features may be implemented in future. '
         )
         self.indepth['Job'] = (
             'Type `=char job` to find list of jobs and their growth rate.',
@@ -110,6 +111,15 @@ class Engel:
             'Type `=char raid` to find list of available raids and their levels.',
             'Type `=char raid info (raid name)` (e.g. `=char raid info ifrit`) to see the stats etc of the raid.',
             'Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
+        )
+        self.changelog = (
+            ('7th February 2021', (
+                'Raid HP significantly reduced.',
+                'Evasion rate nerfed.'
+            )),
+            ('6th February 2021', (
+                '(beta) Launch!',
+            ))
         )
         self.spreadsheet = client.open(id_dict['Engel Sheet'])
         self.dfdict = dict()
@@ -178,10 +188,19 @@ class Engel:
             self.jobjpsum[i + 1] = jpsum
     def calchitrate(self, avoid):
         # calculate hit rate from agi difference
-        if avoid < 1:
+        if avoid <= 0:
             return 1
+        elif avoid >= 40:
+            return 0
         else:
-            return max(1 - avoid * 0.05, 0)
+            hitrate = 1 - min(avoid, 10) * 0.04
+            if avoid > 10:
+                hitrate = hitrate - min(avoid - 10, 10) * 0.03
+            if avoid > 20:
+                hitrate = hitrate - min(avoid - 20, 10) * 0.02
+            if avoid > 30:
+                hitrate = hitrate - (avoid - 30) * 0.01
+            return hitrate
     def calcstats(self, userid):
         # calculate stats given user id
         userdict = dict()
@@ -415,6 +434,20 @@ class Engel:
                 embed.add_field(name = k, value = v, inline = False)
         embed.set_thumbnail(url = 'https://caelum.s-ul.eu/3MgPuHkX.png')
         return embed
+    def infochangelog(self, num=3):
+        # generate changelog
+        embed = discord.Embed()
+        embed.title = 'Engelbert Changelog'
+        try:
+            entry_num = int(num)
+        except IndexError:
+            entry_num = 3
+        for i, tup in enumerate(self.changelog):
+            if i == entry_num:
+                break
+            embed.add_field(name=tup[0], value = '\n'.join(tup[1]), inline=False)
+        embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
+        return embed
     def listbase(self):
         # generate embed of list of available bases
         embed = discord.Embed()
@@ -445,7 +478,7 @@ class Engel:
         raid_list = []
         raid_count = 0
         for index, row in df.iterrows():
-            raid_list.append(f"**{index}** - Level `{row['Level']}`")
+            raid_list.append(f"**{index}** - Level `{row['Level']}` | HP `{row['HP']}`")
             raid_count += 1
             if raid_count % 10 == 0:
                 embed.add_field(name='-', value='\n'.join(raid_list))
@@ -628,8 +661,11 @@ class Engel:
         else:
             if arg[0] == 'info':
                 if len(arg) == 1:
-                    # own info
-                    return self.infouser(user)
+                    if user.id in self.dfdict['User'].index:
+                        # own info
+                        return self.infouser(user)
+                    else:
+                        return discord.Embed(description = 'Choose a base first with `=char base start (base name)`. Try `=charhelp base`.')
                 else:
                     try:
                         member = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
@@ -650,7 +686,7 @@ class Engel:
                         base = self.find_index(' '.join(arg[2:]), 'Base')
                         if base == 'NOTFOUND':
                             return discord.Embed(description = 'Base not found. Try checking `=char base`.')
-                            return self.userbase(user, base)
+                        return discord.Embed(description = self.userbase(user, base))
                     else:
                         # find base and info (not needed atm)
                         return discord.Embed(description = 'Try `=charhelp base`.')
@@ -713,6 +749,11 @@ class Engel:
                     return self.helpmanual(arg[1])
                 else:
                     return self.helpmanual()
+            elif arg[0] in ('changelog', 'version'):
+                if len(arg) > 1:
+                    return self.infochangelog(arg[1])
+                else:
+                    return self.infochangelog()
             else:
                 return self.helpmanual()
 
