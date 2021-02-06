@@ -71,6 +71,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('6th February 2021', (
+                    '(beta) Engelbert Tamagotchi - fluff tamagotchi function `=char help` or `=tamagotchi help` or `=engel help`',
+                )),
                 ('31st January 2021', (
                     'Events - `=events` to check on-going or up-coming events. (`=help events` for more info)',
                 )),
@@ -140,7 +143,9 @@ class WotvUtils:
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
-            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.'))
+            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.')),
+            ('Engelbert Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
+            'Enter `=char help` or `=tamagotchi help` or `=engel help` for more info.'))
         )
         self.help_events = (
             ('Events', (

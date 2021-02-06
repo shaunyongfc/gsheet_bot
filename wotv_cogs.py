@@ -57,10 +57,13 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_eq
             elif arg[0].lower() == 'param':
                 help_tuples = wotv_utils.help_param
-            elif arg[0].lower() in ['stars', 'ramada']:
+            elif arg[0].lower() in ('stars', 'ramada'):
                 help_tuples = wotv_utils.help_ramada
             elif arg[0].lower() == 'events':
                 help_tuples = wotv_utils.help_events
+            elif arg[0].lower() in ('engel', 'char', 'tamagotchi'):
+                await ctx.send(f"Please enter `={arg[0]} help` instead.")
+                return
         for a, b in help_tuples:
             embed.add_field(name=a, value='\n'.join(b), inline=False)
         await ctx.send(embed = embed)

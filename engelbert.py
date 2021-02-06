@@ -439,7 +439,7 @@ class Engel:
     def listraid(self):
         # generate embed of list of available bases
         embed = discord.Embed()
-        embed.title = 'List of Bases'
+        embed.title = 'List of Raids'
         embed.description = self.manual['Raid'] + '\n`=charhelp raid` for more info.'
         df = self.dfdict['Raid']
         raid_list = []
@@ -680,8 +680,7 @@ class Engel:
                         return discord.Embed(description = 'Try `=charhelp job`.')
             elif arg[0] == 'attack':
                 if len(arg) == 1:
-                    # to be implemented with proper suggestion
-                    return self.infouser(user)
+                    return discord.Embed(description = 'Try `=charhelp char`.')
                 else:
                     # find member of said name to attack
                     defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
@@ -753,6 +752,7 @@ class Engelbert(commands.Cog):
         if ctx.message.author.id == id_dict['Owner']:
             user = await self.bot.fetch_user(int(arg[0]))
             embed = await engel.executecommand(user, ctx, *arg[1:])
+            embed.set_footer(text='Still in beta phase. Prone to bugs...')
             await ctx.send(embed = embed)
             await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -762,6 +762,7 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, 'help', *arg)
+        embed.set_footer(text='Still in beta phase. Prone to bugs...')
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -771,5 +772,6 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, *arg)
+        embed.set_footer(text='Still in beta phase. Prone to bugs...')
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
