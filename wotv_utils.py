@@ -72,7 +72,7 @@ class WotvUtils:
             ),
             'changelog': (
                 ('31st January 2021', (
-                    '(Beta) Events - `=events` to check on-going or up-coming events. (`=help events` for more info)',
+                    'Events - `=events` to check on-going or up-coming events. (`=help events` for more info)',
                 )),
                 ('27th January 2021', (
                     'Parameter calculation - `=param` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance. (`=help param` for more info)',
@@ -143,7 +143,7 @@ class WotvUtils:
             'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.'))
         )
         self.help_events = (
-            ('Events (Beta)', (
+            ('Events', (
                 '** =events**',
                 'Returns list of up-coming / on-going events (subject to having been keyed...).'
             )),
