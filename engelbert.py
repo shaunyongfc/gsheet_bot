@@ -65,6 +65,27 @@ class Engel:
         }
         self.spreadsheet.worksheet('Log').append_row([str(v) for v in new_log.values()])
         self.dfdict['Log'] = self.dfdict['Log'].append(new_log, ignore_index=True)
+    def find_index(self, query, dfname):
+        df = self.dfdict[dfname]
+        if dfname == 'Job':
+            indices = df['Job']
+            indexer = lambda x: x['Job']
+        else:
+            indices = df.index
+            indexer = lambda x: x.name
+        if query in indices:
+            return query
+        else:
+            candidates = []
+            for _, row in df.iterrows():
+                if query.lower() == indexer(row).lower():
+                    return indexer(row)
+                elif query.lower() in indexer(row).lower():
+                    candidates.append(indexer(row))
+            if len(candidates) == 1:
+                return candidates[0]
+            else:
+                return 'NOTFOUND'
     def jobjp_init(self):
         # initialize job level - JP table
         basejp = 10
@@ -74,7 +95,7 @@ class Engel:
         for i in range(self.levelcap):
             self.jobjp[i] = basejp + (i * (i + 1)) // 2
             jpsum += basejp + (i * (i + 1)) // 2
-            self.jobjpsum[i] = jpsum
+            self.jobjpsum[i + 1] = jpsum
     def calchitrate(self, avoid):
         # calculate hit rate from agi difference
         if avoid < 1:
@@ -170,7 +191,7 @@ class Engel:
         self.dfdict['Log'].loc[index, 'Event'] = 'userrevived'
         self.dfdict['Log'].loc[index, 'Timestamp'] = datetime.strftime(datetime.now(), mydtformat)
         self.sheetsync(logsync=1)
-    def userjoblevel(self, user, job, level=1):
+    def userjoblevel(self, user, job, num_levels):
         # raises user job levels
         dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         jobid = dfjob[dfjob['Job'] == job].tail(1).index.tolist()[0]
@@ -180,7 +201,7 @@ class Engel:
         if job_level == '':
             job_level = 0
         job_level_0 = job_level
-        for i in range(level):
+        for i in range(num_levels):
             if job_level == self.levelcap:
                 break
             if available_jp >= self.jobjp[job_level]:
@@ -373,7 +394,7 @@ class Engel:
         # generate info embed of specific user jobs and jp
         embed = discord.Embed()
         userrow = self.dfdict['User'].loc[user.id]
-        embed.title = f"{userrow.name} Jobs" # convert ID into actual name...
+        embed.title = f"{user.name} Jobs"
         embed.description = f"JP: {userrow['JP']}"
         dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         job_list = []
@@ -443,6 +464,7 @@ class Engel:
             embed.title = 'Attack Failed'
             embed.description = result_tup[1]
         else:
+            embed.title = f"{attacker.name} VS {defender.name}"
             _, damage, hitrate, hit, kill, jp_gain, defender_jp_gain = result_tup
             desc_list = []
             desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
@@ -469,6 +491,7 @@ class Engel:
             embed.title = 'Attack Failed'
             embed.description = result_tup[1]
         else:
+            embed.title = f"{attacker.name} VS {raid}"
             _, damage, hitrate, hit, kill, jp_gain, raid_damage, raid_hitrate, raid_hit, raid_kill = result_tup
             desc_list = []
             desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
@@ -499,6 +522,8 @@ class Engel:
             desc_list.append(f"HP: {self.dfdict['Raid'].loc[raid, 'HP']}")
             embed.add_field(name = raid, value = '\n'.join(desc_list))
         return embed
+    def executecommand(self, ctx, user, *arg):
+        pass
 
 engel = Engel()
 mydtformat = '%Y/%m/%d %H:%M'
@@ -526,19 +551,23 @@ class Engelbert(commands.Cog):
     @commands.command(aliases=['engel', 'pet', 'tamagotchi', 'tama'])
     async def engelbert(self, ctx, *arg):
         # main function
+        user = ctx.author
         if len(arg) == 0:
             await ctx.send('Nice try 1.') # to be implemented with proper help function
         else:
             if arg[0] == 'info':
                 if len(arg) == 1:
                     # own info
-                    user = ctx.author
-                else:
-                    user = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
-                if user.id in engel.dfdict['User'].index:
                     await ctx.send(embed = engel.infouser(user))
                 else:
-                    await ctx.send('Nice try 2.') # to be implemented with proper starter stuff
+                    try:
+                        member = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
+                        if member.id in engel.dfdict['User'].index:
+                            await ctx.send(embed = engel.infouser(member))
+                        else:
+                            await ctx.send('User not found.') # to be implemented with proper starter stuff
+                    except commands.BadArgument:
+                        await ctx.send('User not found.') # to be implemented with proper starter stuff
             elif arg[0] == 'base':
                 if len(arg) == 1:
                     # list of bases
@@ -547,71 +576,68 @@ class Engelbert(commands.Cog):
                     # various operations
                     if len(arg) > 2 and arg[1] in ('change', 'start'):
                         # change base or start of tamagotchi
-                        user = ctx.author
-                        base = ' '.join(arg[2:])
-                        if base in engel.dfdict['Base'].index:
-                            await ctx.send(engel.userbase(user, base))
+                        base = engel.find_index(' '.join(arg[2:]), 'Base')
+                        if base == 'NOTFOUND':
+                            await ctx.send('Base not found.') # to be implemented with proper suggestion
                         else:
-                            await ctx.send('Nice try 3.') # to be implemented with proper suggestion
+                            await ctx.send(engel.userbase(user, base))
                     else:
                         # find base and info (not needed atm)
-                        await ctx.send('Nice try 4.') # to be implemented with proper suggestion
+                        await ctx.send('Base command not found.') # to be implemented with proper suggestion
             elif arg[0] == 'job':
                 if len(arg) == 1:
                     # list of jobs
                     await ctx.send(embed = engel.listjob())
                 else:
-                    user = ctx.author
-                    if arg[1] in ('level',):
+                    if arg[1] in ('level', 'levels'):
                         if len(arg) == 2:
                             await ctx.send(embed = engel.infojp(user))
                         else:
-                            job = ' '.join(arg[2:])
-                            await ctx.send(engel.userjoblevel(user, job))
-                    elif arg[1] in ('levels',):
-                        if len(arg) > 3:
-                            num_levels = int(arg[2])
-                            job = ' '.join(arg[3:])
-                            await ctx.send(engel.userjoblevel(user, job, num_levels))
+                            if arg[2].isnumeric() and len(arg) > 3:
+                                num_levels = int(arg[2])
+                                job = engel.find_index(' '.join(arg[3:]), 'Job')
+                            else:
+                                num_levels = 1
+                                job = engel.find_index(' '.join(arg[2:]), 'Job')
+                            if job == 'NOTFOUND':
+                                await ctx.send('Job not found.') # to be implemented with proper suggestion
+                            else:
+                                await ctx.send(engel.userjoblevel(user, job, num_levels))
                     elif arg[1] in ('reset',):
                         await ctx.send(engel.userjobreset(user))
                     else:
                         # find job and info (not needed atm)
-                        await ctx.send('Nice try 5.') # to be implemented with proper suggestion
+                        await ctx.send('Job command not found.') # to be implemented with proper suggestion
             elif arg[0] == 'attack':
                 if len(arg) == 1:
-                    # explain?
-                    await ctx.send('Nice try 6.')
+                    # to be implemented with proper suggestion
+                    await ctx.send(embed = engel.infouser(user))
                 else:
                     # find member of said name to attack
-                    user = ctx.author
                     defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
                     if defender.id in engel.dfdict['User'].index:
                         await ctx.send(embed = engel.infoattack(user, defender))
                     else:
-                        await ctx.send('Nice try 7.') # to be implemented with proper suggestion
+                        await ctx.send('User not found.') # to be implemented with proper suggestion
             elif arg[0] == 'raid':
                 # to be implemented
                 if len(arg) == 1:
                     # available raids
                     await ctx.send(embed = engel.listraid())
-                elif len(arg) > 2:
-                    if arg[1] == 'info':
-                        raid = ' '.join(arg[2:])
-                        if raid in engel.dfdict['Raid'].index:
-                            await ctx.send(embed = engel.inforaid(' '.join(arg[2:])))
-                        else:
-                            await ctx.send('Nice try 7.5') # to be implemented with proper suggestion
-                    elif arg[1] == 'attack':
-                        user = ctx.author
-                        raid = ' '.join(arg[2:])
-                        if raid in engel.dfdict['Raid'].index:
-                            await ctx.send(embed = engel.infoattackraid(user, raid))
-                        else:
-                            await ctx.send('Nice try 8.') # to be implemented with proper suggestion
-                    else:
-                        await ctx.send('Nice try 9.') # to be implemented with proper suggestion
                 else:
-                    await ctx.send('Nice try 10.') # to be implemented with proper suggestion
+                    if arg[1] == 'info' and len(arg) > 2:
+                        raid = engel.find_index(' '.join(arg[2:]), 'Raid')
+                        if raid == 'NOTFOUND':
+                            await ctx.send('Raid not found.') # to be implemented with proper suggestion
+                        else:
+                            await ctx.send(embed = engel.inforaid(raid))
+                    elif arg[1] == 'attack' and len(arg) > 2:
+                        raid = engel.find_index(' '.join(arg[2:]), 'Raid')
+                        if raid == 'NOTFOUND':
+                            await ctx.send('Raid not found.') # to be implemented with proper suggestion
+                        else:
+                            await ctx.send(embed = engel.infoattackraid(user, raid))
+                    else:
+                        await ctx.send('Raid command not found.') # to be implemented with proper suggestion
             else:
-                await ctx.send('Nice try.') # to be implemented with proper help function
+                await ctx.send('Command not found.') # to be implemented with proper help function
