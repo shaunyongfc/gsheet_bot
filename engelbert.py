@@ -564,6 +564,13 @@ class Engel:
         for stat in self.statlist2:
             desc_list.append(f"{stat}: {userdict[stat]}")
         embed.add_field(name='Stats', value='\n'.join(desc_list))
+        if row['HP'] == 0:
+            dflog = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
+            deadtime = dflog[dflog['User'] == user.id].tail(1)['Timestamp'].tolist()[0]
+            thres = datetime.strptime(deadtime, mydtformat) + timedelta(hours=engel.revivehours)
+            revivaltd = thres - datetime.now()
+            revivalstr = f"{revivaltd.seconds // 60 + 1} minutes remaining."
+            embed.add_field(name='Revival Time', value=revivalstr, inline=False)
         thumbnail_url = self.dfdict['Base'].loc[row['Base'], 'Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
@@ -741,20 +748,24 @@ class Engel:
                     # available raids
                     return self.listraid()
                 else:
-                    if arg[1] == 'info' and len(arg) > 2:
-                        raid = self.find_index(' '.join(arg[2:]), 'Raid')
-                        if raid == 'NOTFOUND':
-                            return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
-                        else:
-                            return self.inforaid(raid)
-                    elif arg[1] == 'attack' and len(arg) > 2:
+                    if arg[1] == 'attack' and len(arg) > 2:
                         raid = self.find_index(' '.join(arg[2:]), 'Raid')
                         if raid == 'NOTFOUND':
                             return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
                         else:
                             return self.infoattackraid(user, raid)
+                    elif arg[1] == 'info' and len(arg) > 2:
+                        raid = self.find_index(' '.join(arg[2:]), 'Raid')
+                        if raid == 'NOTFOUND':
+                            return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
+                        else:
+                            return self.inforaid(raid)
                     else:
-                        return discord.Embed(description = 'Try `=charhelp raid`.')
+                        raid = self.find_index(' '.join(arg[1:]), 'Raid')
+                        if raid == 'NOTFOUND':
+                            return discord.Embed(description = 'Try `=charhelp raid`.')
+                        else:
+                            return self.inforaid(raid)
             elif arg[0] == 'help':
                 if len(arg) > 1:
                     return self.helpmanual(arg[1])
