@@ -1,4 +1,4 @@
-import re, random, discord
+import re, random, discord, math
 import pandas as pd
 from discord.ext import commands, tasks
 from gsheet_handler import client
@@ -114,8 +114,9 @@ class Engel:
         )
         self.changelog = (
             ('7th February 2021', (
-                'Raid HP significantly reduced.',
-                'Evasion rate nerfed.'
+                'Raid HP significantly reduced but growth rate increased.',
+                'Evasion rate nerfed.',
+                'JP required per level decreased.'
             )),
             ('6th February 2021', (
                 '(beta) Launch!',
@@ -194,8 +195,8 @@ class Engel:
         self.jobjpsum = dict()
         jpsum = 0
         for i in range(self.levelcap):
-            self.jobjp[i] = basejp + (i * (i + 1)) // 2
-            jpsum += basejp + (i * (i + 1)) // 2
+            self.jobjp[i] = basejp + math.floor(i ** 1.5)
+            jpsum += self.jobjp[i]
             self.jobjpsum[i + 1] = jpsum
     def calchitrate(self, avoid):
         # calculate hit rate from agi difference
