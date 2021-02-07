@@ -125,11 +125,21 @@ class Engel:
         self.dfdict = dict()
         self.dfsync()
         self.jobjp_init()
+    def indextransform(self, index):
+        # to counter google sheet eating user ids
+        if isinstance(index, (int, float)):
+            return f"u{index}"
+        else:
+            if index[0] == 'u':
+                return int(index[1:])
+            else:
+                return index
     def dfsync(self):
         # sync online sheet into local data
         for sheetname, indexname in self.sheettuples:
              df = pd.DataFrame(self.spreadsheet.worksheet(sheetname).get_all_records())
              if indexname != '':
+                 df[indexname] = df[indexname].apply(self.indextransform)
                  df = df.set_index(indexname)
              self.dfdict[sheetname] = df
         dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
@@ -139,7 +149,7 @@ class Engel:
     def sheetsync(self, logsync=0, raidsync=0):
         # sync local data into online sheet
         df = self.dfdict['User'].copy()
-        df.index = df.index.astype(str)
+        df.index = pd.Index([self.indextransform(a) for a in df.index.tolist()], name='User')
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
         if logsync:
             df = self.dfdict['Log'].copy()
