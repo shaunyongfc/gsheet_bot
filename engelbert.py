@@ -15,10 +15,10 @@ class Engel:
     def __init__(self):
         # gameplay constants
         self.attack_apcost = 3
-        self.hpregen = 0.05
-        self.apregen = 0.1
+        self.hpregen = 0.1
+        self.apregen = 6
         self.levelcap = 10
-        self.revivehours = 6
+        self.revivehours = 4
         self.sheettuples = (
             ('Base', 'Base'),
             ('Job', 'JobID'),
@@ -68,7 +68,7 @@ class Engel:
             '- ATK and MAG are your offensive stats and DEF and SPR are your defensive stats.',
             '- DEX determines your accuracy and critical rate.'
             '- AGI determines your evasion and critical avoid.',
-            f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen * 100}% respectively every hour.",
+            f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen} respectively every hour.",
             '- If your AP is full, HP regen is doubled instead.',
             f"- If your HP reaches zero, you will be revived with full HP after {self.revivehours} hours."
         )
@@ -119,6 +119,8 @@ class Engel:
         )
         self.changelog = (
             ('8th February 2021', (
+                f"Base AP increased but AP regen is now fixed at 6.",
+                'HP regen % is doubled and revival time is shortened to 4 hours.'
                 'Overall ATK/MAG have been increased across the board.',
                 'AGI stat split into DEX and AGI: AGI > DEX -> miss; DEX > AGI -> critical hit',
                 'New job added - Assassin (becomes Vinera default)'
@@ -297,7 +299,7 @@ class Engel:
         for index, row in self.dfdict['User'].iterrows():
             userdict = self.calcstats(index)
             if row['AP'] < userdict['AP']: # if AP is not full
-                new_ap = min(row['AP'] + int(userdict['AP'] * self.apregen), userdict['AP'])
+                new_ap = min(row['AP'] + self.apregen, userdict['AP'])
                 self.dfdict['User'].loc[index, 'AP'] = new_ap
                 hp_recovery = int(userdict['HP'] * self.hpregen)
             else: # doubles HP regen if AP is full
