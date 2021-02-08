@@ -277,11 +277,11 @@ class Engel:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            jp_gain += (damage * hit // 3 + defenddict['Level'] * min(hit, 1)) // 10 # bonus JP for damage
+            jp_gain += (damage * hit // 6 + defenddict['Level'] * min(hit, 1)) // 5 # bonus JP for damage
             kill = self.userdamage(defender, damage * hit)
             if kill:
                 jp_gain += defenddict['Level'] # bonus JP for killing
-            defender_jp_gain = 1 + attackdict['Level'] // 10
+            defender_jp_gain = 1 + (damage * hit // 12 + attackdict['Level']) // 5
             self.dfdict['User'].loc[defender, 'JP'] = self.dfdict['User'].loc[defender, 'JP'] + defender_jp_gain
             self.dfdict['User'].loc[attacker, 'JP'] = self.dfdict['User'].loc[attacker, 'JP'] + jp_gain # gains JP
             self.sheetsync()
@@ -761,11 +761,14 @@ class Engel:
                 if len(arg) == 1:
                     return discord.Embed(description = 'Try `=charhelp char`.')
                 else:
-                    # find member of said name to attack
-                    defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
-                    if defender.id in self.dfdict['User'].index:
-                        return self.infoattack(user, defender)
-                    else:
+                    try:
+                        # find member of said name to attack
+                        defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
+                        if defender.id in self.dfdict['User'].index:
+                            return self.infoattack(user, defender)
+                        else:
+                            return discord.Embed(description = 'User not found or did not start a character.')
+                    except commands.BadArgument:
                         return discord.Embed(description = 'User not found or did not start a character.')
             elif arg[0] == 'raid':
                 # to be implemented
