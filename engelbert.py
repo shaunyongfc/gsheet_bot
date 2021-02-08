@@ -428,7 +428,7 @@ class Engel:
             jp_gain += (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for damage
             kill = self.raiddamage(raid, damage * hit)
             if kill:
-                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 30 # bonus JP for killing
+                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for killing
             raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
             raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
             if raid_hitrate > 1:
