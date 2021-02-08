@@ -119,10 +119,11 @@ class Engel:
         )
         self.changelog = (
             ('8th February 2021', (
+                'JP gain now scales more with level and less with damage.',
                 f"Base AP increased but AP regen is now fixed at 6.",
-                'HP regen % is doubled and revival time is shortened to 4 hours.'
+                'HP regen % is doubled and revival time is shortened to 4 hours.',
                 'Overall ATK/MAG have been increased across the board.',
-                'AGI stat split into DEX and AGI: AGI > DEX -> miss; DEX > AGI -> critical hit',
+                'AGI stat split into DEX and AGI: AGI > DEX chance to miss; DEX > AGI chance to critical.',
                 'New job added - Assassin (becomes Vinera default)'
             )),
             ('7th February 2021', (
@@ -275,7 +276,7 @@ class Engel:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            jp_gain += (damage * hit + defenddict['Level']) * min(hit, 1) // 5 # bonus JP for damage
+            jp_gain += (damage * hit // 3 + defenddict['Level'] * min(hit, 1)) // 10 # bonus JP for damage
             kill = self.userdamage(defender, damage * hit)
             if kill:
                 jp_gain += defenddict['Level'] # bonus JP for killing
@@ -413,7 +414,7 @@ class Engel:
             # get their status sheets
             userdict = self.calcstats(user)
             raiddict = self.calcstatsraid(raid)
-            jp_gain = 3 # base JP gain
+            jp_gain = 5 # base JP gain
             # consumes AP
             self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
             # pick higher potential damage
@@ -423,7 +424,7 @@ class Engel:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            jp_gain += (damage * hit + self.dfdict['Raid'].loc[raid, 'Level'] * 10) // 5 # bonus JP for damage
+            jp_gain += (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for damage
             kill = self.raiddamage(raid, damage * hit)
             if kill:
                 jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] # bonus JP for killing
