@@ -74,13 +74,14 @@ class Engel:
         )
         self.indepthbattle = (
             '- To battle, you attack another player or a raid.',
-            '- You can battle another player by `=char attack (user ping)`.',
+            '- You can attack another player by `=char attack (user ping)`.',
+            '- You can duel another player by `=char duel (user ping)`. This will not result in KO or JP gain, however.'
             '- Check out `=charhelp raid` for info about raid.'
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger) with ATK/MAG of attacker and DEF/SPR of defender.',
             '- You can only land critical if your DEX is higher than the opponent; you can only evade attacks if your AGI is higher than the opponent.',
             '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`; evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
             '- They use the same formula: 1~10 = 3% per point, 11~40 = 2% per point, 41~50 = 1% per point.',
-            '- Critical damage is double of regular damage.'
+            '- Critical damage is double of regular damage.',
         )
         self.manual['Base'] = (
             'A base determines your base stats and your info picture where available. '
@@ -119,6 +120,7 @@ class Engel:
         )
         self.changelog = (
             ('8th February 2021', (
+                'Duel function.',
                 'Level cap increased from 10 to 20.',
                 'JP gain now scales more with level and less with damage.',
                 f"Base AP increased but AP regen is now fixed at 6.",
@@ -615,6 +617,68 @@ class Engel:
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
         return embed
+    def infoduel(self, attacker, defender):
+        # generate result embed of a duel
+        embed = discord.Embed()
+        embed.title = f"{attacker.name} VS {defender.name}"
+        # get their status sheets
+        attackdict = self.calcstats(attacker.id)
+        attackhp = attackdict['HP']
+        defenddict = self.calcstats(defender.id)
+        defendhp = defenddict['HP']
+        # pick higher potential damage
+        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
+        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
+        counter_damage = max(defenddict['ATK'] - attackdict['DEF'], defenddict['MAG'] - attackdict['SPR'], 0)
+        counter_hitrate = self.calchitrate(defenddict['DEX'] - attackdict['AGI'])
+        desc_list = []
+        desc_list.append(f"*{attacker.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
+        desc_list.append(f"*{attacker.name} has {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        desc_list.append(f"*{defender.name} has {min(counter_hitrate, 1) * 100:.0f}% of doing {counter_damage} damage.*")
+        desc_list.append(f"*{defender.name} has {max(counter_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        embed.description = '\n'.join(desc_list)
+        for i in range(5):
+            field_name = f"Round {i+1}"
+            field_list = [f"{attacker.name} HP `{attackhp}` | {defender.name} HP `{defendhp}`"]
+            if hitrate > 1:
+                hit = 1 + ((hitrate - 1) > random.random())
+            else:
+                hit = hitrate > random.random()
+            if hit == 2:
+                field_list.append(f"{attacker.name} landed a critical hit, dealing {damage * hit} damage.")
+            elif hit == 1:
+                field_list.append(f"{attacker.name} successfully attacked, dealing {damage * hit} damage.")
+            else:
+                field_list.append(f"{attacker.name} missed.")
+            if counter_hitrate > 1:
+                counter_hit = 1 + ((counter_hitrate - 1) > random.random())
+            else:
+                counter_hit = counter_hitrate > random.random()
+            if counter_hit == 2:
+                field_list.append(f"{defender.name} landed a critical hit, dealing {counter_damage * counter_hit} damage.")
+            elif counter_hit == 1:
+                field_list.append(f"{defender.name} successfully attacked, dealing {counter_damage * counter_hit} damage.")
+            else:
+                field_list.append(f"{defender.name} missed.")
+            attackhp = max(attackhp - counter_damage * counter_hit, 0)
+            defendhp = max(defendhp - damage * hit, 0)
+            embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+            if attackhp == 0 or defendhp == 0:
+                break
+        field_name = 'Result'
+        field_list = [f"{attacker.name} HP `{attackhp}` | {defender.name} HP `{defendhp}`"]
+        if attackhp == defendhp:
+            field_list.append('It is a draw!')
+        elif attackhp > defendhp:
+            field_list.append(f"{attacker.name} won!")
+        else:
+            field_list.append(f"{defender.name} won!")
+        embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+        defender_base = self.dfdict['User'].loc[defender.id, 'Base']
+        embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
+        if embed_colour != '':
+            embed.colour = int(embed_colour, 16)
+        return embed
     def infoattack(self, attacker, defender):
         # generate result embed of an attack
         result_tup = self.userattack(attacker.id, defender.id)
@@ -766,6 +830,19 @@ class Engel:
                         defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
                         if defender.id in self.dfdict['User'].index:
                             return self.infoattack(user, defender)
+                        else:
+                            return discord.Embed(description = 'User not found or did not start a character.')
+                    except commands.BadArgument:
+                        return discord.Embed(description = 'User not found or did not start a character.')
+            elif arg[0] == 'duel':
+                if len(arg) == 1:
+                    return discord.Embed(description = 'Try `=charhelp char`.')
+                else:
+                    try:
+                        # find member of said name to attack
+                        defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
+                        if defender.id in self.dfdict['User'].index:
+                            return self.infoduel(user, defender)
                         else:
                             return discord.Embed(description = 'User not found or did not start a character.')
                     except commands.BadArgument:
