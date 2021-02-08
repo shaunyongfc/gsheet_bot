@@ -681,7 +681,7 @@ class WotvEsper(commands.Cog):
             arg = arg[1:]
         else:
             mobile_bool = 0
-        if arg[0] in ['sort', 's', 'rank', 'r', 'filter', 'f']:
+        if arg[0] in ['sort', 's', 'rank', 'r', 'filter', 'f'] and len(arg) > 1:
             # Ranking mode
             if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
                 mobile_bool = 1
@@ -778,7 +778,7 @@ class WotvEsper(commands.Cog):
                         else:
                             field_value = '\n'.join(field_list[checkpoint:checkpoint_list[i]])
                         embed.add_field(name=field_name.capitalize(), value=field_value, inline=True)
-        elif arg[0] in ['compare', 'c']:
+        elif arg[0] in ['compare', 'c'] and len(arg) > 1:
             # Comparison mode
             if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
                 mobile_bool = 1

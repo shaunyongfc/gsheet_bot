@@ -26,14 +26,16 @@ class Engel:
             ('Raid', 'Raid'),
             ('Log', '')
         )
-        self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'AGI')
-        self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'AGI')
+        self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
+        self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.statrating = {
-            5: 'A',
-            4: 'B',
-            3: 'C',
-            2: 'D',
-            1: 'E'
+            7: 'S-',
+            6: 'A+',
+            5: 'A-',
+            4: 'B+',
+            3: 'B-',
+            2: 'C+',
+            1: 'C-'
         }
         self.manual = dict()
         self.indepth = dict()
@@ -64,7 +66,8 @@ class Engel:
             f"- AP is action points. You need to spend {self.attack_apcost} to battle.",
             '- JP is used to raise your job levels, automatically gained slowly or from battles.',
             '- ATK and MAG are your offensive stats and DEF and SPR are your defensive stats.',
-            '- AGI determines your accuracy and evasion.',
+            '- DEX determines your accuracy and critical rate.'
+            '- AGI determines your evasion and critical avoid.',
             f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen * 100}% respectively every hour.",
             '- If your AP is full, HP regen is doubled instead.',
             f"- If your HP reaches zero, you will be revived with full HP after {self.revivehours} hours."
@@ -74,8 +77,10 @@ class Engel:
             '- You can battle another player by `=char attack (user ping)`.',
             '- Check out `=charhelp raid` for info about raid.'
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger) with ATK/MAG of attacker and DEF/SPR of defender.',
-            '- Miss rate is scaled by `AGI diff = (Defender AGI - Attacker AGI)`.',
-            '- For first 10 AGI diff, miss rate increases by 4% per point. The increase rate reduces by 1% every 10 AGI diff until miss rate 100% at 40 AGI diff.'
+            '- You can only land critical if your DEX is higher than the opponent; you can only evade attacks if your AGI is higher than the opponent.',
+            '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`; evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
+            '- They use the same formula: 1~10 = 3% per point, 11~40 = 2% per point, 41~50 = 1% per point.',
+            '- Critical damage is double of regular damage.'
         )
         self.manual['Base'] = (
             'A base determines your base stats and your info picture where available. '
@@ -113,6 +118,11 @@ class Engel:
             'Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
         )
         self.changelog = (
+            ('8th February 2021', (
+                'Overall ATK/MAG have been increased across the board.',
+                'AGI stat split into DEX and AGI: AGI > DEX -> miss; DEX > AGI -> critical hit',
+                'New job added - Assassin (becomes Vinera default)'
+            )),
             ('7th February 2021', (
                 'Raid HP significantly reduced but growth rate increased.',
                 'Evasion rate nerfed.',
@@ -198,21 +208,25 @@ class Engel:
             self.jobjp[i] = basejp + math.floor(i ** 1.5)
             jpsum += self.jobjp[i]
             self.jobjpsum[i + 1] = jpsum
-    def calchitrate(self, avoid):
-        # calculate hit rate from agi difference
-        if avoid <= 0:
+    def calchitrate(self, accuracy):
+        # calculate critical or hit rate from dex - agi
+        if accuracy == 0:
             return 1
-        elif avoid >= 40:
+        elif accuracy >= 50:
+            return 2
+        elif accuracy <= -50:
             return 0
         else:
-            hitrate = 1 - min(avoid, 10) * 0.04
-            if avoid > 10:
-                hitrate = hitrate - min(avoid - 10, 10) * 0.03
-            if avoid > 20:
-                hitrate = hitrate - min(avoid - 20, 10) * 0.02
-            if avoid > 30:
-                hitrate = hitrate - (avoid - 30) * 0.01
-            return hitrate
+            if abs(accuracy) >= 40:
+                modifier = 0.9 - 0.4 + abs(accuracy) * 0.01
+            elif abs(accuracy) >= 10:
+                modifier = 0.3 - 0.2 + abs(accuracy) * 0.02
+            else:
+                modifier = abs(accuracy) * 0.03
+            if accuracy > 0:
+                return 1 + modifier
+            else:
+                return 1 - modifier
     def calcstats(self, userid):
         # calculate stats given user id
         userdict = dict()
@@ -254,16 +268,15 @@ class Engel:
             self.dfdict['User'].loc[attacker, 'AP'] = int(self.dfdict['User'].loc[attacker, 'AP'] - self.attack_apcost)
             # pick higher potential damage
             damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
-            hitrate = self.calchitrate(defenddict['AGI'] - attackdict['AGI'])
-            if hitrate < random.random():
-                hit = 0
-                kill = 0
+            hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
+            if hitrate > 1:
+                hit = 1 + ((hitrate - 1) > random.random())
             else:
-                hit = 1
-                jp_gain += (damage + defenddict['Level']) // 5 # bonus JP for damage
-                kill = self.userdamage(defender, damage)
-                if kill:
-                    jp_gain += defenddict['Level'] # bonus JP for killing
+                hit = hitrate > random.random()
+            jp_gain += (damage * hit + defenddict['Level']) * min(hit, 1) // 5 # bonus JP for damage
+            kill = self.userdamage(defender, damage * hit)
+            if kill:
+                jp_gain += defenddict['Level'] # bonus JP for killing
             defender_jp_gain = 1 + attackdict['Level'] // 10
             self.dfdict['User'].loc[defender, 'JP'] = self.dfdict['User'].loc[defender, 'JP'] + defender_jp_gain
             self.dfdict['User'].loc[attacker, 'JP'] = self.dfdict['User'].loc[attacker, 'JP'] + jp_gain # gains JP
@@ -403,24 +416,22 @@ class Engel:
             self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
             # pick higher potential damage
             damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
-            hitrate = self.calchitrate(raiddict['AGI'] - userdict['AGI'])
-            if hitrate < random.random():
-                hit = 0
-                kill = 0
+            hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
+            if hitrate > 1:
+                hit = 1 + ((hitrate - 1) > random.random())
             else:
-                hit = 1
-                jp_gain += (damage + self.dfdict['Raid'].loc[raid, 'Level']) // 3 # bonus JP for damage
-                kill = self.raiddamage(raid, damage)
-                if kill:
-                    jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] # bonus JP for killing
+                hit = hitrate > random.random()
+            jp_gain += (damage * hit + self.dfdict['Raid'].loc[raid, 'Level'] * 10) // 5 # bonus JP for damage
+            kill = self.raiddamage(raid, damage * hit)
+            if kill:
+                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] # bonus JP for killing
             raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
-            raid_hitrate = self.calchitrate(userdict['AGI'] - raiddict['AGI'])
-            if raid_hitrate < random.random():
-                raid_hit = 0
-                raid_kill = 0
+            raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
+            if raid_hitrate > 1:
+                raid_hit = 1 + ((raid_hitrate - 1) > random.random())
             else:
-                raid_hit = 1
-                raid_kill = self.userdamage(user, raid_damage)
+                raid_hit = raid_hitrate > random.random()
+            raid_kill = self.userdamage(user, raid_damage * raid_hit)
             self.dfdict['User'].loc[user, 'JP'] = self.dfdict['User'].loc[user, 'JP'] + jp_gain # gains JP
             self.sheetsync(raidsync=1)
             return (1, damage, hitrate, hit, kill, jp_gain,
@@ -611,8 +622,11 @@ class Engel:
             embed.title = f"{attacker.name} VS {defender.name}"
             _, damage, hitrate, hit, kill, jp_gain, defender_jp_gain = result_tup
             desc_list = []
-            desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
-            if hit:
+            desc_list.append(f"*Info: You have {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
+            desc_list.append(f"*Info: You have {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+            if hit == 2:
+                desc_list.append(f"You landed a critical hit.")
+            elif hit == 1:
                 desc_list.append(f"You successfully attacked.")
             else:
                 desc_list.append(f"You missed.")
@@ -641,8 +655,11 @@ class Engel:
             embed.title = f"{user.name} VS {raid}"
             _, damage, hitrate, hit, kill, jp_gain, raid_damage, raid_hitrate, raid_hit, raid_kill = result_tup
             desc_list = []
-            desc_list.append(f"*Info: You have {hitrate * 100:.0f}% of doing {damage} damage.*")
-            if hit:
+            desc_list.append(f"*Info: You have {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
+            desc_list.append(f"*Info: You have {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+            if hit == 2:
+                desc_list.append(f"You landed a critical hit.")
+            elif hit == 1:
                 desc_list.append(f"You successfully attacked.")
             else:
                 desc_list.append(f"You missed.")
@@ -652,8 +669,11 @@ class Engel:
             desc_list.append(f"\nYou gained {jp_gain} JP.")
             embed.description = '\n'.join(desc_list)
             desc_list = []
-            desc_list.append(f"\n*Info: {raid} has {raid_hitrate * 100:.0f}% of doing {raid_damage} damage to you.*")
-            if raid_hit:
+            desc_list.append(f"\n*Info: {raid} has {min(raid_hitrate, 1) * 100:.0f}% of doing {raid_damage} damage to you.*")
+            desc_list.append(f"*Info: {raid} has {max(raid_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+            if raid_hit == 2:
+                desc_list.append(f"{raid} landed a critical hit.")
+            elif raid_hit == 1:
                 desc_list.append(f"{raid} successfully countered.")
             else:
                 desc_list.append(f"{raid} missed.")
