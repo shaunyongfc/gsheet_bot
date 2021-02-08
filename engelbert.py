@@ -17,7 +17,7 @@ class Engel:
         self.attack_apcost = 3
         self.hpregen = 0.1
         self.apregen = 6
-        self.levelcap = 10
+        self.levelcap = 20
         self.revivehours = 4
         self.sheettuples = (
             ('Base', 'Base'),
@@ -119,6 +119,7 @@ class Engel:
         )
         self.changelog = (
             ('8th February 2021', (
+                'Level cap increased from 10 to 20.',
                 'JP gain now scales more with level and less with damage.',
                 f"Base AP increased but AP regen is now fixed at 6.",
                 'HP regen % is doubled and revival time is shortened to 4 hours.',
@@ -427,7 +428,7 @@ class Engel:
             jp_gain += (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for damage
             kill = self.raiddamage(raid, damage * hit)
             if kill:
-                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] # bonus JP for killing
+                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 30 # bonus JP for killing
             raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
             raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
             if raid_hitrate > 1:
