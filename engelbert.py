@@ -91,9 +91,9 @@ class Engel:
         )
         self.manual['Job'] = (
             'Your stats are raised according to your jobs. '
-            'You have 100% growth rate of main job and 50% of each sub job.'
+            'You have 100% growth rate of main job and 50% of each sub job. '
             'Main job can be changed every 24 hours, but changing sub jobs has no limit. '
-            'Changing main job also resets your sub jobs. They can ge changed anytime however.'
+            'Changing main job also resets your sub jobs. They can ge changed anytime however. '
         )
         self.indepth['Job'] = (
             'Type `=char job` to find list of jobs and their growth rate.',
@@ -433,8 +433,7 @@ class Engel:
                 'EXP': 0,
                 'Main': baserow['Main'],
                 'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
-                'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
-                baserow['Starter']: 1
+                'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2']
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
             self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
@@ -669,7 +668,7 @@ class Engel:
             desc_list.append(f"Level: {userdict['Level']} (MAX)")
         else:
             desc_list.append(f"Level: {userdict['Level']}")
-            desc_list.append(f"*Next Level: {self.nextlevelexp[userdict['Level']]} EXP*")
+            desc_list.append(f"*Next Level: {self.levelexp[userdict['Level'] + 1] - row['EXP']} EXP*")
         desc_list.append(f"HP: {row['HP']}/{userdict['HP']}")
         desc_list.append(f"AP: {row['AP']}/{userdict['AP']}")
         if row['A_Skill'] != '':
@@ -811,26 +810,29 @@ class Engel:
         elif skillid in (self.dfdict['Job'].loc[userrow['Sub1'], 'Skill'], self.dfdict['Job'].loc[userrow['Sub2'], 'Skill']):
             potency = 'Sub'
         else:
-            embed.description = 'Your current jobs cannot use said skill!'
+            embed.description = 'Your current jobs cannot use said skill.'
             return embed
         # check target
         if target == None:
             target = user
         elif not skillrow['Ally']:
-            embed.description = f"{skill} cannot be casted on others!"
+            embed.description = f"{skill} cannot be casted on others."
             return embed
         if self.dfdict['User'].loc[target.id, 'HP'] == 0:
             embed.description = 'Target is dead!'
             return embed
         if consumehp:
+            if target.id == user.id:
+                embed.description = 'You cannot consume HP to cast a skill for yourself.'
+                return embed
             hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
             if userrow['HP'] <= hpcost:
-                embed.description = f"You need at least {hpcost + 1} HP!"
+                embed.description = f"You need at least {hpcost + 1} HP."
                 return embed
             else:
                 self.dfdict['User'].loc[user.id, 'HP'] = self.dfdict['User'].loc[user.id, 'HP'] - hpcost
         elif userrow['AP'] < self.skill_apcost:
-            embed.description = 'You do not have enough AP!'
+            embed.description = 'You do not have enough AP.'
             return embed
         else:
             self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - self.skill_apcost
