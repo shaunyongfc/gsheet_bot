@@ -15,28 +15,23 @@ class Engel:
     def __init__(self):
         # gameplay constants
         self.attack_apcost = 3
-        self.hpregen = 0.1
+        self.hpregen = 0.2
         self.apregen = 6
-        self.levelcap = 20
-        self.revivehours = 4
+        self.levelcap = 99
+        self.revivehours = 3
+        self.skill_apcost = 5
+        self.skill_hpcost = 0.2
+        self.skillduration = 3
         self.sheettuples = (
             ('Base', 'Base'),
             ('Job', 'JobID'),
+            ('Skill', 'SkillID'),
             ('User', 'User'),
             ('Raid', 'Raid'),
-            ('Log', '')
+            ('Log', ''),
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
-        self.statrating = {
-            7: 'S-',
-            6: 'A+',
-            5: 'A-',
-            4: 'B+',
-            3: 'B-',
-            2: 'C+',
-            1: 'C-'
-        }
         self.manual = dict()
         self.indepth = dict()
         self.helptup = {
@@ -44,10 +39,11 @@ class Engel:
             'character': 'Character',
             'base': 'Base',
             'job': 'Job',
+            'skill': 'Skill',
             'raid': 'Raid'
         }
         self.helpintro = (
-            'Engelbert (beta) is an experimental project of Discord bot tamagotchi '
+            'Engelbert (beta v2) is an experimental project of Discord bot tamagotchi '
             '(digital pet / avatar / character). It is still under beta so things '
             'may be subject to change. Have to see if free hosting service can '
             'handle the frequency of data update too... Feel free to drop some feedback!\n'
@@ -61,11 +57,8 @@ class Engel:
         )
         self.indepth['Character'] = (
             '- Type `=char info` to check your character if you already started one.',
-            '- Type `=char info (user ping)` (e.g. `=char info @Caelum`) to check character of another user.',
-            '- HP is your health (over your max health)',
-            f"- AP is action points. You need to spend {self.attack_apcost} to battle.",
-            '- JP is used to raise your job levels, automatically gained slowly or from battles.',
-            '- ATK and MAG are your offensive stats and DEF and SPR are your defensive stats.',
+            '- Type `=char info (user ping)` (e.g. `=char info @Caelum`) to check character of another user.'
+            f"- AP is action points. You need to spend {self.attack_apcost} per battle.",
             '- DEX determines your accuracy and critical rate.'
             '- AGI determines your evasion and critical avoid.',
             f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen} respectively every hour.",
@@ -75,50 +68,79 @@ class Engel:
         self.indepthbattle = (
             '- To battle, you attack another player or a raid.',
             '- You can attack another player by `=char attack (user ping)`.',
-            '- You can duel another player by `=char duel (user ping)`. This will not result in KO or JP gain, however.'
-            '- Check out `=charhelp raid` for info about raid.'
+            '- Attack multiple times in a row by inserting a number like `=char attack 10 @Caelum`',
+            '- You can duel another player by `=char duel (user ping)`. This will not result in KO or EXP gain, however.'
+            '- Check out `=charhelp raid` for info about raid.',
+            '- Alternatively, you can spend AP to get EXP by `=char train` or `=char train (number of AP)` (e.g. `=char train 10`).',
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger) with ATK/MAG of attacker and DEF/SPR of defender.',
             '- You can only land critical if your DEX is higher than the opponent; you can only evade attacks if your AGI is higher than the opponent.',
             '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`; evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
             '- They use the same formula: 1~10 = 3% per point, 11~40 = 2% per point, 41~50 = 1% per point.',
-            '- Critical damage is double of regular damage.',
+            '- Critical damage is 2x regular damage.',
         )
         self.manual['Base'] = (
             'A base determines your base stats and your info picture where available. '
-            'Your first base also gives you a free job level. '
+            'Every base has a default set of jobs but you can change afterwards. '
             'Your base can be reset every 24 hours. '
             'Element and/or other features may be implemented in future. '
         )
         self.indepth['Base'] = (
-            'Type `=char base` to find list of bases and their bases stats.',
+            'Type `=char base` to find list of available bases and their bases stats.',
             'Type `=char base start (base name)` (e.g. `=char base start jake`) to start your character.',
             'Type `=char base change (base name)` (e.g. `=char base change rain`) to change the base of your character.'
         )
         self.manual['Job'] = (
-            'Leveling a job costs JP and raises your stats according to the job. '
-            'Higher levels require more JP to level. '
-            'Job levels can be reset into JP every 24 hours. '
-            'Skills or other features may be implemented in future. '
+            'Your stats are raised according to your jobs. '
+            'You have 100% growth rate of main job and 50% of each sub job.'
+            'Main job can be changed every 24 hours, but changing sub jobs has no limit. '
+            'Changing main job also resets your sub jobs. They can ge changed anytime however.'
         )
         self.indepth['Job'] = (
             'Type `=char job` to find list of jobs and their growth rate.',
-            'Type `=char job level` to see your current job levels and required JP.',
-            'Type `=char job level (job name)` (e.g. `=char job level red mage`) to level a job.',
-            'Type `=char job level (number) (job name)` (e.g. `=char job level 10 red mage`) to raise multiple levels of a job at once.',
-            'Type `=char job reset` to reset all your job levels into JP.'
+            'Type `=char job main (job name)` (e.g. `=char job main red mage`) to change main job.',
+            'Type `=char job sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
+            'Type `=char job sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
+            'Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.'
+        )
+        self.manual['Skill'] = (
+            'Skills are tied to jobs. You have access to skills of your main job and both your sub jobs. '
+            'However, the skill of your main job will have higher potency. '
+            'There are three types of skills - healing, buff, debuff. '
+        )
+        self.indepth['Skill'] = (
+            'Skills do not apply on duels nor when you are being attacked.',
+            'Only 1 buff or debuff skill can be active at one time.',
+            f"All skills cost {self.skill_apcost} AP to cast.",
+            'Type `=char skill (skill name)` (e.g. `=char skill ruin`) to cast.',
+            'Healing and buff skills can be cast on other users.',
+            'Type `=char skill (skill name) | (user ping)` (e.g. `=char skill protect | @Caelum`).',
+            f"You can opt to consume {self.skill_hpcost*100:.0f}% HP instead of AP when casting on other users.",
+            'Type `=char skill (skill name) | (user ping) | hp` (e.g. `=char skill cure | @Caelum | hp`).'
+            f"Buff and debuff skills last for {self.skillduration} battles.",
         )
         self.manual['Raid'] = (
-            'You can battle a raid by to gain extra JP. '
+            'You can battle a raid by to gain extra EXP. '
             'Note that unlike attacking another player, a raid will counter you every time you attack. '
-            'After a raid dies the killer gains extra JP and the raid will level up with full HP. '
+            'After a raid dies the killer gains extra EXP and the raid will level up with full HP. '
             'Check out `=charhelp char` for battle mechanics. '
         )
         self.indepth['Raid'] = (
             'Type `=char raid` to find list of available raids and their levels.',
             'Type `=char raid info (raid name)` (e.g. `=char raid info ifrit`) to see the stats etc of the raid.',
             'Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
+            'Attack multiple times in a row by inserting a number like `=char raid attack 10 siren`',
         )
         self.changelog = (
+            ('9th February 2021', (
+                'Data reboot with the entire system rebalanced (please check various lists and helps).',
+                'Please check your new stats and reset raid list.',
+                'Level - EXP system to replace Job Levels - JP system (simpler).',
+                'Stats are now raised with main / sub jobs. (`=charhelp job`)',
+                'Skills. (`=charhelp skill`)'
+                'Train function (mainly for newbies) to convert AP into EXP. (`=char train`)',
+                'Able to attack player or raid conescutively by adding a number.',
+                'Again, HP regen % is doubled and revival time is shortened to 3 hours.'
+            )),
             ('8th February 2021', (
                 'Duel function.',
                 'Level cap increased from 10 to 20.',
@@ -141,11 +163,13 @@ class Engel:
         self.spreadsheet = client.open(id_dict['Engel Sheet'])
         self.dfdict = dict()
         self.dfsync()
-        self.jobjp_init()
+        self.levelexp_init()
     def indextransform(self, index):
         # to counter google sheet eating user ids
         if isinstance(index, (int, float)):
             return f"u{index}"
+        elif index == '':
+            return index
         else:
             if index[0] == 'u':
                 return int(index[1:])
@@ -155,14 +179,11 @@ class Engel:
         # sync online sheet into local data
         for sheetname, indexname in self.sheettuples:
              df = pd.DataFrame(self.spreadsheet.worksheet(sheetname).get_all_records())
+             if 'User' in df.columns:
+                 df['User'] = df['User'].apply(self.indextransform)
              if indexname != '':
-                 df[indexname] = df[indexname].apply(self.indextransform)
                  df = df.set_index(indexname)
              self.dfdict[sheetname] = df
-        dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
-        for jobid in dfjob.index:
-            if jobid not in self.dfdict['User'].columns:
-                self.dfdict['User'][jobid] = ''
     def sheetsync(self, logsync=0, raidsync=0):
         # sync local data into online sheet
         df = self.dfdict['User'].copy()
@@ -170,7 +191,7 @@ class Engel:
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
         if logsync:
             df = self.dfdict['Log'].copy()
-            df['User'] = df['User'].astype(str)
+            df['User'] = df['User'].apply(self.indextransform)
             set_with_dataframe(self.spreadsheet.worksheet('Log'), df, include_index=False)
         if raidsync:
             set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
@@ -181,13 +202,18 @@ class Engel:
             'User': userid,
             'Timestamp': timestamp
         }
-        self.spreadsheet.worksheet('Log').append_row([str(v) for v in new_log.values()])
+        new_row = (event, self.indextransform(userid), timestamp)
+        self.spreadsheet.worksheet('Log').append_row(new_row)
         self.dfdict['Log'] = self.dfdict['Log'].append(new_log, ignore_index=True)
     def find_index(self, query, dfname):
+        # auxiliary function to find index of a certain name
         df = self.dfdict[dfname]
         if dfname == 'Job':
             indices = df['Job']
             indexer = lambda x: x['Job']
+        elif dfname == 'Skill':
+            indices = df['Skill']
+            indexer = lambda x: x['Skill']
         else:
             indices = df.index
             indexer = lambda x: x.name
@@ -204,16 +230,32 @@ class Engel:
                 return candidates[0]
             else:
                 return 'NOTFOUND'
-    def jobjp_init(self):
-        # initialize job level - JP table
-        basejp = 10
-        self.jobjp = dict()
-        self.jobjpsum = dict()
-        jpsum = 0
+    def levelexp_init(self):
+        # initialize level - EXP table
+        basejp = 100
+        self.nextlevelexp = []
+        self.levelexp = [0]
+        expsum = 0
         for i in range(self.levelcap):
-            self.jobjp[i] = basejp + math.floor(i ** 1.5)
-            jpsum += self.jobjp[i]
-            self.jobjpsum[i + 1] = jpsum
+            self.nextlevelexp.append(basejp + math.floor(i ** 1.5 * 10))
+            expsum += self.nextlevelexp[i]
+            self.levelexp.append(expsum)
+    def calclevel(self, exp):
+        # calculate level from total EXP
+        level = 0
+        for i in range(0, self.levelcap, 10):
+            if exp < self.levelexp[i]:
+                level = i - 10
+                break
+        else:
+            level = i
+        for i in range(level, self.levelcap + 1, 1):
+            if exp < self.levelexp[i]:
+                level = i - 1
+                break
+        else:
+            return self.levelcap
+        return level
     def calchitrate(self, accuracy):
         # calculate critical or hit rate from dex - agi
         if accuracy == 0:
@@ -236,58 +278,75 @@ class Engel:
     def calcstats(self, userid):
         # calculate stats given user id
         userdict = dict()
-        level = 0
+        userdict['Level'] = self.calclevel(self.dfdict['User'].loc[userid, 'EXP'])
         for statname in self.statlist:
             userdict[statname] = self.dfdict['Base'].loc[self.dfdict['User'].loc[userid, 'Base'], statname]
-        dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
-        for index, row in dfjob.iterrows():
-            if index in self.dfdict['User'].columns:
-                if self.dfdict['User'].loc[userid, index] != '':
-                    for statname in self.statlist:
-                        userdict[statname] += row[statname] * self.dfdict['User'].loc[userid, index]
-                    level += self.dfdict['User'].loc[userid, index]
-        userdict['Level'] = level
+        level_tup = (
+            ('Main', userdict['Level']),
+            ('Sub1', (userdict['Level'] + 1) // 2),
+            ('Sub2', userdict['Level'] // 2)
+        )
+        for job_col, job_level in level_tup:
+            job_id = self.dfdict['User'].loc[userid, job_col]
+            for statname in self.statlist:
+                userdict[statname] += self.dfdict['Job'].loc[job_id, statname] * job_level
         return userdict
     def calcstatsraid(self, raid):
         # calculate raid stats given raid name
         raiddict = dict()
         base = self.dfdict['Raid'].loc[raid, 'Base']
-        jobid = self.dfdict['Base'].loc[base, 'Starter']
+        jobid = self.dfdict['Base'].loc[base, 'Main']
         jobrow = self.dfdict['Job'].loc[jobid]
         for statname in self.statlist:
             raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * self.dfdict['Raid'].loc[raid, 'Level']
         return raiddict
     def userattack(self, attacker, defender):
         # perform an attack between users
+        # get their status sheets
+        attackdict = self.calcstats(attacker)
+        defenddict = self.calcstats(defender)
+        # skill check
+        if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
+            skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker, 'A_Skill']]
+            modifier = skillrow[self.dfdict['User'].loc[attacker, 'A_Potency']]
+            if skillrow['Ally']:
+                attackdict[skillrow['Stat']] = int(round(attackdict[skillrow['Stat']] * modifier))
+            else:
+                defenddict[skillrow['Stat']] = int(round(defenddict[skillrow['Stat']] * modifier))
+        # pick higher potential damage
+        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
+        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
         if self.dfdict['User'].loc[attacker, 'HP'] == 0:
-            return (0, 'You are dead!')
+            return (0, damage, hitrate, 'You are dead!')
         elif self.dfdict['User'].loc[attacker, 'AP'] < self.attack_apcost:
-            return (0, 'Not enough AP!')
+            return (0, damage, hitrate, 'Not enough AP!')
         elif self.dfdict['User'].loc[defender, 'HP'] == 0:
-            return (0, 'Target is dead!')
+            return (0, damage, hitrate, 'Target is dead!')
         else:
-            # get their status sheets
-            attackdict = self.calcstats(attacker)
-            defenddict = self.calcstats(defender)
-            jp_gain = 2 # base JP gain
+            # consumes skill duration
+            if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
+                new_duration = self.dfdict['User'].loc[attacker, 'A_Duration'] - 1
+                if new_duration == 0:
+                    self.dfdict['User'].loc[attacker, 'A_Skill'] = ''
+                    self.dfdict['User'].loc[attacker, 'A_Potency'] = ''
+                    self.dfdict['User'].loc[attacker, 'A_Duration'] = ''
+                else:
+                    self.dfdict['User'].loc[attacker, 'A_Duration'] = new_duration
+            exp_gain = 15 # base EXP gain
             # consumes AP
             self.dfdict['User'].loc[attacker, 'AP'] = int(self.dfdict['User'].loc[attacker, 'AP'] - self.attack_apcost)
-            # pick higher potential damage
-            damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
-            hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
             if hitrate > 1:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            jp_gain += (damage * hit // 6 + defenddict['Level'] * min(hit, 1)) // 5 # bonus JP for damage
+            exp_gain += damage * hit // 30 + defenddict['Level'] * min(hit, 1) # bonus EXP for damage
             kill = self.userdamage(defender, damage * hit)
             if kill:
-                jp_gain += defenddict['Level'] # bonus JP for killing
-            defender_jp_gain = 1 + (damage * hit // 12 + attackdict['Level']) // 5
-            self.dfdict['User'].loc[defender, 'JP'] = self.dfdict['User'].loc[defender, 'JP'] + defender_jp_gain
-            self.dfdict['User'].loc[attacker, 'JP'] = self.dfdict['User'].loc[attacker, 'JP'] + jp_gain # gains JP
-            self.sheetsync()
-            return (1, damage, hitrate, hit, kill, jp_gain, defender_jp_gain)
+                exp_gain += defenddict['Level'] # bonus EXP for killing
+            defender_exp_gain = 10 + damage * hit // 45 + attackdict['Level']
+            self.dfdict['User'].loc[defender, 'EXP'] = self.dfdict['User'].loc[defender, 'EXP'] + defender_exp_gain
+            self.dfdict['User'].loc[attacker, 'EXP'] = self.dfdict['User'].loc[attacker, 'EXP'] + exp_gain # gains EXP
+            return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain)
     def userdamage(self, defender, damage):
         # function for a user to take damage
         self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
@@ -311,8 +370,8 @@ class Engel:
             if 0 < row['HP'] < userdict['HP']:
                 new_hp = min(row['HP'] + hp_recovery, userdict['HP'])
                 self.dfdict['User'].loc[index, 'HP'] = new_hp
-            # gains JP passively too
-            self.dfdict['User'].loc[index, 'JP'] = self.dfdict['User'].loc[index, 'JP'] + 1 + userdict['Level'] // 10
+            # gains EXP passively too
+            self.dfdict['User'].loc[index, 'EXP'] = self.dfdict['User'].loc[index, 'EXP'] + 1 + userdict['Level'] // 3
         self.sheetsync()
     def userrevive(self, index):
         # revives dead user and logs it
@@ -321,51 +380,34 @@ class Engel:
         self.dfdict['Log'].loc[index, 'Event'] = 'userrevived'
         self.dfdict['Log'].loc[index, 'Timestamp'] = datetime.strftime(datetime.now(), mydtformat)
         self.sheetsync(logsync=1)
-    def userjoblevel(self, user, job, num_levels):
-        # raises user job levels
+    def userjobchange(self, user, job, job_col='Main'):
+        # change user main or sub job
         dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         jobid = dfjob[dfjob['Job'] == job].tail(1).index.tolist()[0]
-        userrow = self.dfdict['User'].loc[user.id]
-        available_jp = userrow['JP']
-        job_level = userrow[jobid]
-        if job_level == '':
-            job_level = 0
-        job_level_0 = job_level
-        for i in range(num_levels):
-            if job_level == self.levelcap:
-                break
-            if available_jp >= self.jobjp[job_level]:
-                available_jp -= self.jobjp[job_level]
-                job_level += 1
-            else:
-                break
-        if job_level > job_level_0:
-            self.dfdict['User'].loc[user.id, jobid] = job_level
-            self.dfdict['User'].loc[user.id, 'JP'] = available_jp
-            self.sheetsync()
-        return f"{job_level - job_level_0} level(s) raised. Your current available JP is now {available_jp}."
-    def userjobreset(self, user):
-        # resets user job
-        df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userjobreset']
-        df = df[df['User'] == user.id]
-        if len(df) > 0:
-            thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(days=1)
-            now = datetime.now()
-            if now < thres:
-                remaining = thres - now
-                return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before you can reset jobs."
-        dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
-        userrow = self.dfdict['User'].loc[user.id]
-        jp_refunded = 0
-        for jobid in dfjob.index:
-            if userrow[jobid] != '':
-                jp_refunded += self.jobjpsum[userrow[jobid]]
-                self.dfdict['User'].loc[user.id, jobid] = ''
-        if jp_refunded > 0:
-            self.dfdict['User'].loc[user.id, 'JP'] = self.dfdict['User'].loc[user.id, 'JP'] + jp_refunded
-            self.new_log('userjobreset', user.id, datetime.strftime(datetime.now(), mydtformat))
-            self.sheetsync()
-        return f"{jp_refunded} JP refunded!"
+        if job_col == 'Main':
+            df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userjob']
+            df = df[df['User'] == user.id]
+            if len(df) > 0:
+                thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(days=1)
+                now = datetime.now()
+                if now < thres:
+                    remaining = thres - now
+                    return (0, 0, remaining.seconds)
+            if self.dfdict['User'].loc[user.id, 'Main'] == jobid:
+                return (0, 1)
+            self.dfdict['User'].loc[user.id, 'Main'] = jobid
+            sub1jobid = self.dfdict['Job'].loc[jobid, 'Sub1']
+            self.dfdict['User'].loc[user.id, 'Sub1'] = sub1jobid
+            sub2jobid = self.dfdict['Job'].loc[jobid, 'Sub2']
+            self.dfdict['User'].loc[user.id, 'Sub2'] = sub2jobid
+            self.new_log('userjob', user.id, datetime.strftime(datetime.now(), mydtformat))
+            return (1, self.dfdict['Job'].loc[sub1jobid, 'Job'], self.dfdict['Job'].loc[sub2jobid, 'Job'])
+        else:
+            for jcol in ('Main', 'Sub1', 'Sub2'):
+                if self.dfdict['User'].loc[user.id, jcol] == jobid:
+                    return (0, jcol)
+            self.dfdict['User'].loc[user.id, job_col] = jobid
+            return (1,)
     def userbase(self, user, base):
         # changes user or starts a user
         df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userbase']
@@ -388,7 +430,10 @@ class Engel:
                 'Base': base,
                 'HP': baserow['HP'],
                 'AP': baserow['AP'],
-                'JP': 0,
+                'EXP': 0,
+                'Main': baserow['Main'],
+                'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
+                'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
                 baserow['Starter']: 1
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
@@ -409,39 +454,54 @@ class Engel:
             return 0
     def raidattack(self, user, raid):
         # perform an attack between an user and a raid
+        # get their status sheets
+        userdict = self.calcstats(user)
+        raiddict = self.calcstatsraid(raid)
+        # skill check
+        if self.dfdict['User'].loc[user, 'A_Skill'] != '':
+            skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'A_Skill']]
+            modifier = skillrow[self.dfdict['User'].loc[user, 'A_Potency']]
+            if skillrow['Ally']:
+                userdict[skillrow['Stat']] = int(round(userdict[skillrow['Stat']] * modifier))
+            else:
+                raiddict[skillrow['Stat']] = int(round(raiddict[skillrow['Stat']] * modifier))
+        # pick higher potential damage
+        damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
+        hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
+        raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
+        raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
         if self.dfdict['User'].loc[user, 'HP'] == 0:
-            return (0, 'You are dead!')
+            return (0, damage, hitrate, raid_damage, raid_hitrate, 'You are dead!')
         elif self.dfdict['User'].loc[user, 'AP'] < self.attack_apcost:
-            return (0, 'Not enough AP!')
+            return (0, damage, hitrate, raid_damage, raid_hitrate, 'Not enough AP!')
         else:
-            # get their status sheets
-            userdict = self.calcstats(user)
-            raiddict = self.calcstatsraid(raid)
-            jp_gain = 5 # base JP gain
+            # consumes skill duration
+            if self.dfdict['User'].loc[user, 'A_Skill'] != '':
+                new_duration = self.dfdict['User'].loc[user, 'A_Duration'] - 1
+                if new_duration == 0:
+                    self.dfdict['User'].loc[user, 'A_Skill'] = ''
+                    self.dfdict['User'].loc[user, 'A_Potency'] = ''
+                    self.dfdict['User'].loc[user, 'A_Duration'] = ''
+                else:
+                    self.dfdict['User'].loc[user, 'A_Duration'] = new_duration
+            exp_gain = 30 # base EXP gain
             # consumes AP
             self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
-            # pick higher potential damage
-            damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
-            hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
             if hitrate > 1:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            jp_gain += (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for damage
+            exp_gain += (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 3 # bonus EXP for damage
             kill = self.raiddamage(raid, damage * hit)
             if kill:
-                jp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 10 # bonus JP for killing
-            raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
-            raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
+                exp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 3 # bonus EXP for killing
             if raid_hitrate > 1:
                 raid_hit = 1 + ((raid_hitrate - 1) > random.random())
             else:
                 raid_hit = raid_hitrate > random.random()
             raid_kill = self.userdamage(user, raid_damage * raid_hit)
-            self.dfdict['User'].loc[user, 'JP'] = self.dfdict['User'].loc[user, 'JP'] + jp_gain # gains JP
-            self.sheetsync(raidsync=1)
-            return (1, damage, hitrate, hit, kill, jp_gain,
-                    raid_damage, raid_hitrate, raid_hit, raid_kill)
+            self.dfdict['User'].loc[user, 'EXP'] = self.dfdict['User'].loc[user, 'EXP'] + exp_gain # gains EXP
+            return (1, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain)
     ############################
     # discord embed generators #
     ############################
@@ -489,14 +549,14 @@ class Engel:
             desc_list = []
             for stat in self.statlist2:
                 desc_list.append(f"{stat} `{row[stat]}`")
-            desc_list.append(f"Starter: {self.dfdict['Job'].loc[row['Starter'], 'Job']}")
+            desc_list.append(f"{self.dfdict['Job'].loc[row['Main'], 'Job']}")
             base_list.append(f"**{index}**\n - {' | '.join(desc_list)}")
             base_count += 1
             if base_count % 10 == 0:
-                embed.add_field(name='-', value='\n'.join(base_list))
+                embed.add_field(name='-', value='\n'.join(base_list), inline=False)
                 base_list = []
         if len(base_list) > 0:
-            embed.add_field(name='-', value='\n'.join(base_list))
+            embed.add_field(name='-', value='\n'.join(base_list), inline=False)
         return embed
     def listraid(self):
         # generate embed of list of available bases
@@ -523,48 +583,79 @@ class Engel:
         df = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         job_list = []
         job_count = 0
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             desc_list = []
             for stat in self.statlist2:
-                desc_list.append(f"{stat} `{self.statrating[row[stat]]}`")
+                desc_list.append(f"{stat} `{row[stat]}`")
+            desc_list.append(f"{self.dfdict['Skill'].loc[row['Skill'], 'Skill']}")
             job_list.append(f"**{row['Job']}**\n - {' | '.join(desc_list)}")
             job_count += 1
             if job_count % 10 == 0:
-                embed.add_field(name='-', value='\n'.join(job_list))
+                embed.add_field(name='-', value='\n'.join(job_list), inline=False)
                 job_list = []
         if len(job_list) > 0:
-            embed.add_field(name='-', value='\n'.join(job_list))
+            embed.add_field(name='-', value='\n'.join(job_list), inline=False)
         return embed
-    def infojp(self, user):
-        # generate info embed of specific user jobs and jp
+    def listskill(self):
+        # generate embed of list of available skills
         embed = discord.Embed()
-        userrow = self.dfdict['User'].loc[user.id]
-        embed.title = f"{user.name} Jobs"
-        embed.description = f"JP: {userrow['JP']}"
-        dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
-        job_list = []
-        job_count = 0
-        for index, row in dfjob.iterrows():
-            job_level = userrow[index]
-            if job_level == '':
-                job_level = 0
-            if job_level < self.levelcap:
-                next_jp = self.jobjp[job_level]
-                jobstr = f"**{row['Job']}**\n - Level `{job_level}` (Next: `{next_jp}` JP)"
-                if userrow['JP'] >= next_jp:
-                    jobstr += ' **OK**'
-                job_list.append(jobstr)
+        embed.title = 'List of Skills'
+        embed.description = self.manual['Skill'] + '\n`=charhelp skill` for more info.'
+        df = self.dfdict['Skill']
+        skill_list = []
+        skill_count = 0
+        for _, row in df.iterrows():
+            desc_list = []
+            if row['Ally']:
+                target = 'ally'
             else:
-                job_list.append(f"**{row['Job']}**\n - Level `{job_level}` (MAX)")
-            job_count += 1
-            if job_count % 10 == 0:
-                embed.add_field(name='-', value='\n'.join(job_list))
-                job_list = []
-        if len(job_list) > 0:
-            embed.add_field(name='-', value='\n'.join(job_list))
-        embed_colour = self.dfdict['Base'].loc[userrow['Base'], 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+                target = 'enemy'
+            if row['Healing']:
+                desc_list.append('Healing')
+            elif row['Ally'] > 0:
+                desc_list.append('Buff')
+                desc_list.append(f"Increases {target} {row['Stat']} during battle.")
+            else:
+                desc_list.append('Debuff')
+                desc_list.append(f"Partially ignores {target} {row['Stat']} during battle.")
+            skill_list.append(f"**{row['Skill']}**\n - {' | '.join(desc_list)}")
+            skill_count += 1
+            if skill_count % 10 == 0:
+                embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
+                skill_list = []
+        if len(skill_list) > 0:
+            embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
+        return embed
+    def infojobchange(self, user, jobchange_dict):
+        # generate info embed of job change
+        embed = discord.Embed()
+        embed.title = f"{user.name} Job Change"
+        change = 0
+        desc_list = []
+        for k, v in jobchange_dict.items():
+            if k == 'Main':
+                result_tup = self.userjobchange(user, v)
+                if result_tup[0]:
+                    desc_list = (
+                        'Success! Your jobs are now the following:',
+                        f"Main: {v}",
+                        f"Sub1: {result_tup[1]}",
+                        f"Sub2: {result_tup[2]}")
+                    change = 1
+                elif result_tup[1]:
+                    desc_list.append('It is already your current main job!')
+                else:
+                    desc_list.append(f"{result_tup[2] // 3600} hours {result_tup[2] % 3600 // 60} minutes left before you can change your main job.")
+            else:
+                result_tup = self.userjobchange(user, v, k)
+                if result_tup[0]:
+                    desc_list.append(f"Success! Your {k} is now {v}.")
+                    change = 1
+                else:
+                    desc_list.append(f"{v} is already your {result_tup[1]} job!")
+        if change:
+            self.sheetsync()
+        embed.description = '\n'.join(desc_list)
         return embed
     def infouser(self, user):
         # generate info embed of specific user
@@ -573,15 +664,28 @@ class Engel:
         embed.title = user.name
         desc_list = []
         userdict = self.calcstats(row.name)
-        desc_list.append(f"Base: {row['Base']} (+{userdict['Level']})")
+        desc_list.append(f"Base: {row['Base']}")
+        if userdict['Level'] == self.levelcap:
+            desc_list.append(f"Level: {userdict['Level']} (MAX)")
+        else:
+            desc_list.append(f"Level: {userdict['Level']}")
+            desc_list.append(f"*Next Level: {self.nextlevelexp[userdict['Level']]} EXP*")
         desc_list.append(f"HP: {row['HP']}/{userdict['HP']}")
         desc_list.append(f"AP: {row['AP']}/{userdict['AP']}")
-        desc_list.append(f"JP: {row['JP']}")
+        if row['A_Skill'] != '':
+            desc_list.append(f"Status: {self.dfdict['Skill'].loc[row['A_Skill'], 'Skill']} ({row['A_Duration']})")
         embed.description = '\n'.join(desc_list)
-        desc_list = []
+        field_list = []
         for stat in self.statlist2:
-            desc_list.append(f"{stat}: {userdict[stat]}")
-        embed.add_field(name='Stats', value='\n'.join(desc_list))
+            field_list.append(f"{stat}: {userdict[stat]}")
+        embed.add_field(name='Stats', value='\n'.join(field_list))
+        field_list = []
+        for job_col in ('Main', 'Sub1', 'Sub2'):
+            job_line = f"{job_col}: {self.dfdict['Job'].loc[row[job_col], 'Job']}"
+            skillid = self.dfdict['Job'].loc[row[job_col], 'Skill']
+            job_line += f" ({self.dfdict['Skill'].loc[skillid, 'Skill']})"
+            field_list.append(job_line)
+        embed.add_field(name='Jobs', value='\n'.join(field_list))
         if row['HP'] == 0:
             dflog = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
             deadtime = dflog[dflog['User'] == user.id].tail(1)['Timestamp'].tolist()[0]
@@ -645,9 +749,9 @@ class Engel:
             else:
                 hit = hitrate > random.random()
             if hit == 2:
-                field_list.append(f"{attacker.name} landed a critical hit, dealing {damage * hit} damage.")
+                field_list.append(f"{attacker.name} landed a critical hit with {damage * hit} damage.")
             elif hit == 1:
-                field_list.append(f"{attacker.name} successfully attacked, dealing {damage * hit} damage.")
+                field_list.append(f"{attacker.name} successfully attacked with {damage * hit} damage.")
             else:
                 field_list.append(f"{attacker.name} missed.")
             if counter_hitrate > 1:
@@ -655,9 +759,9 @@ class Engel:
             else:
                 counter_hit = counter_hitrate > random.random()
             if counter_hit == 2:
-                field_list.append(f"{defender.name} landed a critical hit, dealing {counter_damage * counter_hit} damage.")
+                field_list.append(f"{defender.name} landed a critical hit with {counter_damage * counter_hit} damage.")
             elif counter_hit == 1:
-                field_list.append(f"{defender.name} successfully attacked, dealing {counter_damage * counter_hit} damage.")
+                field_list.append(f"{defender.name} successfully attacked with {counter_damage * counter_hit} damage.")
             else:
                 field_list.append(f"{defender.name} missed.")
             attackhp = max(attackhp - counter_damage * counter_hit, 0)
@@ -679,87 +783,172 @@ class Engel:
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
         return embed
-    def infoattack(self, attacker, defender):
-        # generate result embed of an attack
-        result_tup = self.userattack(attacker.id, defender.id)
+    def infotrain(self, user, ap_consume=3):
+        # generate result embed of a training session
         embed = discord.Embed()
-        if result_tup[0] == 0:
-            embed.title = 'Attack Failed'
-            embed.description = result_tup[1]
+        embed.title = f"{user.name} Taining"
+        total_exp_gain = 0
+        ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
+        self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
+        for _ in range(ap_consume):
+            exp_gain = 10 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) // 3
+            total_exp_gain += exp_gain
+            self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
+        if total_exp_gain > 0:
+            self.sheetsync()
+        embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
+        return embed
+    def infoskill(self, user, skill, target=None, consumehp=0):
+        # generate result embed of a skill
+        embed = discord.Embed()
+        userrow = self.dfdict['User'].loc[user.id]
+        skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+        skillrow = self.dfdict['Skill'].loc[skillid]
+        embed.title = f"{user.name} - {skillrow['Skill']}"
+        # check if skill available and what potency
+        if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
+            potency = 'Main'
+        elif skillid in (self.dfdict['Job'].loc[userrow['Sub1'], 'Skill'], self.dfdict['Job'].loc[userrow['Sub2'], 'Skill']):
+            potency = 'Sub'
         else:
-            embed.title = f"{attacker.name} VS {defender.name}"
-            _, damage, hitrate, hit, kill, jp_gain, defender_jp_gain = result_tup
-            desc_list = []
-            desc_list.append(f"*Info: You have {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
-            desc_list.append(f"*Info: You have {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
-            if hit == 2:
-                desc_list.append(f"You landed a critical hit.")
-            elif hit == 1:
-                desc_list.append(f"You successfully attacked.")
+            embed.description = 'Your current jobs cannot use said skill!'
+            return embed
+        # check target
+        if target == None:
+            target = user
+        elif not skillrow['Ally']:
+            embed.description = f"{skill} cannot be casted on others!"
+            return embed
+        if self.dfdict['User'].loc[target.id, 'HP'] == 0:
+            embed.description = 'Target is dead!'
+            return embed
+        if consumehp:
+            hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
+            if userrow['HP'] <= hpcost:
+                embed.description = f"You need at least {hpcost + 1} HP!"
+                return embed
             else:
-                desc_list.append(f"You missed.")
-            if kill:
-                desc_list.append(f"{defender.name} is KO-ed.")
-            desc_list.append(f"You gained {jp_gain} JP. {defender.name} gained {defender_jp_gain} JP.")
-            embed.description = '\n'.join(desc_list)
-            for user in (attacker, defender):
-                desc_list = []
-                for statname in ('HP', 'AP', 'JP'):
-                    desc_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
-                embed.add_field(name = user.name, value = '\n'.join(desc_list))
+                self.dfdict['User'].loc[user.id, 'HP'] = self.dfdict['User'].loc[user.id, 'HP'] - hpcost
+        elif userrow['AP'] < self.skill_apcost:
+            embed.description = 'You do not have enough AP!'
+            return embed
+        else:
+            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - self.skill_apcost
+        if skillrow['Healing']:
+            hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
+            self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
+            embed.description = f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP."
+        else:
+            self.dfdict['User'].loc[target.id, 'A_Skill'] = skillid
+            self.dfdict['User'].loc[target.id, 'A_Potency'] = potency
+            self.dfdict['User'].loc[target.id, 'A_Duration'] = self.skillduration
+            if skillrow['Ally']:
+                embed.description = f"You casted {skillrow['Skill']} on {target.name}."
+            else:
+                embed.description = f"You casted {skillrow['Skill']}."
+        self.sheetsync()
+        return embed
+    def infoattack(self, attacker, defender, num_times=1):
+        # generate result embed of an attack
+        embed = discord.Embed()
+        embed.title = f"{attacker.name} VS {defender.name}"
+        result_tup = self.userattack(attacker.id, defender.id)
+        desc_list = []
+        desc_list.append(f"*You have {min(result_tup[2], 1) * 100:.0f}% of doing {result_tup[1]} damage.*")
+        desc_list.append(f"*You have {max(result_tup[2] - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        embed.description = '\n'.join(desc_list)
+        exp_gain_total = 0
+        defender_exp_gain_total = 0
+        field_list = []
+        for i in range(num_times):
+            if i != 0:
+                result_tup = self.userattack(attacker.id, defender.id)
+            if result_tup[0] == 0:
+                embed.add_field(name=f"Only attacked {i} time(s).", value=result_tup[3], inline=False)
+                break
+            else:
+                _, damage, hitrate, hit, kill, exp_gain, defender_exp_gain = result_tup
+                if hit == 2:
+                    field_list.append(f"You landed a critical hit with {damage * hit} damage.")
+                elif hit == 1:
+                    field_list.append(f"You successfully attacked with {damage} damage.")
+                else:
+                    field_list.append(f"You missed.")
+                exp_gain_total += exp_gain
+                defender_exp_gain_total += defender_exp_gain
+                if kill:
+                    field_list.append(f"{defender.name} is KO-ed.")
+                    break
+        field_list.append(f"You gained {exp_gain_total} EXP. {defender.name} gained {defender_exp_gain_total} EXP.")
+        embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
+        for user in (attacker, defender):
+            field_list = []
+            field_list.append(f"Level: {self.calclevel(self.dfdict['User'].loc[user.id, 'EXP'])}")
+            for statname in ('HP', 'AP'):
+                field_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
+            embed.add_field(name = user.name, value = '\n'.join(field_list))
         defender_base = self.dfdict['User'].loc[defender.id, 'Base']
         embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
+        self.sheetsync()
         return embed
-    def infoattackraid(self, user, raid):
+    def infoattackraid(self, user, raid, num_times=1):
         # generate result embed of an attack
-        result_tup = self.raidattack(user.id, raid)
         embed = discord.Embed()
-        if result_tup[0] == 0:
-            embed.title = 'Attack Failed'
-            embed.description = result_tup[1]
-        else:
-            embed.title = f"{user.name} VS {raid}"
-            _, damage, hitrate, hit, kill, jp_gain, raid_damage, raid_hitrate, raid_hit, raid_kill = result_tup
-            desc_list = []
-            desc_list.append(f"*Info: You have {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
-            desc_list.append(f"*Info: You have {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
-            if hit == 2:
-                desc_list.append(f"You landed a critical hit.")
-            elif hit == 1:
-                desc_list.append(f"You successfully attacked.")
+        embed.title = f"{user.name} VS {raid}"
+        result_tup = self.raidattack(user.id, raid)
+        desc_list = []
+        desc_list.append(f"*You have {min(result_tup[2], 1) * 100:.0f}% of doing {result_tup[1]} damage.*")
+        desc_list.append(f"*You have {max(result_tup[2] - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        desc_list.append(f"*{raid} has {min(result_tup[4], 1) * 100:.0f}% of doing {result_tup[3]} damage to you.*")
+        desc_list.append(f"*{raid} has {max(result_tup[4] - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        embed.description = '\n'.join(desc_list)
+        exp_gain_total = 0
+        field_list = []
+        for i in range(num_times):
+            if i != 0:
+                result_tup = self.raidattack(user.id, raid)
+            if result_tup[0] == 0:
+                embed.add_field(name=f"Only attacked {i} time(s).", value=result_tup[5], inline=False)
+                break
             else:
-                desc_list.append(f"You missed.")
-            if kill:
-                self.new_log(f"{raid} kill", user.id, datetime.strftime(datetime.now(), mydtformat))
-                desc_list.append(f"{raid} is KO-ed. A new level has now been spawned.")
-            desc_list.append(f"\nYou gained {jp_gain} JP.")
-            embed.description = '\n'.join(desc_list)
-            desc_list = []
-            desc_list.append(f"\n*Info: {raid} has {min(raid_hitrate, 1) * 100:.0f}% of doing {raid_damage} damage to you.*")
-            desc_list.append(f"*Info: {raid} has {max(raid_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
-            if raid_hit == 2:
-                desc_list.append(f"{raid} landed a critical hit.")
-            elif raid_hit == 1:
-                desc_list.append(f"{raid} successfully countered.")
-            else:
-                desc_list.append(f"{raid} missed.")
-            if raid_kill:
-                desc_list.append(f"You are KO-ed.")
-            embed.add_field(name = f"{raid} Counter Attack", value = '\n'.join(desc_list), inline = False)
-            desc_list = []
-            for statname in ('HP', 'AP', 'JP'):
-                desc_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
-            embed.add_field(name = user.name, value = '\n'.join(desc_list))
-            desc_list = []
-            desc_list.append(f"Level: {self.dfdict['Raid'].loc[raid, 'Level']}")
-            desc_list.append(f"HP: {self.dfdict['Raid'].loc[raid, 'HP']}")
-            embed.add_field(name = raid, value = '\n'.join(desc_list))
+                _, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain = result_tup
+                if hit == 2:
+                    field_list.append(f"You landed a critical hit with {damage * hit} damage.")
+                elif hit == 1:
+                    field_list.append(f"You successfully attacked with {damage} damage.")
+                else:
+                    field_list.append(f"You missed.")
+                if kill:
+                    self.new_log(f"{raid} kill", user.id, datetime.strftime(datetime.now(), mydtformat))
+                    field_list.append(f"{raid} is KO-ed. A new level has now been spawned.")
+                exp_gain_total += exp_gain
+                if raid_hit == 2:
+                    field_list.append(f"{raid} landed a critical hit with {raid_damage * raid_hit} damage.")
+                elif raid_hit == 1:
+                    field_list.append(f"{raid} successfully countered with {raid_damage} damage.")
+                else:
+                    field_list.append(f"{raid} missed.")
+                if raid_kill:
+                    field_list.append(f"You are KO-ed.")
+                    break
+        field_list.append(f"You gained {exp_gain_total} EXP.")
+        embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
+        field_list = []
+        field_list.append(f"Level: {self.calclevel(self.dfdict['User'].loc[user.id, 'EXP'])}")
+        for statname in ('HP', 'AP'):
+            field_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
+        embed.add_field(name = user.name, value = '\n'.join(field_list))
+        field_list = []
+        field_list.append(f"Level: {self.dfdict['Raid'].loc[raid, 'Level']}")
+        field_list.append(f"HP: {self.dfdict['Raid'].loc[raid, 'HP']}")
+        embed.add_field(name = raid, value = '\n'.join(field_list))
         raid_base = self.dfdict['Raid'].loc[raid, 'Base']
         embed_colour = self.dfdict['Base'].loc[raid_base, 'Colour']
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
+        self.sheetsync(raidsync=1)
         return embed
     async def executecommand(self, user, ctx, *arg):
         # main command execution
@@ -802,34 +991,84 @@ class Engel:
                     # list of jobs
                     return self.listjob()
                 else:
-                    if arg[1] in ('level', 'levels'):
-                        if len(arg) == 2:
-                            return self.infojp(user)
+                    if arg[1].lower() in ('main', 'change') and len(arg) > 2:
+                        job = self.find_index(' '.join(arg[2:]), 'Job')
+                        if job == 'NOTFOUND':
+                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
                         else:
-                            if arg[2].isnumeric() and len(arg) > 3:
-                                num_levels = int(arg[2])
-                                job = self.find_index(' '.join(arg[3:]), 'Job')
-                            else:
-                                num_levels = 1
-                                job = self.find_index(' '.join(arg[2:]), 'Job')
+                            return self.infojobchange(user, {'Main': job})
+                    elif arg[1].lower() == 'sub1' and len(arg) > 2:
+                        job = self.find_index(' '.join(arg[2:]), 'Job')
+                        if job == 'NOTFOUND':
+                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                        else:
+                            return self.infojobchange(user, {'Sub1': job})
+                    elif arg[1].lower() == 'sub2' and len(arg) > 2:
+                        job = self.find_index(' '.join(arg[2:]), 'Job')
+                        if job == 'NOTFOUND':
+                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                        else:
+                            return self.infojobchange(user, {'Sub2': job})
+                    elif arg[1].lower() in ('sub', 'subs') and len(arg) > 2:
+                        jobargs = [a.strip() for a in ' '.join(arg[2:]).split('|')]
+                        if len(jobargs) == 1:
+                            job = self.find_index(jobargs[0], 'Job')
                             if job == 'NOTFOUND':
                                 return discord.Embed(description = 'Job not found. Try checking `=char job`.')
                             else:
-                                return discord.Embed(description = self.userjoblevel(user, job, num_levels))
-                    elif arg[1] in ('reset',):
-                        return discord.Embed(description = self.userjobreset(user))
+                                return self.infojobchange(user, {'Sub1': job})
+                        else:
+                            job1 = self.find_index(jobargs[0], 'Job')
+                            job2 = self.find_index(jobargs[1], 'Job')
+                            if 'NOTFOUND' in (job1, job2):
+                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                            else:
+                                return self.infojobchange(user, {'Sub1': job1, 'Sub2': job2})
                     else:
                         # find job and info (not needed atm)
                         return discord.Embed(description = 'Try `=charhelp job`.')
+            elif arg[0] == 'skill':
+                if len(arg) == 1:
+                    # list of jobs
+                    return self.listskill()
+                else:
+                    skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
+                    skill = self.find_index(skillargs[0], 'Skill')
+                    if skill == 'NOTFOUND':
+                        return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
+                    consumehp = 0
+                    if len(skillargs) == 3:
+                        if skillargs[2].lower() == 'hp':
+                            consumehp = 1
+                    if len(skillargs) > 1:
+                        target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                        if target.id in self.dfdict['User'].index:
+                            return self.infoskill(user, skill, target, consumehp)
+                        else:
+                            return discord.Embed(description = 'User not found or did not start a character.')
+                    else:
+                        return self.infoskill(user, skill)
+                    return discord.Embed(description = 'Try `=charhelp skill`.')
+            elif arg[0] == 'train':
+                if len(arg) > 1:
+                    if arg[1].isnumeric():
+                        return self.infotrain(user, int(arg[1]))
+                return self.infotrain(user)
             elif arg[0] == 'attack':
                 if len(arg) == 1:
                     return discord.Embed(description = 'Try `=charhelp char`.')
                 else:
+                    if arg[1].isnumeric() and len(arg) > 2:
+                        num_times = min(int(arg[1]), 10)
+                        defender_name = ' '.join(arg[2:])
+                    else:
+                        num_times = 1
+                        defender_name = ' '.join(arg[1:])
                     try:
                         # find member of said name to attack
-                        defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
+                        defender = await commands.MemberConverter().convert(ctx, defender_name)
                         if defender.id in self.dfdict['User'].index:
-                            return self.infoattack(user, defender)
+                            return self.infoattack(user, defender, num_times)
                         else:
                             return discord.Embed(description = 'User not found or did not start a character.')
                     except commands.BadArgument:
@@ -854,11 +1093,17 @@ class Engel:
                     return self.listraid()
                 else:
                     if arg[1] == 'attack' and len(arg) > 2:
-                        raid = self.find_index(' '.join(arg[2:]), 'Raid')
+                        if arg[2].isnumeric() and len(arg) > 3:
+                            num_times = min(int(arg[2]), 10)
+                            raid_name = ' '.join(arg[3:])
+                        else:
+                            num_times = 1
+                            raid_name = ' '.join(arg[2:])
+                        raid = self.find_index(raid_name, 'Raid')
                         if raid == 'NOTFOUND':
                             return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
                         else:
-                            return self.infoattackraid(user, raid)
+                            return self.infoattackraid(user, raid, num_times)
                     elif arg[1] == 'info' and len(arg) > 2:
                         raid = self.find_index(' '.join(arg[2:]), 'Raid')
                         if raid == 'NOTFOUND':
@@ -920,7 +1165,7 @@ class Engelbert(commands.Cog):
         if ctx.message.author.id == id_dict['Owner']:
             user = await self.bot.fetch_user(int(arg[0]))
             embed = await engel.executecommand(user, ctx, *arg[1:])
-            embed.set_footer(text='Still in beta phase. Prone to bugs...')
+            embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
             await ctx.send(embed = embed)
             await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -930,7 +1175,7 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, 'help', *arg)
-        embed.set_footer(text='Still in beta phase. Prone to bugs...')
+        embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -940,6 +1185,6 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, *arg)
-        embed.set_footer(text='Still in beta phase. Prone to bugs...')
+        embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
