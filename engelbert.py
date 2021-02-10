@@ -138,7 +138,7 @@ class Engel:
         )
         self.changelog = (
             ('10th February 2021', (
-                'Available number of bases doubled.'
+                'Available number of bases doubled.',
                 'Train and user attack EXP increased.',
                 'Level - curve adjusted so earlier levels need fewer EXP.',
                 'Critical rate and evasion rate nerfed for the third time.',
@@ -802,7 +802,7 @@ class Engel:
         ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
         self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
         for _ in range(ap_consume):
-            exp_gain = 10 + int(self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 0.7)
+            exp_gain = 10 + int(self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 0.9)
             total_exp_gain += exp_gain
             self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
         if total_exp_gain > 0:
