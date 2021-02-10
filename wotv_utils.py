@@ -187,6 +187,7 @@ class WotvUtils:
         self.help_eq = (
             ('Equipment Help', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
+                'Note that only craftable/star-able SSR/UR equipment is listed (i.e. no TM).',
                 self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
             )),
             ('Equipment by name', ('**= eq**',

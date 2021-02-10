@@ -22,6 +22,7 @@ class Engel:
         self.skill_apcost = 5
         self.skill_hpcost = 0.2
         self.skillduration = 3
+        self.attackcap = 20
         self.sheettuples = (
             ('Base', 'Base'),
             ('Job', 'JobID'),
@@ -47,6 +48,7 @@ class Engel:
             '(digital pet / avatar / character). It is still under beta so things '
             'may be subject to change. Have to see if free hosting service can '
             'handle the frequency of data update too... Feel free to drop some feedback!\n'
+            'Type `=char changelog` for recent changes.\n'
             'For more in-depth info of the following, try `=charhelp char`, `=charhelp base`, '
             '`=charhelp job`, `=charhelp raid`'
         )
@@ -68,14 +70,14 @@ class Engel:
         self.indepthbattle = (
             '- To battle, you attack another player or a raid.',
             '- You can attack another player by `=char attack (user ping)`.',
-            '- Attack multiple times in a row by inserting a number like `=char attack 10 @Caelum`',
+            f"- Attack multiple times in a row by inserting a number like `=char attack 6 @Caelum` (up to {self.attackcap}).",
             '- You can duel another player by `=char duel (user ping)`. This will not result in KO or EXP gain, however.'
             '- Check out `=charhelp raid` for info about raid.',
             '- Alternatively, you can spend AP to get EXP by `=char train` or `=char train (number of AP)` (e.g. `=char train 10`).',
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger) with ATK/MAG of attacker and DEF/SPR of defender.',
             '- You can only land critical if your DEX is higher than the opponent; you can only evade attacks if your AGI is higher than the opponent.',
             '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`; evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
-            '- They use the same formula: 1~10 = 3% per point, 11~40 = 2% per point, 41~50 = 1% per point.',
+            '- They use the same formula: 1~25 = 2% per point, 26~75 = 1% per point.',
             '- Critical damage is 2x regular damage.',
         )
         self.manual['Base'] = (
@@ -108,15 +110,19 @@ class Engel:
             'There are three types of skills - healing, buff, debuff. '
         )
         self.indepth['Skill'] = (
-            'Skills do not apply on duels nor when you are being attacked.',
-            'Only 1 buff or debuff skill can be active at one time.',
-            f"All skills cost {self.skill_apcost} AP to cast.",
-            'Type `=char skill (skill name)` (e.g. `=char skill ruin`) to cast.',
-            'Healing and buff skills can be cast on other users.',
-            'Type `=char skill (skill name) | (user ping)` (e.g. `=char skill protect | @Caelum`).',
-            f"You can opt to consume {self.skill_hpcost*100:.0f}% HP instead of AP when casting on other users.",
-            'Type `=char skill (skill name) | (user ping) | hp` (e.g. `=char skill cure | @Caelum | hp`).'
-            f"Buff and debuff skills last for {self.skillduration} battles.",
+            '- Skills do not apply on duels nor when you are being attacked.',
+            '- Only 1 buff or debuff skill can be active at one time.',
+            f"- Buff and debuff skills last for {self.skillduration} battles.",
+            f"- All skills cost {self.skill_apcost} AP to cast.",
+            '- Type `=char skill (skill name)` (e.g. `=char skill ruin`) to cast.',
+            '- Healing and buff skills can be cast on other users.',
+            '- Type `=char skill (skill name) | (user ping)` (e.g. `=char skill protect | @Caelum`).',
+            f"- You can opt to consume {self.skill_hpcost*100:.0f}% HP instead of AP when casting on other users.",
+            '- Type `=char skill (skill name) | (user ping) | hp` (e.g. `=char skill cure | @Caelum | hp`).',
+            '- Healing is scaled with your max HP, i.e. Level.',
+            '- You can revive a target by healing only if you spend enough HP or AP to fully heal the target.',
+            '- The command remains the same if you revive by HP, but to revive with AP:',
+            '- Type `=char skill (healing skill name) | (user ping) | revive` (e.g. `=char skill cure | @Caelum | revive`).'
         )
         self.manual['Raid'] = (
             'You can battle a raid by to gain extra EXP. '
@@ -128,9 +134,14 @@ class Engel:
             'Type `=char raid` to find list of available raids and their levels.',
             'Type `=char raid info (raid name)` (e.g. `=char raid info ifrit`) to see the stats etc of the raid.',
             'Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
-            'Attack multiple times in a row by inserting a number like `=char raid attack 10 siren`',
+            f"Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
         )
         self.changelog = (
+            ('10th February 2021', (
+                'Critical rate and evasion rate nerfed for the third time.',
+                'It is now possible to buff a dead target.',
+                'It is now possible to revive (with a higher cost of healing). `=charhelp skill`'
+            )),
             ('9th February 2021', (
                 'Data reboot with the entire system rebalanced (please check various lists and helps).',
                 'Please check your new stats and reset raid list.',
@@ -260,17 +271,15 @@ class Engel:
         # calculate critical or hit rate from dex - agi
         if accuracy == 0:
             return 1
-        elif accuracy >= 50:
+        elif accuracy >= 75:
             return 2
-        elif accuracy <= -50:
+        elif accuracy <= -75:
             return 0
         else:
-            if abs(accuracy) >= 40:
-                modifier = 0.9 - 0.4 + abs(accuracy) * 0.01
-            elif abs(accuracy) >= 10:
-                modifier = 0.3 - 0.2 + abs(accuracy) * 0.02
+            if abs(accuracy) >= 25:
+                modifier = 0.5 - 0.25 + abs(accuracy) * 0.01
             else:
-                modifier = abs(accuracy) * 0.03
+                modifier = abs(accuracy) * 0.02
             if accuracy > 0:
                 return 1 + modifier
             else:
@@ -706,7 +715,7 @@ class Engel:
         embed.title = raid
         desc_list = []
         raiddict = self.calcstatsraid(row.name)
-        desc_list.append(f"Raid Level: {row['Level']}")
+        desc_list.append(f"Level: {row['Level']}")
         desc_list.append(f"HP: {row['HP']}/{raiddict['HP']}")
         embed.description = '\n'.join(desc_list)
         desc_list = []
@@ -818,28 +827,51 @@ class Engel:
         elif not skillrow['Ally']:
             embed.description = f"{skill} cannot be casted on others."
             return embed
-        if self.dfdict['User'].loc[target.id, 'HP'] == 0:
-            embed.description = 'Target is dead!'
-            return embed
-        if consumehp:
+        hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
+        apcost = self.skill_apcost
+        hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
+        revive = 0
+        # check if is to revive
+        if skillrow['Healing'] and self.dfdict['User'].loc[target.id, 'HP'] == 0:
+            num_times = math.ceil(self.calcstats(target.id)['HP'] / hprecovery)
+            hprecovery = hprecovery * num_times
+            hpcost = hpcost * num_times
+            apcost = apcost * num_times
+            revive = 1
+            if consumehp == 0:
+                desc_list = ['Target is dead!',
+                    f"If you do not mind paying {apcost} AP, type `=char skill {skillrow['Skill']} | target | revive`."
+                ]
+                if target.id != user.id:
+                    desc_list.append(f"If you do not mind paying {hpcost} HP, type `=char skill {skill} | target | hp`.")
+                embed.description = '\n'.join(desc_list)
+                return embed
+        # check HP or AP amount or criteria to consume
+        if consumehp == 1:
             if target.id == user.id:
                 embed.description = 'You cannot consume HP to cast a skill for yourself.'
                 return embed
-            hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
             if userrow['HP'] <= hpcost:
                 embed.description = f"You need at least {hpcost + 1} HP."
                 return embed
             else:
                 self.dfdict['User'].loc[user.id, 'HP'] = self.dfdict['User'].loc[user.id, 'HP'] - hpcost
-        elif userrow['AP'] < self.skill_apcost:
-            embed.description = 'You do not have enough AP.'
+        elif userrow['AP'] < apcost:
+            embed.description = f"You need to have at least {apcost} AP."
             return embed
         else:
-            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - self.skill_apcost
+            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - apcost
+        # Actual skill execution
         if skillrow['Healing']:
-            hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
-            self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
-            embed.description = f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP."
+            if revive:
+                df = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
+                logindex = df[df['User'] == target.id].tail(1).index.tolist()[0]
+                self.userrevive(logindex)
+                embed.description = f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}."
+                return embed
+            else:
+                self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
+                embed.description = f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP."
         else:
             self.dfdict['User'].loc[target.id, 'A_Skill'] = skillid
             self.dfdict['User'].loc[target.id, 'A_Potency'] = potency
@@ -861,8 +893,13 @@ class Engel:
         embed.description = '\n'.join(desc_list)
         exp_gain_total = 0
         defender_exp_gain_total = 0
+        attack_count = 0
         field_list = []
         for i in range(num_times):
+            if attack_count == 10:
+                embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
+                field_list = []
+                attack_count = 0
             if i != 0:
                 result_tup = self.userattack(attacker.id, defender.id)
             if result_tup[0] == 0:
@@ -881,6 +918,7 @@ class Engel:
                 if kill:
                     field_list.append(f"{defender.name} is KO-ed.")
                     break
+            attack_count += 1
         field_list.append(f"You gained {exp_gain_total} EXP. {defender.name} gained {defender_exp_gain_total} EXP.")
         embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
         for user in (attacker, defender):
@@ -907,8 +945,13 @@ class Engel:
         desc_list.append(f"*{raid} has {max(result_tup[4] - 1, 0) * 100:.0f}% of landing a critical hit.*")
         embed.description = '\n'.join(desc_list)
         exp_gain_total = 0
+        attack_count = 0
         field_list = []
         for i in range(num_times):
+            if attack_count == 5:
+                embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
+                field_list = []
+                attack_count = 0
             if i != 0:
                 result_tup = self.raidattack(user.id, raid)
             if result_tup[0] == 0:
@@ -935,6 +978,7 @@ class Engel:
                 if raid_kill:
                     field_list.append(f"You are KO-ed.")
                     break
+            attack_count += 1
         field_list.append(f"You gained {exp_gain_total} EXP.")
         embed.add_field(name = 'Battle Log', value = '\n'.join(field_list), inline=False)
         field_list = []
@@ -1042,6 +1086,8 @@ class Engel:
                     if len(skillargs) == 3:
                         if skillargs[2].lower() == 'hp':
                             consumehp = 1
+                        elif skillargs[2].lower() == 'revive':
+                            consumehp = -1
                     if len(skillargs) > 1:
                         target = await commands.MemberConverter().convert(ctx, skillargs[1])
                         if target.id in self.dfdict['User'].index:
@@ -1061,7 +1107,7 @@ class Engel:
                     return discord.Embed(description = 'Try `=charhelp char`.')
                 else:
                     if arg[1].isnumeric() and len(arg) > 2:
-                        num_times = min(int(arg[1]), 10)
+                        num_times = min(int(arg[1]), 20)
                         defender_name = ' '.join(arg[2:])
                     else:
                         num_times = 1
@@ -1096,7 +1142,7 @@ class Engel:
                 else:
                     if arg[1] == 'attack' and len(arg) > 2:
                         if arg[2].isnumeric() and len(arg) > 3:
-                            num_times = min(int(arg[2]), 10)
+                            num_times = min(int(arg[2]), 20)
                             raid_name = ' '.join(arg[3:])
                         else:
                             num_times = 1
