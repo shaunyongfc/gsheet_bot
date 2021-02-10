@@ -138,6 +138,9 @@ class Engel:
         )
         self.changelog = (
             ('10th February 2021', (
+                'Available number of bases doubled.'
+                'Train and user attack EXP increased.',
+                'Level - curve adjusted so earlier levels need fewer EXP.',
                 'Critical rate and evasion rate nerfed for the third time.',
                 'It is now possible to buff a dead target.',
                 'It is now possible to revive (with a higher cost of healing). `=charhelp skill`'
@@ -243,12 +246,12 @@ class Engel:
                 return 'NOTFOUND'
     def levelexp_init(self):
         # initialize level - EXP table
-        basejp = 100
+        basejp = 50
         self.nextlevelexp = []
         self.levelexp = [0]
         expsum = 0
         for i in range(self.levelcap):
-            self.nextlevelexp.append(basejp + math.floor(i ** 1.5 * 10))
+            self.nextlevelexp.append(basejp + math.floor(i ** 1.7 * 4))
             expsum += self.nextlevelexp[i]
             self.levelexp.append(expsum)
     def calclevel(self, exp):
@@ -348,11 +351,11 @@ class Engel:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
-            exp_gain += damage * hit // 30 + defenddict['Level'] * min(hit, 1) # bonus EXP for damage
+            exp_gain += damage * hit // 30 + defenddict['Level'] * min(hit, 1) * 2 # bonus EXP for damage
             kill = self.userdamage(defender, damage * hit)
             if kill:
                 exp_gain += defenddict['Level'] # bonus EXP for killing
-            defender_exp_gain = 10 + damage * hit // 45 + attackdict['Level']
+            defender_exp_gain = 10 + damage * hit // 45 + attackdict['Level'] * 2
             self.dfdict['User'].loc[defender, 'EXP'] = self.dfdict['User'].loc[defender, 'EXP'] + defender_exp_gain
             self.dfdict['User'].loc[attacker, 'EXP'] = self.dfdict['User'].loc[attacker, 'EXP'] + exp_gain # gains EXP
             return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain)
@@ -799,7 +802,7 @@ class Engel:
         ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
         self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
         for _ in range(ap_consume):
-            exp_gain = 10 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) // 3
+            exp_gain = 10 + int(self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 0.7)
             total_exp_gain += exp_gain
             self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
         if total_exp_gain > 0:
