@@ -105,8 +105,7 @@ class Engel:
             'Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.'
         )
         self.manual['Skill'] = (
-            'Skills are tied to jobs. You have access to skills of your main job and both your sub jobs. '
-            'However, the skill of your main job will have higher potency. '
+            'You can use all skills available. However, the skill of your main job will have higher potency. '
             'There are three types of skills - healing, buff, debuff. '
         )
         self.indepth['Skill'] = (
@@ -138,6 +137,8 @@ class Engel:
         )
         self.changelog = (
             ('10th February 2021', (
+                'You can use all skills at sub job potency. Main job skill still has higher potency.',
+                'Using skills now get you EXP.',
                 'Available number of bases doubled.',
                 'Train and user attack EXP increased.',
                 'Level - curve adjusted so earlier levels need fewer EXP.',
@@ -693,9 +694,9 @@ class Engel:
         field_list = []
         for job_col in ('Main', 'Sub1', 'Sub2'):
             job_line = f"{job_col}: {self.dfdict['Job'].loc[row[job_col], 'Job']}"
-            skillid = self.dfdict['Job'].loc[row[job_col], 'Skill']
-            job_line += f" ({self.dfdict['Skill'].loc[skillid, 'Skill']})"
             field_list.append(job_line)
+        skillid = self.dfdict['Job'].loc[row['Main'], 'Skill']
+        field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[skillid, 'Skill']}")
         embed.add_field(name='Jobs', value='\n'.join(field_list))
         if row['HP'] == 0:
             dflog = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
@@ -797,7 +798,7 @@ class Engel:
     def infotrain(self, user, ap_consume=3):
         # generate result embed of a training session
         embed = discord.Embed()
-        embed.title = f"{user.name} Taining"
+        embed.title = f"{user.name} Training"
         total_exp_gain = 0
         ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
         self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
@@ -819,11 +820,8 @@ class Engel:
         # check if skill available and what potency
         if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
             potency = 'Main'
-        elif skillid in (self.dfdict['Job'].loc[userrow['Sub1'], 'Skill'], self.dfdict['Job'].loc[userrow['Sub2'], 'Skill']):
-            potency = 'Sub'
         else:
-            embed.description = 'Your current jobs cannot use said skill.'
-            return embed
+            potency = 'Sub'
         # check target
         if target == None:
             target = user
@@ -833,6 +831,7 @@ class Engel:
         hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
         apcost = self.skill_apcost
         hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
+        exp_gain = self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) + self.calclevel(self.dfdict['User'].loc[target.id, 'EXP'])
         revive = 0
         # check if is to revive
         if skillrow['Healing'] and self.dfdict['User'].loc[target.id, 'HP'] == 0:
@@ -840,6 +839,7 @@ class Engel:
             hprecovery = hprecovery * num_times
             hpcost = hpcost * num_times
             apcost = apcost * num_times
+            exp_gain = exp_gain * num_times
             revive = 1
             if consumehp == 0:
                 desc_list = ['Target is dead!',
@@ -865,24 +865,25 @@ class Engel:
         else:
             self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - apcost
         # Actual skill execution
+        self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain
         if skillrow['Healing']:
             if revive:
                 df = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
                 logindex = df[df['User'] == target.id].tail(1).index.tolist()[0]
                 self.userrevive(logindex)
-                embed.description = f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}."
+                embed.description = f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}. You gained {exp_gain} EXP."
                 return embed
             else:
                 self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
-                embed.description = f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP."
+                embed.description = f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP. You gained {exp_gain} EXP."
         else:
             self.dfdict['User'].loc[target.id, 'A_Skill'] = skillid
             self.dfdict['User'].loc[target.id, 'A_Potency'] = potency
             self.dfdict['User'].loc[target.id, 'A_Duration'] = self.skillduration
-            if skillrow['Ally']:
-                embed.description = f"You casted {skillrow['Skill']} on {target.name}."
+            if user.id != target.id:
+                embed.description = f"You casted {skillrow['Skill']} on {target.name}. You gained {exp_gain} EXP."
             else:
-                embed.description = f"You casted {skillrow['Skill']}."
+                embed.description = f"You casted {skillrow['Skill']}, gaining {exp_gain} EXP."
         self.sheetsync()
         return embed
     def infoattack(self, attacker, defender, num_times=1):
