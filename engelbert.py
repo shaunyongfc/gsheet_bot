@@ -121,7 +121,8 @@ class Engel:
             '- Healing is scaled with your max HP, i.e. Level.',
             '- You can revive a target by healing only if you spend enough HP or AP to fully heal the target.',
             '- The command remains the same if you revive by HP, but to revive with AP:',
-            '- Type `=char skill (healing skill name) | (user ping) | revive` (e.g. `=char skill cure | @Caelum | revive`).'
+            '- Type `=char skill (healing skill name) | (user ping) | revive` (e.g. `=char skill cure | @Caelum | revive`).',
+            '- Using skills get you EXP proportional to user and target levels, except healing with HP.'
         )
         self.manual['Raid'] = (
             'You can battle a raid by to gain extra EXP. '
@@ -136,6 +137,11 @@ class Engel:
             f"Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
         )
         self.changelog = (
+            ('11th February 2021', (
+                'Healing with HP no longer gets EXP to prevent abuse.',
+                'Raid overall DEX decreased with slight increase in ATK/MAG.',
+                'New raids.'
+            )),
             ('10th February 2021', (
                 'You can use all skills at sub job potency. Main job skill still has higher potency.',
                 'Using skills now get you EXP.',
@@ -831,7 +837,11 @@ class Engel:
         hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
         apcost = self.skill_apcost
         hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
-        exp_gain = self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) + self.calclevel(self.dfdict['User'].loc[target.id, 'EXP'])
+        # no EXP gain if HP consume to heal
+        if consumehp and skillrow['Healing']:
+            exp_gain = 0
+        else:
+            exp_gain = self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) + self.calclevel(self.dfdict['User'].loc[target.id, 'EXP'])
         revive = 0
         # check if is to revive
         if skillrow['Healing'] and self.dfdict['User'].loc[target.id, 'HP'] == 0:
