@@ -21,7 +21,7 @@ class Engel:
         self.revivehours = 3
         self.skill_apcost = 5
         self.skill_hpcost = 0.2
-        self.skillduration = 3
+        self.skillduration = 5
         self.attackcap = 20
         self.sheettuples = (
             ('Base', 'Base'),
@@ -120,6 +120,7 @@ class Engel:
             'Healing is scaled with your max HP, i.e. level. '
         )
         self.indepth['Skill'] = (
+            '- Type `=char skill` to find list of available skills.',
             '- Skills do not apply on duels nor when you are being attacked.',
             '- Using skills with AP or LB get you EXP proportional to user and target levels.',
             '- Only 1 buff or debuff skill can be active at one time.',
@@ -154,12 +155,13 @@ class Engel:
         self.changelog = (
             ('12th February 2021', (
                 'Overall stats increased slightly (including raids).',
-                'LB gauge - attack to charge, can be consumed for a free skill. `=charhelp skill`',
+                'Help and base commands overhauled.',
+                'LB gauge - attack to charge, can be consumed for a free skill.',
                 'Gil - consume AP to accumulate gil, in preparation of new function in future.',
                 'You can now use HP to cast skills on yourself, except healing.',
                 'All skills cast with HP no longer get you EXP.',
-                'Help and base commands overhauled.',
-                'New skills.'
+                'New skills. `=char skill`',
+                'Potency of Protect and Shell increased. Skills now last for 5 turns.',
             )),
             ('11th February 2021', (
                 'Healing with HP no longer gets EXP to prevent abuse.',
@@ -253,6 +255,8 @@ class Engel:
     def find_index(self, query, dfname):
         # auxiliary function to find index of a certain name
         df = self.dfdict[dfname]
+        if 'Hidden' in df.columns:
+            df = df[df['Hidden'] == '']
         if dfname == 'Job':
             indices = df['Job']
             indexer = lambda x: x['Job']
@@ -1204,10 +1208,13 @@ class Engel:
                         elif skillargs[2].lower() == 'lb':
                             consumelb = 1
                     if len(skillargs) > 1:
-                        target = await commands.MemberConverter().convert(ctx, skillargs[1])
-                        if target.id in self.dfdict['User'].index:
-                            return self.infoskill(user, skill, target, consumehp, consumelb)
-                        else:
+                        try:
+                            target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                            if target.id in self.dfdict['User'].index:
+                                return self.infoskill(user, skill, target, consumehp, consumelb)
+                            else:
+                                return discord.Embed(description = 'User not found or did not start a character.')
+                        except commands.BadArgument:
                             return discord.Embed(description = 'User not found or did not start a character.')
                     else:
                         return self.infoskill(user, skill)
