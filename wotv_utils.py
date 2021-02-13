@@ -114,7 +114,7 @@ class WotvUtils:
             'event_tuples': (
                 (('gacha', 'banner', 'stepup', 'step up', 'summon', 'pull'), 'visiore'),
                 (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
-                (('pvp', 'arena', 'class', 'guild'), 'party')
+                (('pvp', 'arena', 'class', 'guild'), 'party'),
                 (('event', 'raid', 'tower', 'box'), 'event'),
                 (('shop',), 'shop'),
                 (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
