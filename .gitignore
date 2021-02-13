@@ -131,8 +131,10 @@ dmypy.json
 # Not needed to upload
 .DS_Store
 bot_images
+unit_images
 
 # Sensitive info
 credentials.json
 token.txt
 id_dict.py
+wotv_png_paths.py

@@ -161,7 +161,7 @@ class Engel:
                 'You can now use HP to cast skills on yourself, except healing.',
                 'All skills cast with HP no longer get you EXP.',
                 'New skills. `=char skill`',
-                'Potency of Protect and Shell increased. Skills now last for 5 turns.',
+                'Potency of Protect and Shell increased. Skills now last for 5 battles.',
             )),
             ('11th February 2021', (
                 'Healing with HP no longer gets EXP to prevent abuse.',
@@ -920,7 +920,7 @@ class Engel:
         apcost = self.skill_apcost
         hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
         # no EXP gain if HP consume
-        if consumehp:
+        if consumehp == 1:
             exp_gain = 0
         else:
             exp_gain = self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) + self.calclevel(self.dfdict['User'].loc[target.id, 'EXP'])
@@ -1137,7 +1137,7 @@ class Engel:
                     # various operations
                     if len(arg) > 2 and arg[1] in ('change', 'start'):
                         # change base or start of tamagotchi
-                        if user.id in self.dfdict['User'].index.tolist():
+                        if user.id in self.dfdict['User'].index.tolist() and arg[1] == 'start':
                             return discord.Embed(description = 'You already started. See your base by `=char info` or change your base with `=char base change` instead.')
                         base = self.find_index(' '.join(arg[2:]), 'Base')
                         if base == 'NOTFOUND':

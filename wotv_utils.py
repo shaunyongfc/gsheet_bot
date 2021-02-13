@@ -112,8 +112,9 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'event_tuples': (
-                (('gacha', 'banner', 'stepup', 'step up', 'summon'), 'visiore'),
+                (('gacha', 'banner', 'stepup', 'step up', 'summon', 'pull'), 'visiore'),
                 (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
+                (('pvp', 'arena', 'class', 'guild'), 'party')
                 (('event', 'raid', 'tower', 'box'), 'event'),
                 (('shop',), 'shop'),
                 (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
@@ -384,7 +385,8 @@ class WotvUtils:
             ('update', '805305947740176425'),
             ('event', '805305947722743830'),
             ('recipe', '805305947898642473'),
-            ('shop', '805305948003368970')
+            ('shop', '805305948003368970'),
+            ('party', '809924634903838810')
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
