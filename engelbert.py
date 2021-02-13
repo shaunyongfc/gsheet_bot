@@ -138,7 +138,7 @@ class Engel:
             '- You can revive a target by healing only if you spend enough HP or AP to fully heal the target.',
             '- You can only revive a target by healing using LB if you can fully heal the target in one cast.',
             '- The command remains the same if you revive by HP, but to revive with AP:',
-            '- Type `=char revive (healing skill name) | (user ping) | revive` (e.g. `=char revive cure | @Caelum`).',
+            '- Type `=char revive (healing skill name) | (user ping)` (e.g. `=char revive cure | @Caelum`).',
         )
         self.intro['Raid'] = (
             'You can battle a raid to gain EXP. '
@@ -153,9 +153,13 @@ class Engel:
             f"- Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
         )
         self.changelog = (
-            ('13th February 2021', (
+            ('14th February 2021', (
+                'New bases. Find the list at `=char base`. (pictures to be added progressively...)',
+                'Base default jobs redistributed (do not affect existing users).',
+                'Base stats redistributed. Check with `=char base (base name)`.',
+                'Sylph DEX and AGI reduced but DEF and SPR increased slightly.'
                 'New jobs. Overall growth rate slightly adjusted. `=char job`',
-                'Shortened skill commands. Check `=charhelp skill`.'
+                'Shortened skill commands. Check `=charhelp skill`.',
             )),
             ('12th February 2021', (
                 'Overall stats increased slightly (including raids).',
@@ -334,8 +338,8 @@ class Engel:
             userdict[statname] = self.dfdict['Base'].loc[self.dfdict['User'].loc[userid, 'Base'], statname]
         level_tup = (
             ('Main', userdict['Level'] + 1),
-            ('Sub1', (userdict['Level'] + 1) // 2),
-            ('Sub2', userdict['Level'] // 2)
+            ('Sub1', userdict['Level'] // 2 + 1),
+            ('Sub2', (userdict['Level'] + 1) // 2)
         )
         for job_col, job_level in level_tup:
             job_id = self.dfdict['User'].loc[userid, job_col]
@@ -1045,6 +1049,10 @@ class Engel:
             field_list.append(f"Level: {self.calclevel(self.dfdict['User'].loc[user.id, 'EXP'])}")
             for statname in ('HP', 'AP'):
                 field_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
+            if self.dfdict['User'].loc[user.id, 'LB'] == 100:
+                field_list.append(f"LB: **MAX**")
+            else:
+                field_list.append(f"LB: {self.dfdict['User'].loc[user.id, 'LB']}%")
             embed.add_field(name = user.name, value = '\n'.join(field_list))
         defender_base = self.dfdict['User'].loc[defender.id, 'Base']
         embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
@@ -1109,6 +1117,10 @@ class Engel:
         field_list.append(f"Level: {self.calclevel(self.dfdict['User'].loc[user.id, 'EXP'])}")
         for statname in ('HP', 'AP'):
             field_list.append(f"{statname}: {self.dfdict['User'].loc[user.id, statname]}")
+        if self.dfdict['User'].loc[user.id, 'LB'] == 100:
+            field_list.append(f"LB: **MAX**")
+        else:
+            field_list.append(f"LB: {self.dfdict['User'].loc[user.id, 'LB']}%")
         embed.add_field(name = user.name, value = '\n'.join(field_list))
         field_list = []
         field_list.append(f"Level: {self.dfdict['Raid'].loc[raid, 'Level']}")
