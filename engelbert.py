@@ -13,16 +13,23 @@ mydtformat = '%Y/%m/%d %H:%M'
 class Engel:
     # utility class that contains the utility functions and parameters
     def __init__(self):
+        # status booleans
+        self.syncpend = 0
+        self.raidsync = 0
+        self.logsync = 0
+        self.maint = 0
         # gameplay constants
         self.attack_apcost = 3
         self.hpregen = 0.2
         self.apregen = 6
         self.levelcap = 99
         self.revivehours = 3
+        self.cdjob = 12
+        self.cdbase = 24
         self.skill_apcost = 5
-        self.skill_hpcost = 0.2
+        self.skill_hpcost = 0.2 # % HP cost
         self.skillduration = 5
-        self.attackcap = 20
+        self.attackcap = 20 # number of attacks
         self.sheettuples = (
             ('Base', 'Base'),
             ('Job', 'JobID'),
@@ -44,6 +51,9 @@ class Engel:
             'raid': 'Raid',
             'battle': 'Battle'
         }
+        self.usernotfound = 'Choose a base first with `=char base start (base name)`. Try `=charhelp base`.'
+        self.targetnotfound = 'User not found or did not start a character.'
+        self.defaultfooter = 'Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...'
         self.helpintro = (
             'Engelbert (beta v2) is an experimental project of Discord bot tamagotchi '
             '(digital pet / avatar / character). It is still under beta so things '
@@ -153,8 +163,13 @@ class Engel:
             f"- Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
         )
         self.changelog = (
+            ('15th February 2021', (
+                'Optimization. Should be faster in overall but might have sync issues. (Please report if anything wrong.)',
+                'Main job change cooldown shortened to 12 hours but base change cooldown still remains 24 hours',
+                'All ongoing base and job cooldowns are reset for the change.'
+            )),
             ('14th February 2021', (
-                'New bases. Find the list at `=char base`. (pictures to be added progressively...)',
+                'New bases. Find the list at `=char base`.',
                 'Base default jobs redistributed (do not affect existing users).',
                 'Base stats redistributed. Check with `=char base (base name)`.',
                 'Sylph DEX and AGI reduced but DEF and SPR increased slightly.'
@@ -239,17 +254,20 @@ class Engel:
              if indexname != '':
                  df = df.set_index(indexname)
              self.dfdict[sheetname] = df
-    def sheetsync(self, logsync=0, raidsync=0):
+    def sheetsync(self):
         # sync local data into online sheet
         df = self.dfdict['User'].copy()
         df.index = pd.Index([self.indextransform(a) for a in df.index.tolist()], name='User')
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
-        if logsync:
+        if self.logsync:
             df = self.dfdict['Log'].copy()
             df['User'] = df['User'].apply(self.indextransform)
             set_with_dataframe(self.spreadsheet.worksheet('Log'), df, include_index=False)
-        if raidsync:
+            self.logsync = 0
+        if self.raidsync:
             set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
+            self.raidsync = 0
+        self.syncpend = 0
     def new_log(self, event, userid, timestamp):
         # write a new log
         new_log = {
@@ -422,7 +440,7 @@ class Engel:
         # function for a user to take damage
         self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
         if self.dfdict['User'].loc[defender, 'HP'] == 0:
-            self.new_log('userdead', defender, datetime.strftime(datetime.now(), mydtformat))
+            self.dfdict['User'].loc[defender, 'TS_Dead'] = datetime.strftime(datetime.now(), mydtformat)
             return 1
         else:
             return 0
@@ -443,23 +461,19 @@ class Engel:
                 self.dfdict['User'].loc[index, 'HP'] = new_hp
             # gains EXP passively too
             self.dfdict['User'].loc[index, 'EXP'] = self.dfdict['User'].loc[index, 'EXP'] + 10 + userdict['Level']
-        self.sheetsync()
-    def userrevive(self, index):
+        self.syncpend = 1
+    def userrevive(self, userid):
         # revive dead user and log it
-        userid = self.dfdict['Log'].loc[index, 'User']
         self.dfdict['User'].loc[userid, 'HP'] = self.calcstats(userid)['HP']
-        self.dfdict['Log'].loc[index, 'Event'] = 'userrevived'
-        self.dfdict['Log'].loc[index, 'Timestamp'] = datetime.strftime(datetime.now(), mydtformat)
-        self.sheetsync(logsync=1)
+        self.dfdict['User'].loc[userid, 'TS_Dead'] = ''
+        self.syncpend = 1
     def userjobchange(self, user, job, job_col='Main'):
         # change user main or sub job
         dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         jobid = dfjob[dfjob['Job'] == job].tail(1).index.tolist()[0]
         if job_col == 'Main':
-            df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userjob']
-            df = df[df['User'] == user.id]
-            if len(df) > 0:
-                thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(days=1)
+            if self.dfdict['User'].loc[user.id, 'TS_Job'] != '':
+                thres = datetime.strptime(self.dfdict['User'].loc[user.id, 'TS_Job'], mydtformat) + timedelta(hours=self.cdjob)
                 now = datetime.now()
                 if now < thres:
                     remaining = thres - now
@@ -472,7 +486,7 @@ class Engel:
             self.dfdict['User'].loc[user.id, 'Sub1'] = sub1jobid
             sub2jobid = self.dfdict['Job'].loc[jobid, 'Sub2']
             self.dfdict['User'].loc[user.id, 'Sub2'] = sub2jobid
-            self.new_log('userjob', user.id, datetime.strftime(datetime.now(), mydtformat))
+            self.dfdict['User'].loc[user.id, 'TS_Job'] = datetime.strftime(datetime.now(), mydtformat)
             return (1, self.dfdict['Job'].loc[sub1jobid, 'Job'], self.dfdict['Job'].loc[sub2jobid, 'Job'])
         else:
             for jcol in ('Main', 'Sub1', 'Sub2'):
@@ -482,21 +496,19 @@ class Engel:
             return (1,)
     def userbase(self, user, base):
         # change base or start a user
-        df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userbase']
-        df = df[df['User'] == user.id]
-        if len(df) > 0:
-            thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(days=1)
+        baserow = self.dfdict['Base'].loc[base]
+        if user.id in self.dfdict['User'].index:
+            thres = datetime.strptime(self.dfdict['User'].loc[user.id, 'TS_Base'], mydtformat) + timedelta(hours=self.cdbase)
             now = datetime.now()
             if now < thres:
                 remaining = thres - now
-                return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before you can change base."
-        baserow = self.dfdict['Base'].loc[base]
-        if user.id in self.dfdict['User'].index:
+                return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before {user.name} can change base."
             if self.dfdict['User'].loc[user.id, 'Base'] == base:
-                return 'It is your current base!'
+                return f"{user.name}, it is your current base."
             else:
                 self.dfdict['User'].loc[user.id, 'Base'] = base
-                replystr = 'Base changed!'
+                self.dfdict['User'].loc[user.id, 'TS_Base'] = datetime.strftime(datetime.now(), mydtformat)
+                replystr = f"{user.name} base now changed to {base}."
         else:
             # initialize user
             new_user = {
@@ -508,13 +520,13 @@ class Engel:
                 'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
                 'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
                 'LB': 0,
-                'Gil': 0
+                'Gil': 0,
+                'TS_Base': datetime.strftime(datetime.now(), mydtformat)
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
             self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
-            replystr = 'User registered!'
-        self.new_log('userbase', user.id, datetime.strftime(datetime.now(), mydtformat))
-        self.sheetsync()
+            replystr = f"{user.name} registered with {base}!"
+        self.syncpend = 1
         return replystr
     def raiddamage(self, raid, damage):
         # function for a raid to take damage
@@ -605,7 +617,7 @@ class Engel:
         else:
             embed.title = 'Engelbert Help'
             embed.description = self.helpintro
-        embed.set_thumbnail(url = 'https://caelum.s-ul.eu/3MgPuHkX.png')
+        embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
         return embed
     def infochangelog(self, num=3):
         # generate changelog
@@ -734,7 +746,7 @@ class Engel:
                 else:
                     desc_list.append(f"{v} is already your {result_tup[1]} job!")
         if change:
-            self.sheetsync()
+            self.syncpend = 1
         embed.description = '\n'.join(desc_list)
         return embed
     def infobase(self, base):
@@ -793,9 +805,7 @@ class Engel:
         embed.add_field(name='Jobs', value='\n'.join(field_list))
         # show revival timer if dead
         if row['HP'] == 0:
-            dflog = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
-            deadtime = dflog[dflog['User'] == user.id].tail(1)['Timestamp'].tolist()[0]
-            thres = datetime.strptime(deadtime, mydtformat) + timedelta(hours=engel.revivehours)
+            thres = datetime.strptime(row['TS_Dead'], mydtformat) + timedelta(hours=engel.revivehours)
             revivaltd = thres - datetime.now()
             revivalstr = f"{revivaltd.seconds // 60 + 1} minutes remaining."
             embed.add_field(name='Revival Time', value=revivalstr, inline=False)
@@ -903,7 +913,7 @@ class Engel:
             total_exp_gain += exp_gain
             self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
         if total_exp_gain > 0:
-            self.sheetsync()
+            self.syncpend = 1
         embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
         return embed
     def infoskill(self, user, skill, target=None, consumehp=0, consumelb=0):
@@ -981,9 +991,7 @@ class Engel:
         self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain
         if skillrow['Healing']:
             if revive:
-                df = self.dfdict['Log'][self.dfdict['Log']['Event'] == 'userdead']
-                logindex = df[df['User'] == target.id].tail(1).index.tolist()[0]
-                self.userrevive(logindex)
+                self.userrevive(target.id)
                 desc_list.append(f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}.")
             else:
                 self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
@@ -999,7 +1007,7 @@ class Engel:
         if exp_gain > 0:
             desc_list.append(f"You gained {exp_gain} EXP.")
         embed.description = '\n'.join(desc_list)
-        self.sheetsync()
+        self.syncpend = 1
         return embed
     def infoattack(self, attacker, defender, num_times=1):
         # generate result embed of an attack
@@ -1059,7 +1067,7 @@ class Engel:
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
         if exp_gain_total + defender_exp_gain_total > 0:
-            self.sheetsync()
+            self.syncpend = 1
         return embed
     def infoattackraid(self, user, raid, num_times=1):
         # generate result embed of an attack
@@ -1131,11 +1139,14 @@ class Engel:
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
         if exp_gain_total > 0:
-            self.sheetsync(raidsync=1)
+            self.syncpend = 1
+            self.raidsync = 1
         return embed
     async def executecommand(self, user, ctx, *arg):
         # main command execution
-        if len(arg) == 0:
+        if self.maint:
+            return discord.Embed(description = 'Currently under maintenance. Will be back up shortly.')
+        elif len(arg) == 0:
             return self.helpmanual()
         else:
             if arg[0] == 'info':
@@ -1144,16 +1155,16 @@ class Engel:
                         # own info
                         return self.infouser(user)
                     else:
-                        return discord.Embed(description = 'Choose a base first with `=char base start (base name)`. Try `=charhelp base`.')
+                        return discord.Embed(description = self.usernotfound)
                 else:
                     try:
                         member = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
                         if member.id in self.dfdict['User'].index:
                             return self.infouser(member)
                         else:
-                            return discord.Embed(description = 'User not found or did not start a character.')
+                            return discord.Embed(description = self.targetnotfound)
                     except commands.BadArgument:
-                        return discord.Embed(description = 'User not found or did not start a character.')
+                        return discord.Embed(description = self.targetnotfound)
             elif arg[0] == 'base':
                 if len(arg) == 1:
                     # list of bases
@@ -1177,7 +1188,7 @@ class Engel:
                 if len(arg) == 1:
                     # list of jobs
                     return self.listjob()
-                else:
+                elif user.id in self.dfdict['User'].index:
                     if arg[1].lower() in ('main', 'change') and len(arg) > 2:
                         job = self.find_index(' '.join(arg[2:]), 'Job')
                         if job == 'NOTFOUND':
@@ -1214,11 +1225,13 @@ class Engel:
                     else:
                         # find job and info (not needed atm)
                         return discord.Embed(description = 'Try `=charhelp job`.')
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] in ('skill', 'revive', 'lb', 'hp', 'hpskill', 'lbskill', 'skillhp', 'skilllb'):
                 if len(arg) == 1:
                     # list of jobs
                     return self.listskill()
-                else:
+                elif user.id in self.dfdict['User'].index:
                     consumehp = 0
                     consumelb = 0
                     if arg[0] in ('lb', 'lbskill', 'skilllb'):
@@ -1253,21 +1266,26 @@ class Engel:
                             if target.id in self.dfdict['User'].index:
                                 return self.infoskill(user, skill, target, consumehp, consumelb)
                             else:
-                                return discord.Embed(description = 'User not found or did not start a character.')
+                                return discord.Embed(description = self.targetnotfound)
                         except commands.BadArgument:
-                            return discord.Embed(description = 'User not found or did not start a character.')
+                            return discord.Embed(description = self.targetnotfound)
                     else:
                         return self.infoskill(user, skill, user, consumehp, consumelb)
                     return discord.Embed(description = 'Try `=charhelp skill`.')
-            elif arg[0] == 'train':
-                if len(arg) > 1:
-                    if arg[1].isnumeric():
-                        return self.infotrain(user, int(arg[1]))
-                return self.infotrain(user)
+                else:
+                    return discord.Embed(description = self.usernotfound)
+            elif arg[0] == 'train' and user.id in self.dfdict['User'].index:
+                if user.id in self.dfdict['User'].index:
+                    if len(arg) > 1:
+                        if arg[1].isnumeric():
+                            return self.infotrain(user, int(arg[1]))
+                    return self.infotrain(user)
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] == 'attack':
                 if len(arg) == 1:
                     return discord.Embed(description = 'Try `=charhelp char`.')
-                else:
+                elif user.id in self.dfdict['User'].index:
                     if arg[1].isnumeric() and len(arg) > 2:
                         num_times = min(int(arg[1]), 20)
                         defender_name = ' '.join(arg[2:])
@@ -1280,28 +1298,32 @@ class Engel:
                         if defender.id in self.dfdict['User'].index:
                             return self.infoattack(user, defender, num_times)
                         else:
-                            return discord.Embed(description = 'User not found or did not start a character.')
+                            return discord.Embed(description = self.targetnotfound)
                     except commands.BadArgument:
-                        return discord.Embed(description = 'User not found or did not start a character.')
+                        return discord.Embed(description = self.targetnotfound)
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] == 'duel':
                 if len(arg) == 1:
                     return discord.Embed(description = 'Try `=charhelp char`.')
-                else:
+                elif user.id in self.dfdict['User'].index:
                     try:
                         # find member of said name to attack
                         defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
                         if defender.id in self.dfdict['User'].index:
                             return self.infoduel(user, defender)
                         else:
-                            return discord.Embed(description = 'User not found or did not start a character.')
+                            return discord.Embed(description = self.targetnotfound)
                     except commands.BadArgument:
-                        return discord.Embed(description = 'User not found or did not start a character.')
+                        return discord.Embed(description = self.targetnotfound)
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] == 'raid':
                 # to be implemented
                 if len(arg) == 1:
                     # available raids
                     return self.listraid()
-                else:
+                elif user.id in self.dfdict['User'].index:
                     if arg[1] == 'attack' and len(arg) > 2:
                         if arg[2].isnumeric() and len(arg) > 3:
                             num_times = min(int(arg[2]), 20)
@@ -1326,6 +1348,8 @@ class Engel:
                             return discord.Embed(description = 'Try `=charhelp raid`.')
                         else:
                             return self.inforaid(raid)
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] == 'help':
                 if len(arg) > 1:
                     return self.helpmanual(arg[1])
@@ -1345,6 +1369,11 @@ class Engelbert(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.timercheck.start()
+        self.synccheck.start()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.bot.get_channel(id_dict['Engel Logs']).send('I restarted.')
 
     @tasks.loop(minutes=1.0)
     async def timercheck(self):
@@ -1354,12 +1383,28 @@ class Engelbert(commands.Cog):
         thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(hours=1)
         if now.minute == 0 or now > thres:
             engel.userregenall(now)
-        df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'userdead']
-        thres = now  - timedelta(hours=5)
-        for index, row in df.iterrows():
-            thres = datetime.strptime(row['Timestamp'], mydtformat) + timedelta(hours=engel.revivehours)
+        df = engel.dfdict['User'][engel.dfdict['User']['TS_Dead'] != '']
+        for userid, row in df.iterrows():
+            thres = datetime.strptime(row['TS_Dead'], mydtformat) + timedelta(hours=engel.revivehours)
             if now > thres:
-                engel.userrevive(index)
+                engel.userrevive(userid)
+
+    @tasks.loop(seconds=5.0)
+    async def synccheck(self):
+        # check if sync is pending
+        if engel.syncpend:
+            engel.sheetsync()
+
+    @commands.command(aliases=['engelmaint'])
+    async def engelbertmaint(self, ctx, *arg):
+        # Maintenance mode to pause updating of sheets
+        if ctx.message.author.id == id_dict['Owner']:
+            if engel.maint:
+                engel.maint = 0
+                await ctx.send('Maintenance mode shifted.')
+            else:
+                engel.maint = 1
+                await ctx.send('Maintenance mode entered.')
 
     @commands.command(aliases=['engelsync'])
     async def engelbertsync(self, ctx, *arg):
@@ -1375,7 +1420,7 @@ class Engelbert(commands.Cog):
         if ctx.message.author.id == id_dict['Owner']:
             user = await self.bot.fetch_user(int(arg[0]))
             embed = await engel.executecommand(user, ctx, *arg[1:])
-            embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
+            embed.set_footer(text = engel.defaultfooter)
             await ctx.send(embed = embed)
             await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -1385,7 +1430,7 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, 'help', *arg)
-        embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
+        embed.set_footer(text = engel.defaultfooter)
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
 
@@ -1395,6 +1440,6 @@ class Engelbert(commands.Cog):
         # main command
         user = ctx.author
         embed = await engel.executecommand(user, ctx, *arg)
-        embed.set_footer(text='Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...')
+        embed.set_footer(text = engel.defaultfooter)
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
