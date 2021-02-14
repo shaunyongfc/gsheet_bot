@@ -150,6 +150,12 @@ class Engel:
             '- The command remains the same if you revive by HP, but to revive with AP:',
             '- Type `=char revive (healing skill name) | (user ping)` (e.g. `=char revive cure | @Caelum`).',
         )
+        self.indepth['Auto LB Skill'] = (
+            '- Type `=char autolbskill (skill name)` (e.g. `=char autolbskill brave`).',
+            '- Will automatically consume LB gauge when full to cast the skill on yourself when you initiate a battle.',
+            '- If not a healing skill, will wait for current buff/debuff to expire before consuming.',
+            '- Type `=char autolbskill off` to turn off.'
+        )
         self.intro['Raid'] = (
             'You can battle a raid to gain EXP. '
             'Unlike attacking another player, a raid will counter you every time you attack. '
@@ -164,6 +170,7 @@ class Engel:
         )
         self.changelog = (
             ('15th February 2021', (
+                'Auto LB skill. Type `=char autolbskill (skill name)` to auto cast LB.',
                 'Optimization. Should be faster in overall but might have sync issues. (Please report if anything wrong.)',
                 'Main job change cooldown shortened to 12 hours but base change cooldown still remains 24 hours',
                 'All ongoing base and job cooldowns are reset for the change.'
@@ -399,6 +406,21 @@ class Engel:
         elif zero_attack:
             return (0, damage, hitrate)
         else:
+            lb_use = 0
+            if self.dfdict['User'].loc[attacker, 'LB_Auto'] != 'off' and self.dfdict['User'].loc[attacker, 'LB'] == 100:
+                skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker, 'LB_Auto']]
+                if self.dfdict['User'].loc[attacker, 'A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+                    lb_use = self.infoskill(attacker, skillrow.name, consumelb=1)
+                    if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+                        # recalculate damage and hit rate
+                        modifier = skillrow[self.dfdict['User'].loc[attacker, 'A_Potency']]
+                        if skillrow['Ally']:
+                            attackdict[skillrow['Stat']] = int(round(attackdict[skillrow['Stat']] * modifier))
+                        else:
+                            defenddict[skillrow['Stat']] = int(round(defenddict[skillrow['Stat']] * modifier))
+                        # pick higher potential damage
+                        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
+                        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
             # consume skill duration
             if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
                 new_duration = self.dfdict['User'].loc[attacker, 'A_Duration'] - 1
@@ -435,7 +457,7 @@ class Engel:
             self.dfdict['User'].loc[defender, 'LB'] = self.dfdict['User'].loc[defender, 'LB'] + defender_lb_gain
             # Gil gain
             self.dfdict['User'].loc[attacker, 'Gil'] = self.dfdict['User'].loc[attacker, 'Gil'] + self.attack_apcost
-            return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain)
+            return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain, lb_use)
     def userdamage(self, defender, damage):
         # function for a user to take damage
         self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
@@ -521,7 +543,8 @@ class Engel:
                 'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
                 'LB': 0,
                 'Gil': 0,
-                'TS_Base': datetime.strftime(datetime.now(), mydtformat)
+                'TS_Base': datetime.strftime(datetime.now(), mydtformat),
+                'LB_Auto': 'off'
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
             self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
@@ -564,6 +587,23 @@ class Engel:
         elif zero_attack:
             return (0, damage, hitrate, raid_damage, raid_hitrate)
         else:
+            lb_use = 0
+            if self.dfdict['User'].loc[user, 'LB_Auto'] != 'off' and self.dfdict['User'].loc[user, 'LB'] == 100:
+                skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'LB_Auto']]
+                if self.dfdict['User'].loc[user, 'A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+                    lb_use = self.infoskill(user, skillrow.name, consumelb=1)
+                    if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+                        # recalculate damage and hit rate
+                        modifier = skillrow[self.dfdict['User'].loc[user, 'A_Potency']]
+                        if skillrow['Ally']:
+                            userdict[skillrow['Stat']] = int(round(userdict[skillrow['Stat']] * modifier))
+                        else:
+                            raiddict[skillrow['Stat']] = int(round(raiddict[skillrow['Stat']] * modifier))
+                        # pick higher potential damage
+                        damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
+                        hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
+                        raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
+                        raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
             # consume skill duration
             if self.dfdict['User'].loc[user, 'A_Skill'] != '':
                 new_duration = self.dfdict['User'].loc[user, 'A_Duration'] - 1
@@ -599,7 +639,7 @@ class Engel:
             else:
                 raid_hit = raid_hitrate > random.random()
             raid_kill = self.userdamage(user, raid_damage * raid_hit)
-            return (1, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain)
+            return (1, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain, lb_use)
     ############################
     # discord embed generators #
     ############################
@@ -614,6 +654,7 @@ class Engel:
             embed.add_field(name = 'In Depth', value = '\n'.join(self.indepth[kw]), inline = False)
             if kw == 'Skill':
                 embed.add_field(name = 'Healing', value = '\n'.join(self.indepth['Healing']), inline = False)
+                embed.add_field(name = 'Auto LB Skill', value = '\n'.join(self.indepth['Auto LB Skill']), inline = False)
         else:
             embed.title = 'Engelbert Help'
             embed.description = self.helpintro
@@ -789,6 +830,10 @@ class Engel:
         desc_list.append(f"Gil: {row['Gil']}")
         if row['A_Skill'] != '':
             desc_list.append(f"Status: {self.dfdict['Skill'].loc[row['A_Skill'], 'Skill']} ({row['A_Duration']})")
+        if row['LB_Auto'] != 'off':
+            desc_list.append(f"Auto LB Skill: {self.dfdict['Skill'].loc[row['LB_Auto'], 'Skill']}")
+        else:
+            desc_list.append(f"Auto LB Skill: *off*")
         embed.description = '\n'.join(desc_list)
         # field of stats
         field_list = []
@@ -916,13 +961,35 @@ class Engel:
             self.syncpend = 1
         embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
         return embed
+    def infoautolb(self, user, skill):
+        # generate result embed of setting auto lb
+        userid = user.id
+        if skill == 'off' and self.dfdict['User'].loc[user.id, 'LB_Auto'] != 'off':
+            self.dfdict['User'].loc[user.id, 'LB_Auto'] = 'off'
+            self.syncpend = 1
+            return f"{user.name} auto LB is now turned off."
+        else:
+            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+            if self.dfdict['User'].loc[user.id, 'LB_Auto'] != skillid:
+                self.dfdict['User'].loc[user.id, 'LB_Auto'] = skillid
+                self.syncpend = 1
+                return f"{user.name} auto LB is now set to {skill}."
+        return f"This is {user.name} current setting."
     def infoskill(self, user, skill, target=None, consumehp=0, consumelb=0):
         # generate result embed of a skill
         embed = discord.Embed()
-        userrow = self.dfdict['User'].loc[user.id]
-        skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+        if isinstance(user, int):
+            userid = user
+            skillid = skill
+        else:
+            userid = user.id
+            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+        userrow = self.dfdict['User'].loc[userid]
         skillrow = self.dfdict['Skill'].loc[skillid]
-        embed.title = f"{user.name} - {skillrow['Skill']}"
+        if isinstance(user, int):
+            embed.title = f"{skillrow['Skill']}"
+        else:
+            embed.title = f"{user.name} - {skillrow['Skill']}"
         desc_list = []
         # check if skill available and what potency
         if consumelb and userrow['LB'] < 100:
@@ -934,25 +1001,34 @@ class Engel:
             potency = 'Sub'
         # check target
         if target == None:
-            target = user
-        if target.id != user.id and not skillrow['Ally']:
+            if isinstance(user, int):
+                targetid = userid
+            else:
+                target = user
+                targetid = target.id
+        else:
+            targetid = target.id
+        if targetid != userid and not skillrow['Ally']:
             embed.description = f"{skill} cannot be casted on others."
             return embed
-        hpcost = math.ceil(self.calcstats(user.id)['HP'] * self.skill_hpcost)
+        hpcost = math.ceil(self.calcstats(userid)['HP'] * self.skill_hpcost)
         apcost = self.skill_apcost
-        hprecovery = math.floor(self.calcstats(user.id)['HP'] * skillrow[potency])
+        hprecovery = math.floor(self.calcstats(userid)['HP'] * skillrow[potency])
         # no EXP gain if HP consume
         if consumehp == 1:
             exp_gain = 0
         else:
-            exp_gain = self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) + self.calclevel(self.dfdict['User'].loc[target.id, 'EXP'])
+            exp_gain = self.calclevel(self.dfdict['User'].loc[userid, 'EXP']) + self.calclevel(self.dfdict['User'].loc[targetid, 'EXP'])
         revive = 0
         # check if is to revive
-        if skillrow['Healing'] and self.dfdict['User'].loc[target.id, 'HP'] == 0:
-            num_times = math.ceil(self.calcstats(target.id)['HP'] / hprecovery)
+        if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == 0:
+            num_times = math.ceil(self.calcstats(targetid)['HP'] / hprecovery)
             if num_times > 1 and consumelb:
-                embed.description = f"You are not strong enough to revive {target.name} with one cast."
-                return embed
+                if isinstance(user, int):
+                    return 0
+                else:
+                    embed.description = f"You are not strong enough to revive {target.name} with one cast."
+                    return embed
             hprecovery = hprecovery * num_times
             hpcost = hpcost * num_times
             apcost = apcost * num_times
@@ -962,13 +1038,13 @@ class Engel:
                 desc_list = ['Target is dead!',
                     f"If you do not mind paying {apcost} AP, type `=char skill {skillrow['Skill']} | target | revive`."
                 ]
-                if target.id != user.id:
+                if targetid != userid:
                     desc_list.append(f"If you do not mind paying {hpcost} HP, type `=char skill {skill} | target | hp`.")
                 embed.description = '\n'.join(desc_list)
                 return embed
         # check HP or AP amount or criteria to consume
         if consumehp == 1:
-            if target.id == user.id and skillrow['Healing']:
+            if targetid == userid and skillrow['Healing']:
                 embed.description = 'You cannot consume HP to heal yourself.'
                 return embed
             if userrow['HP'] <= hpcost:
@@ -976,39 +1052,44 @@ class Engel:
                 return embed
             else:
                 desc_list.append(f"You consumed {hpcost} HP.")
-                self.dfdict['User'].loc[user.id, 'HP'] = self.dfdict['User'].loc[user.id, 'HP'] - hpcost
+                self.dfdict['User'].loc[userid, 'HP'] = self.dfdict['User'].loc[userid, 'HP'] - hpcost
         elif consumelb == 1:
-            self.dfdict['User'].loc[user.id, 'LB'] = 0
+            self.dfdict['User'].loc[userid, 'LB'] = 0
             desc_list.append(f"You consumed LB gauge.")
         elif userrow['AP'] < apcost:
             embed.description = f"You need to have at least {apcost} AP."
             return embed
         else:
-            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - apcost
-            self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + apcost
+            self.dfdict['User'].loc[userid, 'AP'] = self.dfdict['User'].loc[userid, 'AP'] - apcost
+            self.dfdict['User'].loc[userid, 'Gil'] = self.dfdict['User'].loc[userid, 'Gil'] + apcost
             desc_list.append(f"You consumed {apcost} AP.")
         # Actual skill execution
-        self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain
+        self.dfdict['User'].loc[userid, 'EXP'] = self.dfdict['User'].loc[userid, 'EXP'] + exp_gain
         if skillrow['Healing']:
             if revive:
-                self.userrevive(target.id)
-                desc_list.append(f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}.")
+                self.userrevive(targetid)
+                if not isinstance(user, int):
+                    desc_list.append(f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}.")
             else:
-                self.dfdict['User'].loc[target.id, 'HP'] = min(self.dfdict['User'].loc[target.id, 'HP'] + hprecovery, self.calcstats(target.id)['HP'])
-                desc_list.append(f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP.")
+                self.dfdict['User'].loc[targetid, 'HP'] = min(self.dfdict['User'].loc[targetid, 'HP'] + hprecovery, self.calcstats(targetid)['HP'])
+                if not isinstance(user, int):
+                    desc_list.append(f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP.")
         else:
-            self.dfdict['User'].loc[target.id, 'A_Skill'] = skillid
-            self.dfdict['User'].loc[target.id, 'A_Potency'] = potency
-            self.dfdict['User'].loc[target.id, 'A_Duration'] = self.skillduration
-            if user.id != target.id:
+            self.dfdict['User'].loc[targetid, 'A_Skill'] = skillid
+            self.dfdict['User'].loc[targetid, 'A_Potency'] = potency
+            self.dfdict['User'].loc[targetid, 'A_Duration'] = self.skillduration
+            if userid != targetid and not isinstance(user, int):
                 desc_list.append(f"You casted {skillrow['Skill']} on {target.name}.")
             else:
                 desc_list.append(f"You casted {skillrow['Skill']}.")
         if exp_gain > 0:
             desc_list.append(f"You gained {exp_gain} EXP.")
-        embed.description = '\n'.join(desc_list)
         self.syncpend = 1
-        return embed
+        if isinstance(user, int):
+            return exp_gain
+        else:
+            embed.description = '\n'.join(desc_list)
+            return embed
     def infoattack(self, attacker, defender, num_times=1):
         # generate result embed of an attack
         embed = discord.Embed()
@@ -1037,7 +1118,11 @@ class Engel:
                 embed.add_field(name=f"Only attacked {i} time(s).", value=result_tup[3], inline=False)
                 break
             else:
-                _, damage, hitrate, hit, kill, exp_gain, defender_exp_gain = result_tup
+                _, damage, hitrate, hit, kill, exp_gain, defender_exp_gain, lb_use = result_tup
+                if lb_use > 0:
+                    skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker.id, 'LB_Auto'], 'Skill']
+                    field_list.append(f"You consumed LB gauge to cast {skill}.")
+                    exp_gain_total += lb_use
                 if hit == 2:
                     field_list.append(f"You landed a critical hit with {damage * hit} damage.")
                 elif hit == 1:
@@ -1098,7 +1183,11 @@ class Engel:
                 embed.add_field(name=f"Only attacked {i} time(s).", value=result_tup[5], inline=False)
                 break
             else:
-                _, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain = result_tup
+                _, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain, lb_use = result_tup
+                if lb_use > 0:
+                    skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user.id, 'LB_Auto'], 'Skill']
+                    field_list.append(f"You consumed LB gauge to cast {skill}.")
+                    exp_gain_total += lb_use
                 if hit == 2:
                     field_list.append(f"You landed a critical hit with {damage * hit} damage.")
                 elif hit == 1:
@@ -1227,9 +1316,23 @@ class Engel:
                         return discord.Embed(description = 'Try `=charhelp job`.')
                 else:
                     return discord.Embed(description = self.usernotfound)
+            elif arg[0] in ('autolbskill', 'autolb'):
+                if len(arg) == 1:
+                    # list of skills
+                    return self.listskill()
+                elif user.id in self.dfdict['User'].index:
+                    if arg[1].lower() == 'off':
+                        skill = 'off'
+                    else:
+                        skill = self.find_index(' '.join(arg[1:]), 'Skill')
+                        if skill == 'NOTFOUND':
+                            return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
+                    return discord.Embed(description = self.infoautolb(user, skill))
+                else:
+                    return discord.Embed(description = self.usernotfound)
             elif arg[0] in ('skill', 'revive', 'lb', 'hp', 'hpskill', 'lbskill', 'skillhp', 'skilllb'):
                 if len(arg) == 1:
-                    # list of jobs
+                    # list of skills
                     return self.listskill()
                 elif user.id in self.dfdict['User'].index:
                     consumehp = 0
@@ -1410,7 +1513,9 @@ class Engelbert(commands.Cog):
     async def engelbertsync(self, ctx, *arg):
         # Synchronise Engelbert sheets
         if ctx.message.author.id == id_dict['Owner']:
+            engel.maint = 1
             engel.dfsync()
+            engel.maint = 0
             await ctx.send('Google sheet synced for Engelbert.')
 
     @commands.command(aliases=['fred'])
