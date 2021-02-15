@@ -1132,6 +1132,7 @@ class Engel:
         # generate result embed of a gacha session
         embed = discord.Embed()
         result_sum = {k: 0 for k in self.gacha_rate.keys()}
+        desc_list = []
         if free: # daily free gacha
             embed.title = f"{user.name} Free Daily Gacha"
             if self.dfdict['User'].loc[user.id, 'TS_Gacha'] != '':
@@ -1158,7 +1159,6 @@ class Engel:
         for _ in range(num_times):
             choice = random.choices(list(self.gacha_rate.keys()), weights=list(self.gacha_rate.values()))[0]
             result_sum[choice] += 1
-        desc_list = []
         desc_list.append(f"You spent {gil_cost} Gil to gacha {num_times} time(s).")
         for k, v in result_sum.items():
             if v > 0:
