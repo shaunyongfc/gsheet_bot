@@ -1749,7 +1749,7 @@ class Engel:
                         try:
                             target = await commands.MemberConverter().convert(ctx, skillargs[1])
                             if target.id in self.dfdict['User'].index:
-                                return self.infoitem(user, skill, target, num_times=num_times)
+                                return self.infoitem(user, skill, target=target, num_times=num_times)
                             else:
                                 return discord.Embed(description = self.targetnotfound)
                         except commands.BadArgument:
