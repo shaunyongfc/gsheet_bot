@@ -33,43 +33,51 @@ class Engel:
         self.gachacost  = 10
         # GACHA RATE
         self.gacha_rate = {
-            'i1': 40,
+            'i1': 50,
             'i2': 20,
             'i3': 20,
-            'i4': 12,
-            'i5': 4,
-            'i6': 2,
-            'i7': 2
+            'i4': 6,
+            'i5': 2,
+            'i6': 1,
+            'i7': 1
         }
         self.drop_rate = {
             0: {
-                'i1': 50,
+                'i1': 58,
                 'i2': 20,
                 'i3': 20,
-                'i4': 10
+                'i4': 2
             },
-            50: self.gacha_rate,
+            50: {
+                'i1': 56,
+                'i2': 20,
+                'i3': 20,
+                'i4': 2,
+                'i6': 1,
+                'i7': 1
+            },
             80: {
-                'i2': 25,
-                'i3': 25,
-                'i4': 20,
-                'i5': 10,
-                'i6': 10,
-                'i7': 10
+                'i2': 50,
+                'i3': 35,
+                'i4': 4,
+                'i5': 1,
+                'i6': 5,
+                'i7': 5
             },
             '80': {
                 'i1': 100
             },
             100: {
-                'i4': 25,
-                'i5': 25,
-                'i6': 25,
-                'i7': 25
+                'i2': 30,
+                'i3': 25,
+                'i4': 12,
+                'i5': 3,
+                'i6': 15,
+                'i7': 15
             },
             '100': {
-                'i1': 50,
-                'i2': 25,
-                'i3': 25
+                'i1': 80,
+                'i2': 20
             }
         }
         self.sheettuples = (
@@ -205,6 +213,7 @@ class Engel:
             f"Each gacha costs {self.gachacost} Gil. "
             'Please remember to claim your daily free gacha by `=char daily`. '
             'Check your inventory by `=char inv` or `=char inventory`. '
+            'Note: AP% recovery caps at Max AP of 100.'
         )
         self.indepth['Item'] = (
             '- Type `=char item` to find list of available items.',
@@ -230,7 +239,8 @@ class Engel:
         self.changelog = (
             ('16th February 2021', (
                 'Items. Type `=charhelp item` for details.',
-                'Past raid kills are rewarded with raid drops retroactively.'
+                'Past raid kills are rewarded with raid drops retroactively.',
+                'Update: Due to critical balance error, some hours are rolled back with lower AP recovery potential.'
             )),
             ('15th February 2021', (
                 'Auto LB skill. Type `=char autolbskill (skill name)` to auto cast LB.',
@@ -1236,7 +1246,7 @@ class Engel:
                 hp_recovery = int(targetdict['HP'] * skillrow['Main'])
                 hp_recovery = min(targetdict['HP'] - self.dfdict['User'].loc[targetid, 'HP'], hp_recovery)
         if 'AP' in skillrow['Stat'].split('/'):
-            ap_recovery = int(targetdict['AP'] * skillrow['Main'])
+            ap_recovery = int(min(targetdict['AP'], 100) * skillrow['Main'])
             ap_recovery = min(targetdict['AP'] - self.dfdict['User'].loc[targetid, 'AP'], ap_recovery)
         if 'LB' in skillrow['Stat'].split('/'):
             lb_recovery = int(100 * skillrow['Main'])
@@ -1250,6 +1260,8 @@ class Engel:
             self.userrevive(targetid)
             if isinstance(user, int):
                 return 1
+            else:
+                desc_list.append(f"{target.name} revived.")
         elif hp_recovery > 0:
             self.dfdict['User'].loc[targetid, 'HP'] = self.dfdict['User'].loc[targetid, 'HP'] + hp_recovery
             if not isinstance(user, int):
