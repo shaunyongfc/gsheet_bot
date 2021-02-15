@@ -242,7 +242,9 @@ class Engel:
                 'Past raid kills are rewarded with raid drops retroactively.',
                 'Update: Due to critical balance error, some hours are rolled back with lower AP recovery potential.',
                 'Beginners now get 10 Ethers to start.',
-                'Free daily now gives 10 Ethers and 1 Elixir.'
+                'Free daily now gives 10 Ethers and 1 Elixir.',
+                'Ramuh and Aigaion DEX buffed.',
+                'Raids of level over 80 have their HP increased.'
             )),
             ('15th February 2021', (
                 'Auto LB skill. Type `=char autolbskill (skill name)` to auto cast LB.',
@@ -457,8 +459,17 @@ class Engel:
         base = self.dfdict['Raid'].loc[raid, 'Base']
         jobid = self.dfdict['Base'].loc[base, 'Main']
         jobrow = self.dfdict['Job'].loc[jobid]
-        for statname in self.statlist:
+        for statname in self.statlist2:
             raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+        if self.dfdict['Raid'].loc[raid, 'Level'] < 80:
+            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+        elif self.dfdict['Raid'].loc[raid, 'Level'] < 100:
+            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * 80
+            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - 79) * 5
+        else:
+            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * 80
+            raiddict['HP'] += jobrow['HP'] * 100
+            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - 99) * 20
         return raiddict
     def userattack(self, attacker, defender, zero_attack=0):
         # perform an attack between users
@@ -990,7 +1001,7 @@ class Engel:
         else:
             field_list.append(f"LB Skill: *off*")
         if row['I_Auto'] != 'off':
-            field_list.append(f"Item: {self.dfdict['Skill'].loc[row['I_Auto'], 'Skill']}")
+            field_list.append(f"Item: {self.dfdict['Skill'].loc[row['I_Auto'], 'Skill']} ({row[row['I_Auto']]})")
         else:
             field_list.append(f"Item: *off*")
         field_list.append(f"HP Threshold: {row['I_Thres']}%")
@@ -1137,15 +1148,13 @@ class Engel:
             gil_cost = 0
             result_sum['i4'] += 10
             result_sum['i5'] += 1
+            desc_list.append('You claimed your free Ethers and Elixir.')
             self.dfdict['User'].loc[user.id, 'TS_Gacha'] = datetime.strftime(datetime.now(), mydtformat)
         else:
             embed.title = f"{user.name} Gacha"
             num_times = min(self.dfdict['User'].loc[user.id, 'Gil'] // self.gachacost, num_times)
             gil_cost = num_times * self.gachacost
             self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] - gil_cost
-        if num_times == 0:
-            embed.description = 'You gacha-ed 0 time.'
-            return embed
         for _ in range(num_times):
             choice = random.choices(list(self.gacha_rate.keys()), weights=list(self.gacha_rate.values()))[0]
             result_sum[choice] += 1
@@ -1155,6 +1164,7 @@ class Engel:
             if v > 0:
                 self.dfdict['User'].loc[user.id, k] = self.dfdict['User'].loc[user.id, k] + v
                 desc_list.append(f"You got {v} {self.dfdict['Skill'].loc[k, 'Skill']}(s).")
+        desc_list.append(f"You have {self.dfdict['User'].loc[user.id, 'Gil']} Gil left.")
         self.syncpend = 1
         embed.description = '\n'.join(desc_list)
         return embed
@@ -1167,7 +1177,7 @@ class Engel:
         self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
         self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + ap_consume
         for _ in range(ap_consume):
-            exp_gain = 10 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP'])
+            exp_gain = 20 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
             total_exp_gain += exp_gain
             self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
         if total_exp_gain > 0:
@@ -1211,7 +1221,7 @@ class Engel:
                 self.syncpend = 1
                 return f"{user.name} auto item is now set to {skill}."
         return f"This is {user.name} current setting."
-    def infoitem(self, user, skill, target=None):
+    def infoitem(self, user, skill, num_times=1, target=None):
         # generate result embed of a item
         embed = discord.Embed()
         if isinstance(user, int):
@@ -1227,6 +1237,10 @@ class Engel:
         if userrow[skillid] == 0:
             embed.description = f"You ran out of {skillrow['Skill']}."
             return embed
+        if skillrow['Main'] == 1:
+            num_times = 1
+        else:
+            num_times = min(userrow[skillid], num_times)
         # check target
         if target == None:
             if isinstance(user, int):
@@ -1240,6 +1254,7 @@ class Engel:
         hp_recovery = 0
         ap_recovery = 0
         lb_recovery = 0
+        # num of times to be coded
         if 'HP' in skillrow['Stat'].split('/'):
             if self.dfdict['User'].loc[targetid, 'HP'] == 0:
                 if skillrow['Main'] < 1:
@@ -1721,7 +1736,12 @@ class Engel:
                     # list of items
                     return self.listitem()
                 elif user.id in self.dfdict['User'].index:
-                    skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
+                    if arg[1].isnumeric() and len(arg) > 2:
+                        num_times = min(int(arg[1]), 20)
+                        skillargs = [a.strip() for a in ' '.join(arg[2:]).split('|')]
+                    else:
+                        num_times = 1
+                        skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
                     skill = self.find_index(skillargs[0], 'Item')
                     if skill == 'NOTFOUND':
                         return discord.Embed(description = 'Item not found. Try checking `=char item`.')
@@ -1729,13 +1749,13 @@ class Engel:
                         try:
                             target = await commands.MemberConverter().convert(ctx, skillargs[1])
                             if target.id in self.dfdict['User'].index:
-                                return self.infoitem(user, skill, target)
+                                return self.infoitem(user, skill, target, num_times=num_times)
                             else:
                                 return discord.Embed(description = self.targetnotfound)
                         except commands.BadArgument:
                             return discord.Embed(description = self.targetnotfound)
                     else:
-                        return self.infoitem(user, skill)
+                        return self.infoitem(user, skill, num_times=num_times)
                     return discord.Embed(description = 'Try `=charhelp item`.')
                 else:
                     return discord.Embed(description = self.usernotfound)
