@@ -113,7 +113,7 @@ class Engel:
             'handle the frequency of data update too... Feel free to drop some feedback!\n'
             '- Type `=char changelog` for recent changes.\n'
             '- For more in-depth info of the following, try `=charhelp char`, `=charhelp battle`, '
-            '`=charhelp base`, `=charhelp job`, `=charhelp raid`, `=charhelp skill`.'
+            '`=charhelp base`, `=charhelp job`, `=charhelp raid`, `=charhelp skill`, `=charhelp item`'
         )
         self.intro['Character'] = (
             'Each Discord ID can only have one character. To start a character, '
@@ -221,7 +221,7 @@ class Engel:
             '- Type `=char item (item name) | (user name)` (e.g. `=char item ether | @Caelum`) to use item on another user.',
             '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to automatically consume item when your HP is low.',
             '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold to use item automatically.',
-            '- Type `=char daily` for free 10 gachas daily.',
+            '- Type `=char daily` for free 10 gachas daily (+ bonus 10 Ethers and 1 Elixir).',
             '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times (default is 10).'
         )
         self.intro['Raid'] = (
@@ -240,7 +240,9 @@ class Engel:
             ('16th February 2021', (
                 'Items. Type `=charhelp item` for details.',
                 'Past raid kills are rewarded with raid drops retroactively.',
-                'Update: Due to critical balance error, some hours are rolled back with lower AP recovery potential.'
+                'Update: Due to critical balance error, some hours are rolled back with lower AP recovery potential.',
+                'Beginners now get 10 Ethers to start.',
+                'Free daily now gives 10 Ethers and 1 Elixir.'
             )),
             ('15th February 2021', (
                 'Auto LB skill. Type `=char autolbskill (skill name)` to auto cast LB.',
@@ -629,7 +631,7 @@ class Engel:
                 'i1': 0,
                 'i2': 0,
                 'i3': 0,
-                'i4': 0,
+                'i4': 10,
                 'i5': 0,
                 'i6': 0,
                 'i7': 0
@@ -1118,6 +1120,7 @@ class Engel:
     def infogacha(self, user, num_times=10, free=0):
         # generate result embed of a gacha session
         embed = discord.Embed()
+        result_sum = {k: 0 for k in self.gacha_rate.keys()}
         if free: # daily free gacha
             embed.title = f"{user.name} Free Daily Gacha"
             if self.dfdict['User'].loc[user.id, 'TS_Gacha'] != '':
@@ -1132,6 +1135,8 @@ class Engel:
                     return embed
             num_times = 10
             gil_cost = 0
+            result_sum['i4'] += 10
+            result_sum['i5'] += 1
             self.dfdict['User'].loc[user.id, 'TS_Gacha'] = datetime.strftime(datetime.now(), mydtformat)
         else:
             embed.title = f"{user.name} Gacha"
@@ -1141,7 +1146,6 @@ class Engel:
         if num_times == 0:
             embed.description = 'You gacha-ed 0 time.'
             return embed
-        result_sum = {k: 0 for k in self.gacha_rate.keys()}
         for _ in range(num_times):
             choice = random.choices(list(self.gacha_rate.keys()), weights=list(self.gacha_rate.values()))[0]
             result_sum[choice] += 1
