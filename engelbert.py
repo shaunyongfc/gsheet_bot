@@ -1177,12 +1177,13 @@ class Engel:
     def infoautoitem(self, user, skill):
         # generate result embed of setting auto item
         userid = user.id
-        if isinstance(skill, int) and self.dfdict['User'].loc[user.id, 'I_Thres'] != skill:
-            if skill < 1 or skill > 99:
-                return f"Please set a number between 1-99."
-            self.dfdict['User'].loc[user.id, 'I_Thres'] = skill
-            self.syncpend = 1
-            return f"{user.name} auto item HP threshold now set to {skill}%."
+        if isinstance(skill, int):
+            if self.dfdict['User'].loc[user.id, 'I_Thres'] != skill:
+                if skill < 1 or skill > 99:
+                    return f"Please set a number between 1-99."
+                self.dfdict['User'].loc[user.id, 'I_Thres'] = skill
+                self.syncpend = 1
+                return f"{user.name} auto item HP threshold now set to {skill}%."
         elif skill == 'off' and self.dfdict['User'].loc[user.id, 'I_Auto'] != 'off':
             self.dfdict['User'].loc[user.id, 'I_Auto'] = 'off'
             self.syncpend = 1
