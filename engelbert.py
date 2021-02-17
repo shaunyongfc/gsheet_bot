@@ -23,6 +23,8 @@ class Engel:
         self.hpregen = 0.2
         self.apregen = 6
         self.levelcap = 99
+        self.raidcap = 120
+        self.raidcap2 = 79
         self.revivehours = 3
         self.cdjob = 12
         self.cdbase = 24
@@ -68,12 +70,12 @@ class Engel:
                 'i1': 100
             },
             100: {
-                'i2': 30,
+                'i2': 38,
                 'i3': 25,
-                'i4': 12,
-                'i5': 3,
-                'i6': 15,
-                'i7': 15
+                'i4': 15,
+                'i5': 2,
+                'i6': 10,
+                'i7': 10
             },
             '100': {
                 'i1': 80,
@@ -142,7 +144,7 @@ class Engel:
         self.indepth['Battle'] = (
             '- Type `=char attack (user ping)` to another player.',
             f"- Attack multiple times in a row by inserting a number like `=char attack 6 @Caelum` (up to {self.attackcap}).",
-            '- When you attack a target, attacker ATK, MAG, DEX, defender DEF, SPR, AGI are used in calculation.'
+            '- When you attack a target, attacker ATK, MAG, DEX, defender DEF, SPR, AGI are used in calculation.',
             '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger).',
             '- You can only land critical if your DEX is higher than the opponent',
             '- You can only evade attacks if your AGI is higher than the opponent.',
@@ -219,15 +221,25 @@ class Engel:
             '- Type `=char item` to find list of available items.',
             '- Type `=char item (item name)` (e.g. `=char item elixir`) to use item.',
             '- Type `=char item (item name) | (user name)` (e.g. `=char item ether | @Caelum`) to use item on another user.',
-            '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to automatically consume item when your HP is low.',
-            '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold to use item automatically.',
+            '- Type `=char item (number) (item name)` (e.g. `=char item 10 ether`) to use a number of items at once.',
+            '- You can set item to automatically consume before each battle when your HP is low.'
+            '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to set item.',
+            '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold.',
+            '- You can use items that restore LB to gain EXP.',
+            '- Type `=char train (number) (item name)` (e.g. `=char train 3 hero`).',
+            '- Warning: Not setting item name will consume your AP instead.'
+        )
+        self.indepth['Gacha'] = (
             '- Type `=char daily` for free 10 gachas daily (+ bonus 10 Ethers and 1 Elixir).',
-            '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times (default is 10).'
+            '- Type `=char gacha` to gacha 10 times.',
+            '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.'
         )
         self.intro['Raid'] = (
             'You can battle a raid to gain EXP. '
-            'Unlike attacking another player, a raid will counter you every time you attack. '
-            'After a raid dies the killer gains extra EXP and the raid will level up with full HP. '
+            'A raid will counter you every time you attack. '
+            'After a raid dies the killer gains extra EXP and picks up drops. Then, raid will level up with full HP. '
+            f"Raid group 1 levels will loop between {self.raidcap2 + 1} and {self.raidcap}; "
+            f"Raid group 2 levels will loop between 0 and {self.raidcap2}. "
             'Check out `=charhelp battle` for battle mechanics. '
         )
         self.indepth['Raid'] = (
@@ -237,7 +249,12 @@ class Engel:
             f"- Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
         )
         self.changelog = (
-            ('16th February 2021', (
+            ('17th February 2021', (
+                'Raids now auto loop between certain levels. (`=charhelp raid`)',
+                'Compared to previous adjustment, raids of level 80 have their starting HP increased, HP growth and drop rate nerfed.',
+                'You can now consume multiple items at once and consume Hero Drinks for EXP directly (`=charhelp item`)'
+            )),
+            ('15th February 2021', (
                 'Items. Type `=charhelp item` for details.',
                 'Past raid kills are rewarded with raid drops retroactively.',
                 'Update: Due to critical balance error, some hours are rolled back with lower AP recovery potential.',
@@ -246,13 +263,13 @@ class Engel:
                 'Ramuh and Aigaion DEX buffed.',
                 'Raids of level over 80 have their HP increased.'
             )),
-            ('15th February 2021', (
+            ('14th February 2021', (
                 'Auto LB skill. Type `=char autolbskill (skill name)` to auto cast LB.',
                 'Optimization. Should be faster in overall but might have sync issues. (Please report if anything wrong.)',
                 'Main job change cooldown shortened to 12 hours but base change cooldown still remains 24 hours',
                 'All ongoing base and job cooldowns are reset for the change.'
             )),
-            ('14th February 2021', (
+            ('13th February 2021', (
                 'New bases. Find the list at `=char base`.',
                 'Base default jobs redistributed (do not affect existing users).',
                 'Base stats redistributed. Check with `=char base (base name)`.',
@@ -461,15 +478,10 @@ class Engel:
         jobrow = self.dfdict['Job'].loc[jobid]
         for statname in self.statlist2:
             raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
-        if self.dfdict['Raid'].loc[raid, 'Level'] < 80:
-            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
-        elif self.dfdict['Raid'].loc[raid, 'Level'] < 100:
-            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * 80
-            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - 79) * 5
-        else:
-            raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * 80
-            raiddict['HP'] += jobrow['HP'] * 100
-            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - 99) * 20
+        raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+        if self.dfdict['Raid'].loc[raid, 'Level'] > self.raidcap2:
+            raiddict['HP'] = raiddict['HP'] * 2
+            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - self.raidcap2)
         return raiddict
     def userattack(self, attacker, defender, zero_attack=0):
         # perform an attack between users
@@ -655,6 +667,7 @@ class Engel:
     def raiddamage(self, raid, damage):
         # function for a raid to take damage
         self.dfdict['Raid'].loc[raid, 'HP'] = int(max(self.dfdict['Raid'].loc[raid, 'HP'] - damage, 0))
+        # if kill
         if self.dfdict['Raid'].loc[raid, 'HP'] == 0:
             # item drop
             drop_level = 0
@@ -673,7 +686,16 @@ class Engel:
             else:
                 item_drop = (item1,)
             # level up the raid and fully recovers
-            self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+            if raid == self.dfdict['Raid'].loc[raid, 'Base']:
+                if self.dfdict['Raid'].loc[raid, 'Level'] < self.raidcap:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+                else:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = self.raidcap2 + 1
+            else:
+                if self.dfdict['Raid'].loc[raid, 'Level'] < self.raidcap2:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+                else:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = 0
             self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstatsraid(raid)['HP']
             return item_drop
         else:
@@ -785,6 +807,8 @@ class Engel:
             if kw == 'Skill':
                 embed.add_field(name = 'Healing', value = '\n'.join(self.indepth['Healing']), inline = False)
                 embed.add_field(name = 'Auto LB Skill', value = '\n'.join(self.indepth['Auto LB Skill']), inline = False)
+            if kw == 'Item':
+                embed.add_field(name = 'Gacha', value = '\n'.join(self.indepth['Gacha']), inline = False)
         else:
             embed.title = 'Engelbert Help'
             embed.description = self.helpintro
@@ -1168,21 +1192,36 @@ class Engel:
         self.syncpend = 1
         embed.description = '\n'.join(desc_list)
         return embed
-    def infotrain(self, user, ap_consume=3):
+    def infotrain(self, user, ap_consume=3, skill=None):
         # generate result embed of a training session
         embed = discord.Embed()
         embed.title = f"{user.name} Training"
         total_exp_gain = 0
-        ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
-        self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
-        self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + ap_consume
-        for _ in range(ap_consume):
-            exp_gain = 20 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
-            total_exp_gain += exp_gain
-            self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] +  exp_gain # gains EXP
-        if total_exp_gain > 0:
-            self.syncpend = 1
-        embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
+        if skill == None:
+            ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
+            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
+            self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + ap_consume
+            for _ in range(ap_consume):
+                exp_gain = 20 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
+                total_exp_gain += exp_gain
+                self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain # gains EXP
+            if total_exp_gain > 0:
+                self.syncpend = 1
+            embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
+        else:
+            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+            if 'LB' not in self.dfdict['Skill'].loc[skillid, 'Stat'].split('/'):
+                embed.description = f"You can only train with items that restore LB."
+                return embed
+            ap_consume = min(self.dfdict['User'].loc[user.id, skillid], ap_consume)
+            self.dfdict['User'].loc[user.id, skillid] = self.dfdict['User'].loc[user.id, skillid] - ap_consume
+            for _ in range(ap_consume):
+                exp_gain = 50 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
+                total_exp_gain += exp_gain
+                self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain # gains EXP
+            if total_exp_gain > 0:
+                self.syncpend = 1
+            embed.description = f"You consumed {ap_consume} {skill}(s) and gained {total_exp_gain} EXP."
         return embed
     def infoautolb(self, user, skill):
         # generate result embed of setting auto lb
@@ -1237,10 +1276,7 @@ class Engel:
         if userrow[skillid] == 0:
             embed.description = f"You ran out of {skillrow['Skill']}."
             return embed
-        if skillrow['Main'] == 1:
-            num_times = 1
-        else:
-            num_times = min(userrow[skillid], num_times)
+        num_times = min(userrow[skillid], num_times)
         # check target
         if target == None:
             if isinstance(user, int):
@@ -1252,8 +1288,11 @@ class Engel:
             targetid = target.id
         targetdict = self.calcstats(targetid)
         hp_recovery = 0
+        hp_num_times = 0
         ap_recovery = 0
+        ap_num_times = 0
         lb_recovery = 0
+        lb_num_times = 0
         # num of times to be coded
         if 'HP' in skillrow['Stat'].split('/'):
             if self.dfdict['User'].loc[targetid, 'HP'] == 0:
@@ -1263,18 +1302,27 @@ class Engel:
                 hp_recovery = -1
             else:
                 hp_recovery = int(targetdict['HP'] * skillrow['Main'])
-                hp_recovery = min(targetdict['HP'] - self.dfdict['User'].loc[targetid, 'HP'], hp_recovery)
+                hp_diff = targetdict['HP'] - self.dfdict['User'].loc[targetid, 'HP']
+                hp_num_times = min(math.ceil(hp_diff / hp_recovery), num_times)
+                hp_recovery = min(hp_diff, hp_recovery * hp_num_times)
         if 'AP' in skillrow['Stat'].split('/'):
             ap_recovery = int(min(targetdict['AP'], 100) * skillrow['Main'])
-            ap_recovery = min(targetdict['AP'] - self.dfdict['User'].loc[targetid, 'AP'], ap_recovery)
+            ap_diff = targetdict['AP'] - self.dfdict['User'].loc[targetid, 'AP']
+            ap_num_times = min(math.ceil(ap_diff / ap_recovery), num_times)
+            ap_recovery = min(ap_diff, ap_recovery * ap_num_times)
         if 'LB' in skillrow['Stat'].split('/'):
             lb_recovery = int(100 * skillrow['Main'])
-            lb_recovery = min(100 - self.dfdict['User'].loc[targetid, 'LB'], lb_recovery)
+            lb_diff = 100 - self.dfdict['User'].loc[targetid, 'LB']
+            lb_num_times = min(math.ceil(lb_diff / lb_recovery), num_times)
+            lb_recovery = min(lb_diff, lb_recovery * lb_num_times)
         if hp_recovery == 0 and ap_recovery == 0 and lb_recovery == 0:
             embed.description = f"It will have no effect."
             return embed
         # carry out the effects
-        self.dfdict['User'].loc[userid, skillid] = self.dfdict['User'].loc[userid, skillid] - 1
+        num_times = max(hp_num_times, ap_num_times, lb_num_times)
+        self.dfdict['User'].loc[userid, skillid] = self.dfdict['User'].loc[userid, skillid] - num_times
+        if num_times > 1:
+            desc_list.append(f"You used {num_times} {skill}s.")
         if hp_recovery == -1:
             self.userrevive(targetid)
             if isinstance(user, int):
@@ -1785,9 +1833,20 @@ class Engel:
                         return self.infogacha(user, int(arg[1]))
                 return self.infogacha(user)
             elif arg[0] == 'train' and user.id in self.dfdict['User'].index:
+                ap_consume = 1
+                skill = None
                 if len(arg) > 1:
                     if arg[1].isnumeric():
-                        return self.infotrain(user, int(arg[1]))
+                        ap_consume = int(arg[1])
+                        if len(arg) > 2:
+                            skill = self.find_index(' '.join(arg[2:]), 'Item')
+                            if skill == 'NOTFOUND':
+                                return discord.Embed(description = 'Item not found. Try checking `=char item`.')
+                    else:
+                        skill = self.find_index(' '.join(arg[1:]), 'Item')
+                        if skill == 'NOTFOUND':
+                            return discord.Embed(description = 'Item not found. Try checking `=char item`.')
+                    return self.infotrain(user, ap_consume, skill)
                 return self.infotrain(user)
             elif arg[0] == 'attack':
                 if len(arg) == 1:
