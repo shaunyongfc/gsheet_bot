@@ -232,7 +232,8 @@ class Engel:
         self.indepth['Gacha'] = (
             '- Type `=char daily` for free 10 gachas daily (+ bonus 10 Ethers and 1 Elixir).',
             '- Type `=char gacha` to gacha 10 times.',
-            '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.'
+            '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.',
+            '- Type `=char rate` to check rate.'
         )
         self.intro['Raid'] = (
             'You can battle a raid to gain EXP. '
@@ -247,12 +248,14 @@ class Engel:
             '- Type `=char raid (raid name)` (e.g. `=char raid ifrit`) to see the stats etc of the raid.',
             '- Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
             f"- Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
+            '- Type `=char rate` to check drop rates.'
         )
         self.changelog = (
             ('17th February 2021', (
                 'Raids now auto loop between certain levels. (`=charhelp raid`)',
-                'Compared to previous adjustment, raids of level 80 have their starting HP increased, HP growth and drop rate nerfed.',
-                'You can now consume multiple items at once and consume Hero Drinks for EXP directly (`=charhelp item`)'
+                'Compared to previous adjustment, raids of level over 80 have their starting HP increased, HP growth and drop rate nerfed.',
+                'You can now consume multiple items at once and consume Hero Drinks for EXP directly (`=charhelp item`)',
+                'You can now check gacha or raid drop rate with `=char rate`.'
             )),
             ('15th February 2021', (
                 'Items. Type `=charhelp item` for details.',
@@ -809,9 +812,48 @@ class Engel:
                 embed.add_field(name = 'Auto LB Skill', value = '\n'.join(self.indepth['Auto LB Skill']), inline = False)
             if kw == 'Item':
                 embed.add_field(name = 'Gacha', value = '\n'.join(self.indepth['Gacha']), inline = False)
+        elif kw in ('changelog', 'version'):
+            return self.infochangelog(1)
+        elif kw in ('rate', 'drop', 'gacha'):
+            return self.ratemanual()
         else:
             embed.title = 'Engelbert Help'
             embed.description = self.helpintro
+        embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
+        return embed
+    def ratemanual(self):
+        embed = discord.Embed()
+        # gacha
+        field_list = []
+        embed.description = 'Bracketed rates in raid drop rates are on separate slot. `=charhelp item` or `=charhelp raid` for other info.'
+        df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item']
+        for index, row in df.iterrows():
+            field_list.append(f"**{row['Skill']}**: {self.gacha_rate[index]}%")
+        embed.add_field(name='Gacha', value = '\n'.join(field_list))
+        # raid drop
+        previous_level = -1
+        drop_list = dict()
+        for k, v in self.drop_rate.items():
+            if isinstance(k, str):
+                continue
+            if previous_level != -1:
+                field_name = f"Raid Level {previous_level}-{k - 1}"
+                field_list = [f"**{df.loc[itemid, 'Skill']}**: {ratestr}" for itemid, ratestr in drop_list.items()]
+                embed.add_field(name = field_name, value = '\n'.join(field_list))
+                drop_list = dict()
+            for itemid in df.index:
+                if itemid in v.keys():
+                    drop_list[itemid] = f"{v[itemid]}%"
+                if str(k) in self.drop_rate.keys():
+                    if itemid in self.drop_rate[str(k)].keys():
+                        if itemid in drop_list.keys():
+                            drop_list[itemid] = drop_list[itemid] + f" ({self.drop_rate[str(k)][itemid]}%)"
+                        else:
+                            drop_list[itemid] = f"({self.drop_rate[str(k)][itemid]}%)"
+            previous_level = k
+        field_name = f"Raid Level {previous_level}+"
+        field_list = [f"**{df.loc[itemid, 'Skill']}**: {ratestr}" for itemid, ratestr in drop_list.items()]
+        embed.add_field(name = field_name, value = '\n'.join(field_list))
         embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
         return embed
     def infochangelog(self, num=3):
@@ -1926,6 +1968,8 @@ class Engel:
                     return self.infochangelog(arg[1])
                 else:
                     return self.infochangelog()
+            elif arg[0] in ('rate', 'gacha'):
+                return self.ratemanual()
             else:
                 return discord.Embed(description = 'Try `=charhelp`.')
 

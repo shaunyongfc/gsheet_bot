@@ -702,82 +702,85 @@ class WotvEsper(commands.Cog):
                     arg = arg[1:]
                 else:
                     break
-            if first_arg == 'STAT':
-                row_df = df.nlargest(20, col)
+            if col == 'NOTFOUND':
+                embed.description = 'Esper effect not found or ambiguous. Try `=help esper`.'
             else:
-                row_df = df[df[col].str.lower().str.contains(first_arg)]
-            if first_arg == 'y':
-                arg = arg[1:]
-            if len(arg) > 2:
-                # Force into mobile mode otherwise can't fit
-                mobile_bool = 1
-            tuples_list = []
-            if len(arg) > 0:
-                for argstr in arg:
-                    if argstr.upper() in wotv_utils.dicts['esper_stats']:
-                        tuples_list.append((argstr.upper(), 'STAT'))
-                    else:
-                        tup = wotv_utils.esper_findcol(argstr)
-                        if tup[0] != 'NOTFOUND':
-                            tuples_list.append(tup)
-            list_lists = []
-            for index, row in row_df.iterrows():
-                row_list = [index] # Initialise for each row with only name
-                for tupcol, tuparg in tuples_list:
-                    # Find value and add to row list
-                    if tuparg == 'STAT':
-                        row_list.append(str(row[tupcol]))
-                    elif tuparg in row[tupcol].lower():
-                        eff_list = row[tupcol].split(' / ')
-                        for eff in eff_list:
-                            if tuparg in eff.lower():
-                                re_match = wotv_utils.revalues.findall(eff)
-                                row_list.append(re_match[0])
-                    else:
-                        row_list.append('-')
-                list_lists.append(row_list)
-            # Sort list
-            if first_arg != 'y':
-                list_lists.sort(key=lambda a: int(a[1]), reverse=True)
-            # Print based on display mode
-            if mobile_bool:
-                for row_list in list_lists:
-                    field_name = wotv_utils.name_str(row_df.loc[row_list[0]])
-                    field_list = []
-                    for argname, argvalue in zip(arg, row_list[1:]):
-                        if argvalue != '-':
-                            field_list.append(f"**{argname.title()}**: {argvalue}")
-                    embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
-            else:
-                transpose_list = list(map(list, zip(*list_lists)))
-                esper_list = [wotv_utils.name_str(row_df.loc[a], alias=0) for a in transpose_list[0]]
-                field_value = '\n'.join(esper_list)
-                checkpoint_list = [0]
-                # Split if too long
-                if len(field_value) > 1020:
-                    field_value_length = -2
-                    for i, field_entry in enumerate(esper_list):
-                        field_value_length += len(field_entry) + 2
-                        if field_value_length > 1000:
-                            field_value_length = len(field_entry)
-                            checkpoint_list.append(i)
-                for i, checkpoint in enumerate(checkpoint_list, start=1):
-                    if checkpoint == 0:
-                        field_name = 'Esper'
-                    else:
-                        embed.add_field(name='\u200B', value='\u200B', inline=False)
-                        field_name = 'Esper (cont.)'
-                    if i == len(checkpoint_list):
-                        field_value = '\n'.join(esper_list[checkpoint:])
-                    else:
-                        field_value = '\n'.join(esper_list[checkpoint:checkpoint_list[i]])
-                    embed.add_field(name=field_name, value=field_value, inline=True)
-                    for field_name, field_list in zip(arg, transpose_list[1:]):
-                        if i == len(checkpoint_list):
-                            field_value = '\n'.join(field_list[checkpoint:])
+                if first_arg == 'STAT':
+                    row_df = df.nlargest(20, col)
+                else:
+                    row_df = df[df[col].str.lower().str.contains(first_arg)]
+                if first_arg == 'y':
+                    arg = arg[1:]
+                if len(arg) > 2:
+                    # Force into mobile mode otherwise can't fit
+                    mobile_bool = 1
+                tuples_list = []
+                if len(arg) > 0:
+                    for argstr in arg:
+                        if argstr.upper() in wotv_utils.dicts['esper_stats']:
+                            tuples_list.append((argstr.upper(), 'STAT'))
                         else:
-                            field_value = '\n'.join(field_list[checkpoint:checkpoint_list[i]])
-                        embed.add_field(name=field_name.capitalize(), value=field_value, inline=True)
+                            tup = wotv_utils.esper_findcol(argstr)
+                            if tup[0] != 'NOTFOUND':
+                                tuples_list.append(tup)
+                list_lists = []
+                for index, row in row_df.iterrows():
+                    row_list = [index] # Initialise for each row with only name
+                    for tupcol, tuparg in tuples_list:
+                        # Find value and add to row list
+                        if tuparg == 'STAT':
+                            row_list.append(str(row[tupcol]))
+                        elif tuparg in row[tupcol].lower():
+                            eff_list = row[tupcol].split(' / ')
+                            for eff in eff_list:
+                                if tuparg in eff.lower():
+                                    re_match = wotv_utils.revalues.findall(eff)
+                                    row_list.append(re_match[0])
+                        else:
+                            row_list.append('-')
+                    list_lists.append(row_list)
+                # Sort list
+                if first_arg != 'y':
+                    list_lists.sort(key=lambda a: int(a[1]), reverse=True)
+                # Print based on display mode
+                if mobile_bool:
+                    for row_list in list_lists:
+                        field_name = wotv_utils.name_str(row_df.loc[row_list[0]])
+                        field_list = []
+                        for argname, argvalue in zip(arg, row_list[1:]):
+                            if argvalue != '-':
+                                field_list.append(f"**{argname.title()}**: {argvalue}")
+                        embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+                else:
+                    transpose_list = list(map(list, zip(*list_lists)))
+                    esper_list = [wotv_utils.name_str(row_df.loc[a], alias=0) for a in transpose_list[0]]
+                    field_value = '\n'.join(esper_list)
+                    checkpoint_list = [0]
+                    # Split if too long
+                    if len(field_value) > 1020:
+                        field_value_length = -2
+                        for i, field_entry in enumerate(esper_list):
+                            field_value_length += len(field_entry) + 2
+                            if field_value_length > 1000:
+                                field_value_length = len(field_entry)
+                                checkpoint_list.append(i)
+                    for i, checkpoint in enumerate(checkpoint_list, start=1):
+                        if checkpoint == 0:
+                            field_name = 'Esper'
+                        else:
+                            embed.add_field(name='\u200B', value='\u200B', inline=False)
+                            field_name = 'Esper (cont.)'
+                        if i == len(checkpoint_list):
+                            field_value = '\n'.join(esper_list[checkpoint:])
+                        else:
+                            field_value = '\n'.join(esper_list[checkpoint:checkpoint_list[i]])
+                        embed.add_field(name=field_name, value=field_value, inline=True)
+                        for field_name, field_list in zip(arg, transpose_list[1:]):
+                            if i == len(checkpoint_list):
+                                field_value = '\n'.join(field_list[checkpoint:])
+                            else:
+                                field_value = '\n'.join(field_list[checkpoint:checkpoint_list[i]])
+                            embed.add_field(name=field_name.capitalize(), value=field_value, inline=True)
         elif arg[0] in ['compare', 'c'] and len(arg) > 1:
             # Comparison mode
             if mobile_bool == 0 and arg[1] in ['m', 'mobile']:

@@ -442,6 +442,14 @@ class WotvUtils:
                 if argstr in v:
                     col = k
                     break
+            else:
+                col_list = []
+                for k, v in self.dicts['esper_sets'].items():
+                    for v_item in v:
+                        if argstr in v_item:
+                            col_list.append(k)
+                if len(col_list) == 1:
+                    col = col_list[0]
         return col, argstr
     def name_str(self, row, name='NAME', element=1, rarity=1, type=1, limited=1, awaken=1, alias=1, elestr=''):
         # process an entry to print the name string decorated with emotes
