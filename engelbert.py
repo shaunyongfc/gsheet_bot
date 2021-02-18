@@ -293,7 +293,7 @@ class Engel:
             ('18th February 2021', (
                 '- Tried again to make help commands more readable...',
                 '- Buffs now take effect when you are attacked by other players, but duration is not consumed.',
-                '- Attacking other players now gets you EXP regardless of missing.'
+                '- Attacking other players now gets you EXP regardless of missing.',
                 '- Type `=char heroskill` to cast skills with Hero Drinks directly.',
                 '- Healing skills are no longer possible with HP cost.',
                 '- In duels if both parties survive, now the one that dealt more damage is the winner.',
@@ -1420,8 +1420,8 @@ class Engel:
                 targetid = target.id
         else:
             targetid = target.id
-        t_hp = self.calcstats(targetid, stat='HP')
-        t_ap = self.calcstats(targetid, stat='AP')
+        t_hp = self.calcstats(targetid, stat='HP')['HP']
+        t_ap = self.calcstats(targetid, stat='AP')['AP']
         hp_recovery = 0
         hp_num_times = 0
         ap_recovery = 0
