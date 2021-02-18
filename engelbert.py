@@ -1,5 +1,6 @@
 import re, random, discord, math
 import pandas as pd
+import numpy as np
 from discord.ext import commands, tasks
 from gsheet_handler import client
 from gspread_dataframe import set_with_dataframe
@@ -92,165 +93,213 @@ class Engel:
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
-        self.intro = dict()
-        self.indepth = dict()
-        self.helptup = {
-            'char': 'Character',
-            'character': 'Character',
-            'base': 'Base',
-            'job': 'Job',
-            'skill': 'Skill',
-            'lb': 'Skill',
-            'item': 'Item',
-            'raid': 'Raid',
-            'battle': 'Battle'
-        }
         self.usernotfound = 'Choose a base first with `=char base start (base name)`. Try `=charhelp base`.'
         self.targetnotfound = 'User not found or did not start a character.'
         self.defaultfooter = 'Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...'
+        self.manual = dict()
+        self.manual['character'] = ((
+            'Description', (
+                'Each Discord ID can only have one character.',
+                'To start a character, you need to pick a base (check out `=charhelp base`).',
+            )),(
+            'Information', (
+                '- Type `=char info` to check your character if you already started one.',
+                '- Type `=char info (user ping)` (e.g. `=char info @Caelum`) to check character of another user.',
+                '- Your stats are calculated from your Level and your current main/sub jobs.',
+                '- Level raises by earning EXP.',
+                f"- If your HP reaches zero, you cannot battle and will be revived after {self.revivehours} hours.",
+                f"- AP is action points, spent for various actions.",
+                '- LB is filled every time you battle or are attacked.',
+                '- When fully filled, LB can be consumed to cast a skill (`=charhelp skill`).'
+                '- For other stats please refer to battle mechanics. (`=charhelp battle`)',
+            )),(
+            'Train', (
+                '- Mainly gained from raids. (`=charhelp raid`)',
+                '- Type `=char train` or `=char train (number of AP)` (e.g. `=char train 10`) to quickly spend AP for EXP.',
+                '- You can use items that restore LB to gain EXP.',
+                '- Type `=char train (number) (item name)` (e.g. `=char train 3 hero`).',
+            )),(
+            'Hourly Regen', (
+                f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen} respectively every hour.",
+                '- If your AP is full, HP regen is doubled instead.',
+                '- You also gain a small amount of EXP.',
+            ))
+        )
+        self.manual['battle'] = ((
+            'Description', (
+                'Currently there are two types of battles: PVP and raids (`=charhelp raid`).',
+                'As in any other RPG, the objective is to bring down the target HP to 0 while keeping yourself alive.',
+            )),(
+            'Mechanics', (
+                '- When you attack a target, attacker ATK, MAG, DEX, defender DEF, SPR, AGI are used in calculation.',
+                '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger).',
+                '- You can only land critical if your DEX is higher than the opponent',
+                '- You can only evade attacks if your AGI is higher than the opponent.',
+                '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`',
+                '- Evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
+                '- They use the same formula: 1~25 = 2% per point, 26~75 = 1% per point.',
+                '- Critical damage is 2x regular damage.',
+            )),(
+            'PVP', (
+                '- Two types of PVP: attacks and duels.',
+                f"- Attacks cost {self.attack_apcost}.",
+                '- Both attacker and target gain EXP scaled to damage and opponent level.',
+                '- Type `=char attack (user ping)` (e.g. `=char attack @Caelum`) to another player.',
+                f"- Type `=char attack (number) (user ping)` (e.g. `=char attack 6 @Caelum`) to attack multiple times  (up to {self.attackcap}).",
+                '- Duels are basically battle simulation just for fun.',
+                '- Duels do not cost AP nor result in any gain or loss.',
+                '- Skill effects and auto settings do not take effect in duels.',
+                '- Type `=char duel (user ping)` to duel with character of another user.',
+            )),
+        )
+        self.manual['base'] = ((
+            'Description', (
+                'A base determines your base stats and your info picture where available.',
+                'Every base has a default set of jobs but you can change afterwards.',
+                f"Your base can be changed every {self.cdbase} hours. Changing a base does not change your jobs.",
+            )),(
+            'Commands', (
+                '- Type `=char base` to find list of available bases.',
+                '- Type `=char base (base name)` (e.g. `=char base lasswell`) to read info of the base.',
+                '- Type `=char base start (base name)` (e.g. `=char base start jake`) to start your character.',
+                '- Type `=char base change (base name)` (e.g. `=char base change rain`) to change the base of your character.',
+            ))
+        )
+        self.manual['job'] = ((
+            'Description', (
+                'Your jobs determine most of your stats.'
+                'You have 100% growth rate of main job and 50% of each sub job.'
+                f"Main job can be changed every {self.cdjob} hours, but changing sub jobs has no limit."
+                'Changing main job also resets your sub jobs. They can be changed anytime however.'
+            )),(
+            'Commands', (
+                '- Type `=char job` to find list of jobs and their growth rate.',
+                '- Type `=char job main (job name)` (e.g. `=char job main red mage`) to change main job.',
+                '- Type `=char job sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
+                '- Type `=char job sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
+                '- Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.'
+            ))
+        )
+        self.manual['skill'] = ((
+            'Description', (
+                'You can use all skills available, but the skill of your main job will have higher potency.',
+                'There are three types of skills - healing, buff, debuff.',
+            )),(
+            'Information', (
+                '- Healing and buff skills can be cast on other users.',
+                '- Skills do not apply on duels.',
+                '- Only 1 buff or debuff skill can be active at one time.',
+                f"- By default, skills cost {self.skill_apcost} AP to cast.",
+                f"- You can opt to consume {self.skill_hpcost*100:.0f}% HP, 100% LB or 1 Hero Drink (item).",
+                '- Skills gain you EXP proportional to user and target levels (0 EXP when consuming HP).',
+                f"- Buff and debuff skills last for {self.skillduration} battles.",
+                '- Duration is not consumed when you are attacked by other players.',
+            )),(
+            'Commands', (
+                '- Type `=char skill` to find list of available skills.',
+                '- Type `=char skill (skill name)` (e.g. `=char skill ruin`) to cast on yourself.',
+                '- Type `=char hpskill (skill name)` (e.g. `=char hpskill faith`) to consume hp.',
+                '- Type `=char lbskill (skill name)` (e.g. `=char lbskill cure`) to consume lb.',
+                '- Type `=char heroskill (skill name)` (e.g. `=char lbskill cure`) to consume item Hero Drink.',
+                '- Type `=char skill (skill name) | (user ping)` (e.g. `=char heroskill protect | @Caelum`) to cast on others.',
+            )),(
+            'Healing Skills', (
+                '- Healing amount is scaled with your max HP.',
+                '- You cannot use healing skills with HP.',
+                '- You can revive a target only if you can fully heal the target.',
+                '- To revive with AP: Type `=char revive (healing skill name) | (user ping)` (e.g. `=char revive cure | @Caelum`).',
+                '- Otherwise the commands remain the same.',
+            )),(
+            'Auto LB Skill', (
+                '- You can automatically consume LB gauge when full to cast a skill on yourself during battle.',
+                '- It is activated when your LB gauge is full and (unless healing) no active buff or debuff',
+                '- Note that auto item will activate before auto lb.',
+                '- Type `=char autolbskill (skill name)` (e.g. `=char autolbskill brave`).',
+                '- Type `=char autolbskill off` to turn off.',
+            ))
+        )
+        self.manual['item'] = ((
+            'Description', (
+                'Items are consumables you obtain from raid drops or gacha.',
+                'Check your inventory by `=char inv` or `=char inventory`.',
+                'Please remember to claim your daily free gacha by `=char daily`.',
+                'Note: AP% recovery caps at Max AP of 100.',
+            )),(
+            'Commands', (
+                '- Type `=char inv` to check your inventory.'
+                '- Type `=char item` to find list of available items.',
+                '- Type `=char item (item name)` (e.g. `=char item elixir`) to use item.',
+                '- Type `=char item (item name) | (user name)` (e.g. `=char item ether | @Caelum`) to use item on another user.',
+                '- Type `=char item (number) (item name)` (e.g. `=char item 10 ether`) to use a number of items at once.',
+            )),(
+            'Auto Item', (
+                '- You can set item to be automatically consumed before each battle when your HP is low.'
+                '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to set item.',
+                '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold.',
+                '- Type `=char autoitem off` to turn off.',
+            )),(
+            'Gacha', (
+                f"- Each gacha costs {self.gachacost} Gil.",
+                '- Type `=char daily` for free 10 gachas daily (+ bonus 10 Ethers and 1 Elixir).',
+                '- Type `=char gacha` to gacha 10 times.',
+                '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.',
+                '- Type `=char rate` to check gacha rate.',
+            ))
+        )
+        self.manual['raid'] = ((
+            'Description', (
+                'Raids are bosses shared across all users.',
+                'Raids will counter you every time you attack.',
+                'Check out `=charhelp battle` for battle mechanics.'
+            )),(
+            'Commands', (
+                '- Type `=char raid` to find list of available raids and their levels.',
+                '- Type `=char raid (raid name)` (e.g. `=char raid ifrit`) to check information of the raid.',
+                '- Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.',
+                f"- Type `=char raid attack (number) (raid name)` (e.g. `=char raid attack 10 siren`) to attack multiple times (up to {self.attackcap}).",
+                '- Type `=char rate` to check drop rates.',
+            )),(
+            'Rewards', (
+                '- You gain EXP proportional to raid level and damage dealt.',
+                '- If you deal the killing blow, you gain extra EXP and pick up item drops.',
+                '- Type `=char rate` to check drop rate.',
+            )),(
+            'Levels', (
+                '- Raids level up and revive with full HP when you defeat them.',
+                '- Raids will loop back to initial levels when they hit certain levels.',
+                f"- Group 1 levels will loop between {self.raidcap2 + 1} and {self.raidcap}.",
+                f"- Group 2 levels will loop between 0 and {self.raidcap2}.",
+            )
+            )
+        )
+        manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
             'Engelbert (beta v2) is an experimental project of Discord bot tamagotchi '
-            '(digital pet / avatar / character). It is still under beta so things '
+            '(digital pet / avatar / character). It is under constant development so things '
             'may be subject to change. Have to see if free hosting service can '
             'handle the frequency of data update too... Feel free to drop some feedback!\n'
             '- Type `=char changelog` for recent changes.\n'
-            '- For more in-depth info of the following, try `=charhelp char`, `=charhelp battle`, '
-            '`=charhelp base`, `=charhelp job`, `=charhelp raid`, `=charhelp skill`, `=charhelp item`'
+            '- Type `=char futureplan` for tentative future plans.\n'
+            '- For more in-depth info of the following, try:\n' +
+            manual_commands
         )
-        self.intro['Character'] = (
-            'Each Discord ID can only have one character. To start a character, '
-            'you need to pick a base (check out `=charhelp base`).'
-        )
-        self.indepth['Character'] = (
-            '- Type `=char info` to check your character if you already started one.',
-            '- Type `=char info (user ping)` (e.g. `=char info @Caelum`) to check character of another user.',
-            '- Type `=char duel (user ping)` to duel with character of another user (no gain/loss whatsoever).',
-            '- Your stats are calculated from your Level and your current main/sub jobs.',
-            '- Level raises by earning EXP, mainly from battles (`=charhelp battle`, `=charhelp raid`).',
-            '- Type `=char train` or `=char train (number of AP)` (e.g. `=char train 10`) to quickly spend AP for EXP.',
-            f"- If your HP reaches zero, you cannot battle and will be revived after {self.revivehours} hours.",
-            f"- AP is action points, spent for various actions.",
-            f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen} respectively every hour.",
-            '- If your AP is full, HP regen is doubled instead.',
-            '- LB is filled every time you battle or are attacked.',
-            '- When fully filled, LB can be consumed to cast a skill (`=charhelp skill`).',
-            '- Gil is earned every time you consume AP. No use for now, to be implemented in a future update.'
-        )
-        self.intro['Battle'] = (
-            f"There are two types of battle: player and raid. Each battle consumes {self.attack_apcost}. "
-            'Check out `=charhelp raid` for info about raid. '
-            'Note: Duel does not consume AP. '
-        )
-        self.indepth['Battle'] = (
-            '- Type `=char attack (user ping)` to another player.',
-            f"- Attack multiple times in a row by inserting a number like `=char attack 6 @Caelum` (up to {self.attackcap}).",
-            '- When you attack a target, attacker ATK, MAG, DEX, defender DEF, SPR, AGI are used in calculation.',
-            '- Damage is calculated by `ATK - DEF` or `MAG - SPR` (whichever larger).',
-            '- You can only land critical if your DEX is higher than the opponent',
-            '- You can only evade attacks if your AGI is higher than the opponent.',
-            '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`',
-            '- Evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
-            '- They use the same formula: 1~25 = 2% per point, 26~75 = 1% per point.',
-            '- Critical damage is 2x regular damage.',
-        )
-        self.intro['Base'] = (
-            'A base determines your base stats and your info picture where available. '
-            'Every base has a default set of jobs but you can change afterwards. '
-            f"Your base can be changed every {self.cdbase} hours. Changing a base does not change your jobs. "
-        )
-        self.indepth['Base'] = (
-            '- Type `=char base` to find list of available bases.',
-            '- Type `=char base (base name)` (e.g. `=char base lasswell`) to read info of the base.'
-            '- Type `=char base start (base name)` (e.g. `=char base start jake`) to start your character.',
-            '- Type `=char base change (base name)` (e.g. `=char base change rain`) to change the base of your character.'
-        )
-        self.intro['Job'] = (
-            'Your jobs determine your stats. '
-            'You have 100% growth rate of main job and 50% of each sub job. '
-            f"Main job can be changed every {self.cdjob} hours, but changing sub jobs has no limit. "
-            'Changing main job also resets your sub jobs. They can be changed anytime however. '
-        )
-        self.indepth['Job'] = (
-            '- Type `=char job` to find list of jobs and their growth rate.',
-            '- Type `=char job main (job name)` (e.g. `=char job main red mage`) to change main job.',
-            '- Type `=char job sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
-            '- Type `=char job sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
-            '- Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.'
-        )
-        self.intro['Skill'] = (
-            'Skills can cost either HP, AP or LB. '
-            'You can use all skills available. However, the skill of your main job will have higher potency. '
-            'There are three types of skills - healing, buff, debuff. '
-            'Healing is scaled with your max HP, i.e. level. '
-        )
-        self.indepth['Skill'] = (
-            '- Type `=char skill` to find list of available skills.',
-            '- Skills do not apply on duels nor when you are being attacked.',
-            '- Using skills with AP or LB get you EXP proportional to user and target levels.',
-            '- Only 1 buff or debuff skill can be active at one time.',
-            f"- Buff and debuff skills last for {self.skillduration} battles.",
-            f"- By default, skills cost {self.skill_apcost} AP to cast.",
-            '- Type `=char skill (skill name)` (e.g. `=char skill ruin`) to cast on yourself.',
-            f"- You can opt to consume {self.skill_hpcost*100:.0f}% HP or LB instead of AP.",
-            '- Type `=char hpskill (skill name)` (e.g. `=char hpskill faith`).',
-            '- Type `=char lbskill (skill name)` (e.g. `=char lbskill cure`).',
-            '- Healing and buff skills can be cast on other users.',
-            '- Type `=char skill (skill name) | (user ping)` (e.g. `=char skill protect | @Caelum`).'
-        )
-        self.indepth['Healing'] = (
-            '- You cannot heal yourself with HP.',
-            '- You can revive a target by healing only if you spend enough HP or AP to fully heal the target.',
-            '- You can only revive a target by healing using LB if you can fully heal the target in one cast.',
-            '- The command remains the same if you revive by HP, but to revive with AP:',
-            '- Type `=char revive (healing skill name) | (user ping)` (e.g. `=char revive cure | @Caelum`).',
-        )
-        self.indepth['Auto LB Skill'] = (
-            '- Type `=char autolbskill (skill name)` (e.g. `=char autolbskill brave`).',
-            '- Will automatically consume LB gauge when full to cast the skill on yourself when you initiate a battle.',
-            '- If not a healing skill, will wait for current buff/debuff to expire before consuming.',
-            '- Type `=char autolbskill off` to turn off.'
-        )
-        self.intro['Item'] = (
-            'Items are consumables you obtain from raid drops or gacha. '
-            f"Each gacha costs {self.gachacost} Gil. "
-            'Please remember to claim your daily free gacha by `=char daily`. '
-            'Check your inventory by `=char inv` or `=char inventory`. '
-            'Note: AP% recovery caps at Max AP of 100.'
-        )
-        self.indepth['Item'] = (
-            '- Type `=char item` to find list of available items.',
-            '- Type `=char item (item name)` (e.g. `=char item elixir`) to use item.',
-            '- Type `=char item (item name) | (user name)` (e.g. `=char item ether | @Caelum`) to use item on another user.',
-            '- Type `=char item (number) (item name)` (e.g. `=char item 10 ether`) to use a number of items at once.',
-            '- You can set item to automatically consume before each battle when your HP is low.'
-            '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to set item.',
-            '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold.',
-            '- You can use items that restore LB to gain EXP.',
-            '- Type `=char train (number) (item name)` (e.g. `=char train 3 hero`).',
-            '- Warning: Not setting item name will consume your AP instead.'
-        )
-        self.indepth['Gacha'] = (
-            '- Type `=char daily` for free 10 gachas daily (+ bonus 10 Ethers and 1 Elixir).',
-            '- Type `=char gacha` to gacha 10 times.',
-            '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.',
-            '- Type `=char rate` to check rate.'
-        )
-        self.intro['Raid'] = (
-            'You can battle a raid to gain EXP. '
-            'A raid will counter you every time you attack. '
-            'After a raid dies the killer gains extra EXP and picks up drops. Then, raid will level up with full HP. '
-            f"Raid group 1 levels will loop between {self.raidcap2 + 1} and {self.raidcap}; "
-            f"Raid group 2 levels will loop between 0 and {self.raidcap2}. "
-            'Check out `=charhelp battle` for battle mechanics. '
-        )
-        self.indepth['Raid'] = (
-            '- Type `=char raid` to find list of available raids and their levels.',
-            '- Type `=char raid (raid name)` (e.g. `=char raid ifrit`) to see the stats etc of the raid.',
-            '- Type `=char raid attack (raid name)` (e.g. `=char raid attack siren`) to attack the raid.'
-            f"- Attack multiple times in a row by inserting a number like `=char raid attack 7 siren` (up to {self.attackcap}).",
-            '- Type `=char rate` to check drop rates.'
+        self.futureplan = (
+            'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
+            '- EX Base: trade Dark Matters for EX Base and spend Dark Matters to upgrade.',
+            '- Esper: trade Auracites for an esper for passive stat bonus. Not sure whether to make them upgradeable yet.',
+            '- Trial: spend AP to spawn individual trial, beat them for rewards. Planning to have more complicated battle mechanics than raid.'
         )
         self.changelog = (
+            ('18th February 2021', (
+                '- Tried again to make help commands more readable...',
+                '- Buffs now take effect when you are attacked by other players, but duration is not consumed.',
+                '- Attacking other players now gets you EXP regardless of missing.'
+                '- Type `=char heroskill` to cast skills with Hero Drinks directly.',
+                '- Healing skills are no longer possible with HP cost.',
+                '- In duels if both parties survive, now the one that dealt more damage is the winner.',
+                '- Note: fixed some bugs and optimized a bit of battle coding, please let me know if anything unusual.',
+                '- `=char futureplan` to check what is coming up.'
+            )),
             ('17th February 2021', (
                 'Raids now auto loop between certain levels. (`=charhelp raid`)',
                 'Compared to previous adjustment, raids of level over 80 have their starting HP increased, HP growth and drop rate nerfed.',
@@ -364,22 +413,19 @@ class Engel:
         df.index = pd.Index([self.indextransform(a) for a in df.index.tolist()], name='User')
         set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
         if self.logsync:
-            df = self.dfdict['Log'].copy()
-            df['User'] = df['User'].apply(self.indextransform)
-            set_with_dataframe(self.spreadsheet.worksheet('Log'), df, include_index=False)
+            set_with_dataframe(self.spreadsheet.worksheet('Log'), self.dfdict['Log'], include_index=False)
             self.logsync = 0
         if self.raidsync:
             set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
             self.raidsync = 0
         self.syncpend = 0
-    def new_log(self, event, userid, timestamp):
+    def new_log(self, event,timestamp):
         # write a new log
         new_log = {
             'Event': event,
-            'User': userid,
             'Timestamp': timestamp
         }
-        new_row = (event, self.indextransform(userid), timestamp)
+        new_row = (event, timestamp)
         self.spreadsheet.worksheet('Log').append_row(new_row)
         self.dfdict['Log'] = self.dfdict['Log'].append(new_log, ignore_index=True)
     def find_index(self, query, dfname):
@@ -457,51 +503,118 @@ class Engel:
                 return 1 + modifier
             else:
                 return 1 - modifier
-    def calcstats(self, userid):
-        # calculate stats given user id
-        userdict = dict()
-        userdict['Level'] = self.calclevel(self.dfdict['User'].loc[userid, 'EXP'])
-        for statname in self.statlist:
-            userdict[statname] = self.dfdict['Base'].loc[self.dfdict['User'].loc[userid, 'Base'], statname]
-        level_tup = (
-            ('Main', userdict['Level'] + 1),
-            ('Sub1', userdict['Level'] // 2 + 1),
-            ('Sub2', (userdict['Level'] + 1) // 2)
-        )
-        for job_col, job_level in level_tup:
-            job_id = self.dfdict['User'].loc[userid, job_col]
-            for statname in self.statlist:
-                userdict[statname] += self.dfdict['Job'].loc[job_id, statname] * job_level
-        return userdict
-    def calcstatsraid(self, raid):
-        # calculate raid stats given raid name
-        raiddict = dict()
-        base = self.dfdict['Raid'].loc[raid, 'Base']
-        jobid = self.dfdict['Base'].loc[base, 'Main']
-        jobrow = self.dfdict['Job'].loc[jobid]
-        for statname in self.statlist2:
-            raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
-        raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
-        if self.dfdict['Raid'].loc[raid, 'Level'] > self.raidcap2:
-            raiddict['HP'] = raiddict['HP'] * 2
-            raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - self.raidcap2)
-        return raiddict
-    def userattack(self, attacker, defender, zero_attack=0):
-        # perform an attack between users
-        # get their status sheets
-        attackdict = self.calcstats(attacker)
-        defenddict = self.calcstats(defender)
-        # skill check
-        if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
-            skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker, 'A_Skill']]
-            modifier = skillrow[self.dfdict['User'].loc[attacker, 'A_Potency']]
-            if skillrow['Ally']:
-                attackdict[skillrow['Stat']] = int(round(attackdict[skillrow['Stat']] * modifier))
+    def calcstats(self, userid, usertype='User', moddict=None, stat=None):
+        if usertype == 'User':
+            # calculate stats given user id
+            userdict = dict()
+            userdict['Level'] = self.calclevel(self.dfdict['User'].loc[userid, 'EXP'])
+            if stat == 'ALL':
+                statlist = self.statlist
+            elif stat == None:
+                statlist = self.statlist2
             else:
-                defenddict[skillrow['Stat']] = int(round(defenddict[skillrow['Stat']] * modifier))
+                statlist = [stat]
+            for statname in statlist:
+                userdict[statname] = self.dfdict['Base'].loc[self.dfdict['User'].loc[userid, 'Base'], statname]
+            level_tup = (
+                ('Main', userdict['Level'] + 1),
+                ('Sub1', userdict['Level'] // 2 + 1),
+                ('Sub2', (userdict['Level'] + 1) // 2)
+            )
+            for job_col, job_level in level_tup:
+                job_id = self.dfdict['User'].loc[userid, job_col]
+                for statname in statlist:
+                    userdict[statname] += self.dfdict['Job'].loc[job_id, statname] * job_level
+            if moddict != None:
+                for k, v in moddict.items():
+                    userdict[k] = int(round(userdict[k] * v))
+            return userdict
+        elif usertype == 'Raid':
+            # calculate raid stats given raid name
+            raid = userid
+            raiddict = dict()
+            base = self.dfdict['Raid'].loc[raid, 'Base']
+            jobid = self.dfdict['Base'].loc[base, 'Main']
+            jobrow = self.dfdict['Job'].loc[jobid]
+            if stat == None or stat == 'ALL':
+                for statname in self.statlist2:
+                    raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+            if stat == 'HP' or stat == 'ALL':
+                raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+                if self.dfdict['Raid'].loc[raid, 'Level'] > self.raidcap2:
+                    raiddict['HP'] = raiddict['HP'] * 2
+                    raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - self.raidcap2)
+            if moddict != None:
+                for k, v in moddict.items():
+                    raiddict[statname] = int(round(raiddict[statname] * v))
+            return raiddict
+    def calcdamage(self, attacker, defender, a_skilltup=None, d_skilltup=None, counter=0, raid=0):
+        # calculate damage given attacker and defender
+        # skill check
+        skilltuplist = []
+        if a_skilltup != None:
+            if self.dfdict['Skill'].loc[a_skilltup[0], 'Stat'] == 'COMBO':
+                skilltuplist += [
+                    (a, 'Main', 0) for a in self.dfdict['Skill'].loc[a_skilltup[0], 'Main'].split('/')
+                ] + [
+                    (a, 'Sub', 0) for a in self.dfdict['Skill'].loc[a_skilltup[0], 'Sub'].split('/')
+                ]
+            else:
+                skilltuplist += [(*a_skilltup, 0)]
+        if d_skilltup != None:
+            if self.dfdict['Skill'].loc[d_skilltup[0], 'Stat'] == 'COMBO':
+                skilltuplist += [
+                    (a, 'Main', 1) for a in self.dfdict['Skill'].loc[d_skilltup[0], 'Main'].split('/')
+                ] + [
+                    (a, 'Sub', 1) for a in self.dfdict['Skill'].loc[d_skilltup[0], 'Sub'].split('/')
+                ]
+            else:
+                skilltuplist += [(*d_skilltup, 1)]
+        # stat modifier dict
+        a_moddict = {stat: 1 for stat in self.statlist2}
+        d_moddict = {stat: 1 for stat in self.statlist2}
+        for skillid, skillpotency, skillside in skilltuplist:
+            skillrow = self.dfdict['Skill'].loc[skillid]
+            if skillside + skillrow['Ally'] == 1:
+                a_moddict[skillrow['Stat']] = a_moddict[skillrow['Stat']] * skillrow[skillpotency]
+            else:
+                d_moddict[skillrow['Stat']] = d_moddict[skillrow['Stat']] * skillrow[skillpotency]
+        # get their status sheets
+        attackdict = self.calcstats(attacker, moddict=a_moddict)
+        if raid == 1:
+            defenddict = self.calcstats(defender, usertype='Raid', moddict=d_moddict)
+        else:
+            defenddict = self.calcstats(defender, moddict=d_moddict)
         # pick higher potential damage
         damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
         hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
+        if counter:
+            counter_damage = max(defenddict['ATK'] - attackdict['DEF'], defenddict['MAG'] - attackdict['SPR'], 0)
+            counter_hitrate = self.calchitrate(defenddict['DEX'] - attackdict['AGI'])
+            return damage, hitrate, counter_damage, counter_hitrate
+        else:
+            return damage, hitrate
+    def userconsumeduration(self, user):
+        # consume skill duration
+        if self.dfdict['User'].loc[user, 'A_Skill'] != '':
+            new_duration = self.dfdict['User'].loc[user, 'A_Duration'] - 1
+            if new_duration == 0:
+                self.dfdict['User'].loc[user, 'A_Skill'] = ''
+                self.dfdict['User'].loc[user, 'A_Potency'] = ''
+                self.dfdict['User'].loc[user, 'A_Duration'] = ''
+            else:
+                self.dfdict['User'].loc[user, 'A_Duration'] = new_duration
+    def userattack(self, attacker, defender, zero_attack=0):
+        # perform an attack between users
+        if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
+            a_skilltup = (self.dfdict['User'].loc[attacker, 'A_Skill'], self.dfdict['User'].loc[attacker, 'A_Potency'])
+        else:
+            a_skilltup = None
+        if self.dfdict['User'].loc[defender, 'A_Skill'] != '':
+            d_skilltup = (self.dfdict['User'].loc[defender, 'A_Skill'], self.dfdict['User'].loc[defender, 'A_Potency'])
+        else:
+            d_skilltup = None
+        damage, hitrate = self.calcdamage(attacker, defender, a_skilltup, d_skilltup)
         # check attack criteria
         if self.dfdict['User'].loc[attacker, 'HP'] == 0:
             return (0, damage, hitrate, 'You are dead!')
@@ -520,23 +633,9 @@ class Engel:
                     lb_use = self.infoskill(attacker, skillrow.name, consumelb=1)
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
-                        modifier = skillrow[self.dfdict['User'].loc[attacker, 'A_Potency']]
-                        if skillrow['Ally']:
-                            attackdict[skillrow['Stat']] = int(round(attackdict[skillrow['Stat']] * modifier))
-                        else:
-                            defenddict[skillrow['Stat']] = int(round(defenddict[skillrow['Stat']] * modifier))
-                        # pick higher potential damage
-                        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
-                        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
-            # consume skill duration
-            if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
-                new_duration = self.dfdict['User'].loc[attacker, 'A_Duration'] - 1
-                if new_duration == 0:
-                    self.dfdict['User'].loc[attacker, 'A_Skill'] = ''
-                    self.dfdict['User'].loc[attacker, 'A_Potency'] = ''
-                    self.dfdict['User'].loc[attacker, 'A_Duration'] = ''
-                else:
-                    self.dfdict['User'].loc[attacker, 'A_Duration'] = new_duration
+                        a_skilltup = (self.dfdict['User'].loc[attacker, 'A_Skill'], self.dfdict['User'].loc[attacker, 'A_Potency'])
+                        damage, hitrate = self.calcdamage(attacker, defender, a_skilltup, d_skilltup)
+            self.userconsumeduration(attacker)
             # consume AP
             self.dfdict['User'].loc[attacker, 'AP'] = int(self.dfdict['User'].loc[attacker, 'AP'] - self.attack_apcost)
             # calculate critical or hit rate
@@ -545,21 +644,23 @@ class Engel:
             else:
                 hit = hitrate > random.random()
             # EXP gain
-            exp_gain = 15 + damage * hit // 30 + defenddict['Level'] * min(hit, 1) * 2
+            a_level = self.calclevel(self.dfdict['User'].loc[attacker, 'EXP'])
+            d_level = self.calclevel(self.dfdict['User'].loc[defender, 'EXP'])
+            exp_gain = 15 + damage * hit // 30 + d_level * 2
             # bonus EXP for killing
             kill = self.userdamage(defender, damage * hit)
             if kill:
-                exp_gain += defenddict['Level']
+                exp_gain += d_level * 2
             self.dfdict['User'].loc[attacker, 'EXP'] = self.dfdict['User'].loc[attacker, 'EXP'] + exp_gain
             # defender EXP regardless of hit
-            defender_exp_gain = 10 + damage * hit // 45 + attackdict['Level'] * 2
+            defender_exp_gain = 10 + damage * hit // 45 + a_level * 2
             self.dfdict['User'].loc[defender, 'EXP'] = self.dfdict['User'].loc[defender, 'EXP'] + defender_exp_gain
             # LB gain
-            lb_gain = ((defenddict['Level'] - 1) // attackdict['Level'] + 1) * 10
+            lb_gain = ((d_level - 1) // a_level + 1) * 10
             lb_gain = min(100 - self.dfdict['User'].loc[attacker, 'LB'], lb_gain)
             self.dfdict['User'].loc[attacker, 'LB'] = self.dfdict['User'].loc[attacker, 'LB'] + lb_gain
             # defender LB gain
-            defender_lb_gain = ((attackdict['Level'] - 1) // defenddict['Level'] + 1) * 10
+            defender_lb_gain = ((a_level - 1) // d_level + 1) * 10
             defender_lb_gain = min(100 - self.dfdict['User'].loc[defender, 'LB'], defender_lb_gain)
             self.dfdict['User'].loc[defender, 'LB'] = self.dfdict['User'].loc[defender, 'LB'] + defender_lb_gain
             # Gil gain
@@ -576,24 +677,26 @@ class Engel:
     def userregenall(self, now=None):
         # hourly automatic regen for all
         if now != None:
-            self.new_log('hourlyregen', '', datetime.strftime(now, mydtformat))
+            self.new_log('hourlyregen', datetime.strftime(now, mydtformat))
         for index, row in self.dfdict['User'].iterrows():
-            userdict = self.calcstats(index)
-            if row['AP'] < userdict['AP']: # if AP is not full
-                new_ap = min(row['AP'] + self.apregen, userdict['AP'])
+            u_level = self.calclevel(row['EXP'])
+            u_hp = self.calcstats(index, stat='HP')['HP']
+            u_ap = self.calcstats(index, stat='AP')['AP']
+            if row['AP'] < u_ap: # if AP is not full
+                new_ap = min(row['AP'] + self.apregen, u_ap)
                 self.dfdict['User'].loc[index, 'AP'] = new_ap
-                hp_recovery = int(userdict['HP'] * self.hpregen)
+                hp_recovery = int(u_hp * self.hpregen)
             else: # doubles HP regen if AP is full
-                hp_recovery = int(userdict['HP'] * self.hpregen * 2)
-            if 0 < row['HP'] < userdict['HP']:
-                new_hp = min(row['HP'] + hp_recovery, userdict['HP'])
+                hp_recovery = int(u_hp * self.hpregen * 2)
+            if 0 < row['HP'] < u_hp:
+                new_hp = min(row['HP'] + hp_recovery, u_hp)
                 self.dfdict['User'].loc[index, 'HP'] = new_hp
             # gains EXP passively too
-            self.dfdict['User'].loc[index, 'EXP'] = self.dfdict['User'].loc[index, 'EXP'] + 10 + userdict['Level']
+            self.dfdict['User'].loc[index, 'EXP'] = self.dfdict['User'].loc[index, 'EXP'] + 20 + u_level
         self.syncpend = 1
     def userrevive(self, userid):
         # revive dead user and log it
-        self.dfdict['User'].loc[userid, 'HP'] = self.calcstats(userid)['HP']
+        self.dfdict['User'].loc[userid, 'HP'] = self.calcstats(userid, stat='HP')['HP']
         self.dfdict['User'].loc[userid, 'TS_Dead'] = ''
         self.syncpend = 1
     def userjobchange(self, user, job, job_col='Main'):
@@ -699,28 +802,17 @@ class Engel:
                     self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = 0
-            self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstatsraid(raid)['HP']
+            self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstats(raid, usertype='Raid', stat='HP')['HP']
             return item_drop
         else:
             return 0
     def raidattack(self, user, raid, zero_attack=0):
         # perform an attack between an user and a raid
-        # get their status sheets
-        userdict = self.calcstats(user)
-        raiddict = self.calcstatsraid(raid)
-        # skill check
         if self.dfdict['User'].loc[user, 'A_Skill'] != '':
-            skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'A_Skill']]
-            modifier = skillrow[self.dfdict['User'].loc[user, 'A_Potency']]
-            if skillrow['Ally']:
-                userdict[skillrow['Stat']] = int(round(userdict[skillrow['Stat']] * modifier))
-            else:
-                raiddict[skillrow['Stat']] = int(round(raiddict[skillrow['Stat']] * modifier))
-        # pick higher potential damage
-        damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
-        hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
-        raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
-        raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
+            a_skilltup = (self.dfdict['User'].loc[user, 'A_Skill'], self.dfdict['User'].loc[user, 'A_Potency'])
+        else:
+            a_skilltup = None
+        damage, hitrate, raid_damage, raid_hitrate = self.calcdamage(user, raid, a_skilltup=a_skilltup, counter=1, raid=1)
         # check attack criteria
         if self.dfdict['User'].loc[user, 'HP'] == 0:
             return (0, damage, hitrate, raid_damage, raid_hitrate, 'You are dead!')
@@ -731,12 +823,13 @@ class Engel:
         else:
             # use item
             item_use = 0
-            hp_perc = self.dfdict['User'].loc[user, 'HP'] / userdict['HP']
+            u_hp = self.calcstats(user, stat='HP')['HP']
+            hp_perc = self.dfdict['User'].loc[user, 'HP'] / u_hp
             if self.dfdict['User'].loc[user, 'I_Auto'] != 'off' and hp_perc < self.dfdict['User'].loc[user, 'I_Thres'] / 100:
                 skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'I_Auto']]
                 while self.dfdict['User'].loc[user, self.dfdict['User'].loc[user, 'I_Auto']] > 0:
                     item_use += self.infoitem(user, skillrow.name)
-                    if self.dfdict['User'].loc[user, 'HP'] / userdict['HP'] >= self.dfdict['User'].loc[user, 'I_Thres'] / 100:
+                    if self.dfdict['User'].loc[user, 'HP'] / u_hp >= self.dfdict['User'].loc[user, 'I_Thres'] / 100:
                         break
             # use lb
             lb_use = 0
@@ -746,46 +839,35 @@ class Engel:
                     lb_use = self.infoskill(user, skillrow.name, consumelb=1)
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
-                        modifier = skillrow[self.dfdict['User'].loc[user, 'A_Potency']]
-                        if skillrow['Ally']:
-                            userdict[skillrow['Stat']] = int(round(userdict[skillrow['Stat']] * modifier))
-                        else:
-                            raiddict[skillrow['Stat']] = int(round(raiddict[skillrow['Stat']] * modifier))
-                        # pick higher potential damage
-                        damage = max(userdict['ATK'] - raiddict['DEF'], userdict['MAG'] - raiddict['SPR'], 0)
-                        hitrate = self.calchitrate(userdict['DEX'] - raiddict['AGI'])
-                        raid_damage = max(raiddict['ATK'] - userdict['DEF'], raiddict['MAG'] - userdict['SPR'], 0)
-                        raid_hitrate = self.calchitrate(raiddict['DEX'] - userdict['AGI'])
-            # consume skill duration
-            if self.dfdict['User'].loc[user, 'A_Skill'] != '':
-                new_duration = self.dfdict['User'].loc[user, 'A_Duration'] - 1
-                if new_duration == 0:
-                    self.dfdict['User'].loc[user, 'A_Skill'] = ''
-                    self.dfdict['User'].loc[user, 'A_Potency'] = ''
-                    self.dfdict['User'].loc[user, 'A_Duration'] = ''
-                else:
-                    self.dfdict['User'].loc[user, 'A_Duration'] = new_duration
+                        a_skilltup = (self.dfdict['User'].loc[user, 'A_Skill'], self.dfdict['User'].loc[user, 'A_Potency'])
+                        damage, hitrate, raid_damage, raid_hitrate = self.calcdamage(user, raid, a_skilltup=a_skilltup, counter=1, raid=1)
+            self.userconsumeduration(user)
             # consume AP
             self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
+            # LB gain
+            u_level = self.calclevel(self.dfdict['User'].loc[user, 'EXP'])
+            r_level = self.dfdict['Raid'].loc[raid, 'Level']
+            if r_level > u_level:
+                lb_gain = 20
+            else:
+                lb_gain = 10
+            lb_gain = min(100 - self.dfdict['User'].loc[user, 'LB'], lb_gain)
+            self.dfdict['User'].loc[user, 'LB'] = self.dfdict['User'].loc[user, 'LB'] + lb_gain
             # check critical or hit
             if hitrate > 1:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
             # EXP gain
-            exp_gain = 30 + (damage * hit) // 30 + self.dfdict['Raid'].loc[raid, 'Level'] * 3
+            exp_gain = 30 + (damage * hit) // 30 + r_level * 3
             # Bonus EXP for killing
             kill = self.raiddamage(raid, damage * hit)
             if kill != 0:
-                exp_gain += self.dfdict['Raid'].loc[raid, 'Level'] * 3
+                exp_gain += r_level * 3
                 # Item drop
                 for itemid in kill:
                     self.dfdict['User'].loc[user, itemid] = self.dfdict['User'].loc[user, itemid] + 1
             self.dfdict['User'].loc[user, 'EXP'] = self.dfdict['User'].loc[user, 'EXP'] + exp_gain
-            # LB gain
-            lb_gain = (self.dfdict['Raid'].loc[raid, 'Level'] // userdict['Level'] + 1) * 10
-            lb_gain = min(100 - self.dfdict['User'].loc[user, 'LB'], lb_gain)
-            self.dfdict['User'].loc[user, 'LB'] = self.dfdict['User'].loc[user, 'LB'] + lb_gain
             # Gil gain
             self.dfdict['User'].loc[user, 'Gil'] = self.dfdict['User'].loc[user, 'Gil'] + self.attack_apcost
             # raid counter attack
@@ -801,17 +883,14 @@ class Engel:
     def helpmanual(self, kw=''):
         # generate help manual
         embed = discord.Embed()
-        kw = kw.lower().rstrip('s')
-        if kw in self.helptup.keys():
-            kw = self.helptup[kw]
-            embed.title = f"{kw} Help"
-            embed.description = self.intro[kw]
-            embed.add_field(name = 'In Depth', value = '\n'.join(self.indepth[kw]), inline = False)
-            if kw == 'Skill':
-                embed.add_field(name = 'Healing', value = '\n'.join(self.indepth['Healing']), inline = False)
-                embed.add_field(name = 'Auto LB Skill', value = '\n'.join(self.indepth['Auto LB Skill']), inline = False)
-            if kw == 'Item':
-                embed.add_field(name = 'Gacha', value = '\n'.join(self.indepth['Gacha']), inline = False)
+        kw = kw.lower().rstrip('s').replace('char', 'character')
+        if kw in self.manual.keys():
+            embed.title = f"{kw.title()} Help"
+            for field_name, field_value in self.manual[kw]:
+                if field_name == 'Description':
+                    embed.description = '\n'.join(field_value)
+                else:
+                    embed.add_field(name=field_name, value='\n'.join(field_value), inline=False)
         elif kw in ('changelog', 'version'):
             return self.infochangelog(1)
         elif kw in ('rate', 'drop', 'gacha'):
@@ -856,6 +935,13 @@ class Engel:
         embed.add_field(name = field_name, value = '\n'.join(field_list))
         embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
         return embed
+    def infofutureplan(self):
+        # generate future plan
+        embed = discord.Embed()
+        embed.title = 'Engelbert Future Plans'
+        embed.description = '\n'.join(self.futureplan)
+        embed.set_thumbnail(url = 'https://caelum.s-ul.eu/peon3odf.png')
+        return embed
     def infochangelog(self, num=3):
         # generate changelog
         embed = discord.Embed()
@@ -874,7 +960,7 @@ class Engel:
         # generate embed of list of available bases
         embed = discord.Embed()
         embed.title = 'List of Bases'
-        embed.description = self.intro['Base'] + '\n`=charhelp base` for more info.'
+        embed.description = '`=charhelp base` for more info.'
         base_list = self.dfdict['Base'][self.dfdict['Base']['Hidden'] == ''].index.tolist()
         base_count = 0
         field_list = []
@@ -891,7 +977,7 @@ class Engel:
         # generate embed of list of available bases
         embed = discord.Embed()
         embed.title = 'List of Raids'
-        embed.description = self.intro['Raid'] + '\n`=charhelp raid` for more info.'
+        embed.description = '`=charhelp raid` for more info.'
         df = self.dfdict['Raid']
         raid_list = []
         raid_count = 0
@@ -908,7 +994,7 @@ class Engel:
         # generate embed of list of available jobs
         embed = discord.Embed()
         embed.title = 'List of Jobs'
-        embed.description = self.intro['Job'] + '\n`=charhelp job` for more info.'
+        embed.description = '`=charhelp job` for more info.'
         df = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
         job_list = []
         job_count = 0
@@ -929,7 +1015,7 @@ class Engel:
         # generate embed of list of available skills
         embed = discord.Embed()
         embed.title = 'List of Skills'
-        embed.description = self.intro['Skill'] + '\n`=charhelp skill` for more info.'
+        embed.description = '`=charhelp skill` for more info.'
         df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == '']
         skill_list = []
         skill_count = 0
@@ -959,7 +1045,7 @@ class Engel:
         # generate embed of list of available items
         embed = discord.Embed()
         embed.title = 'List of Items'
-        embed.description = self.intro['Item'] + '\n`=charhelp item` for more info.'
+        embed.description = '`=charhelp item` for more info. Note: AP% recovery caps at Max AP of 100.'
         df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item']
         skill_list = []
         skill_count = 0
@@ -1030,7 +1116,7 @@ class Engel:
         embed.title = user.name
         # basic info
         desc_list = []
-        userdict = self.calcstats(row.name)
+        userdict = self.calcstats(row.name, stat='ALL')
         desc_list.append(f"Base: {row['Base']}")
         if userdict['Level'] == self.levelcap:
             desc_list.append(f"Level: {userdict['Level']} (MAX)")
@@ -1117,7 +1203,7 @@ class Engel:
         row = self.dfdict['Raid'].loc[raid]
         embed.title = raid
         desc_list = []
-        raiddict = self.calcstatsraid(row.name)
+        raiddict = self.calcstats(row.name, usertype='Raid', stat='ALL')
         desc_list.append(f"Level: {row['Level']}")
         desc_list.append(f"HP: {row['HP']}/{raiddict['HP']}")
         embed.description = '\n'.join(desc_list)
@@ -1137,15 +1223,12 @@ class Engel:
         embed = discord.Embed()
         embed.title = f"{attacker.name} VS {defender.name}"
         # get their status sheets
-        attackdict = self.calcstats(attacker.id)
-        attackhp = attackdict['HP']
-        defenddict = self.calcstats(defender.id)
-        defendhp = defenddict['HP']
+        attackhp = self.calcstats(attacker.id, stat='HP')['HP']
+        attackhp_init = attackhp
+        defendhp = self.calcstats(defender.id, stat='HP')['HP']
+        defendhp_init = defendhp
         # pick higher potential damage
-        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
-        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
-        counter_damage = max(defenddict['ATK'] - attackdict['DEF'], defenddict['MAG'] - attackdict['SPR'], 0)
-        counter_hitrate = self.calchitrate(defenddict['DEX'] - attackdict['AGI'])
+        damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(attacker.id, defender.id, counter=1)
         desc_list = []
         desc_list.append(f"*{attacker.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
         desc_list.append(f"*{attacker.name} has {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
@@ -1182,12 +1265,21 @@ class Engel:
                 break
         field_name = 'Result'
         field_list = [f"{attacker.name} HP `{attackhp}` | {defender.name} HP `{defendhp}`"]
-        if attackhp == defendhp:
-            field_list.append('It is a draw!')
-        elif attackhp > defendhp:
-            field_list.append(f"{attacker.name} won!")
-        else:
+        if attackhp == 0 and defendhp > 0:
             field_list.append(f"{defender.name} won!")
+        elif defendhp == 0 and attackhp > 0:
+            field_list.append(f"{attacker.name} won!")
+        elif attackhp == defendhp == 0:
+            field_list.append('It is a draw!')
+        else:
+            attackdmg = defendhp_init - defendhp
+            defenddmg = attackhp_init - attackhp
+            if attackdmg > defenddmg:
+                field_list.append(f"{attacker.name} won!")
+            elif defenddmg > attackdmg:
+                field_list.append(f"{defender.name} won!")
+            else:
+                field_list.append('It is a draw!')
         embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         defender_base = self.dfdict['User'].loc[defender.id, 'Base']
         embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
@@ -1328,7 +1420,8 @@ class Engel:
                 targetid = target.id
         else:
             targetid = target.id
-        targetdict = self.calcstats(targetid)
+        t_hp = self.calcstats(targetid, stat='HP')
+        t_ap = self.calcstats(targetid, stat='AP')
         hp_recovery = 0
         hp_num_times = 0
         ap_recovery = 0
@@ -1343,13 +1436,13 @@ class Engel:
                     return embed
                 hp_recovery = -1
             else:
-                hp_recovery = int(targetdict['HP'] * skillrow['Main'])
-                hp_diff = targetdict['HP'] - self.dfdict['User'].loc[targetid, 'HP']
+                hp_recovery = int(t_hp * skillrow['Main'])
+                hp_diff = t_hp - self.dfdict['User'].loc[targetid, 'HP']
                 hp_num_times = min(math.ceil(hp_diff / hp_recovery), num_times)
                 hp_recovery = min(hp_diff, hp_recovery * hp_num_times)
         if 'AP' in skillrow['Stat'].split('/'):
-            ap_recovery = int(min(targetdict['AP'], 100) * skillrow['Main'])
-            ap_diff = targetdict['AP'] - self.dfdict['User'].loc[targetid, 'AP']
+            ap_recovery = int(min(t_ap, 100) * skillrow['Main'])
+            ap_diff = t_ap - self.dfdict['User'].loc[targetid, 'AP']
             ap_num_times = min(math.ceil(ap_diff / ap_recovery), num_times)
             ap_recovery = min(ap_diff, ap_recovery * ap_num_times)
         if 'LB' in skillrow['Stat'].split('/'):
@@ -1411,9 +1504,16 @@ class Engel:
         userrow = self.dfdict['User'].loc[userid]
         skillrow = self.dfdict['Skill'].loc[skillid]
         desc_list = []
+        # healing with HP
+        if consumehp == 1 and skillrow['Healing']:
+            embed.description = 'You cannot consume HP for healing skills.'
+            return embed
         # check if skill available and what potency
-        if consumelb and userrow['LB'] < 100:
+        if consumelb == 1 and userrow['LB'] < 100:
             embed.description = f'Your LB gauge is not full yet.'
+            return embed
+        elif consumelb == 2 and userrow['i3'] < 1:
+            embed.description = f'Your ran out of Hero Drinks.'
             return embed
         if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
             potency = 'Main'
@@ -1431,9 +1531,11 @@ class Engel:
         if targetid != userid and not skillrow['Ally']:
             embed.description = f"{skill} cannot be casted on others."
             return embed
-        hpcost = math.ceil(self.calcstats(userid)['HP'] * self.skill_hpcost)
+        u_hp = self.calcstats(userid, stat='HP')['HP']
+        t_hp = self.calcstats(targetid, stat='HP')['HP']
+        hpcost = math.ceil(u_hp * self.skill_hpcost)
         apcost = self.skill_apcost
-        hprecovery = math.floor(self.calcstats(userid)['HP'] * skillrow[potency])
+        hprecovery = math.floor(u_hp * skillrow[potency])
         # no EXP gain if HP consume
         if consumehp == 1:
             exp_gain = 0
@@ -1442,8 +1544,8 @@ class Engel:
         revive = 0
         # check if is to revive
         if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == 0:
-            num_times = math.ceil(self.calcstats(targetid)['HP'] / hprecovery)
-            if num_times > 1 and consumelb:
+            num_times = math.ceil(t_hp / hprecovery)
+            if num_times > 1 and consumelb > 0:
                 if isinstance(user, int):
                     return 0
                 else:
@@ -1454,16 +1556,13 @@ class Engel:
             apcost = apcost * num_times
             exp_gain = exp_gain * num_times
             revive = 1
-            if consumehp == 0:
-                desc_list = ['Target is dead!',
-                    f"If you do not mind paying {apcost} AP, type `=char skill {skillrow['Skill']} | target | revive`."
-                ]
-                if targetid != userid:
-                    desc_list.append(f"If you do not mind paying {hpcost} HP, type `=char skill {skill} | target | hp`.")
-                embed.description = '\n'.join(desc_list)
-                return embed
+            desc_list = ['Target is dead!',
+                f"If you do not mind paying {apcost} AP, type `=char skill {skillrow['Skill']} | target | revive`."
+            ]
+            embed.description = '\n'.join(desc_list)
+            return embed
         # check if target HP is full
-        if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == self.calcstats(targetid)['HP']:
+        if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == t_hp:
             if isinstance(user, int):
                 return 0
             else:
@@ -1471,9 +1570,6 @@ class Engel:
                 return embed
         # check HP or AP amount or criteria to consume
         if consumehp == 1:
-            if targetid == userid and skillrow['Healing']:
-                embed.description = 'You cannot consume HP to heal yourself.'
-                return embed
             if userrow['HP'] <= hpcost:
                 embed.description = f"You need at least {hpcost + 1} HP."
                 return embed
@@ -1483,6 +1579,9 @@ class Engel:
         elif consumelb == 1:
             self.dfdict['User'].loc[userid, 'LB'] = 0
             desc_list.append(f"You consumed LB gauge.")
+        elif consumelb == 2:
+            self.dfdict['User'].loc[userid, 'i3'] = self.dfdict['User'].loc[userid, 'i3'] - 1
+            desc_list.append(f"You consumed a Hero Drink.")
         elif userrow['AP'] < apcost:
             embed.description = f"You need to have at least {apcost} AP."
             return embed
@@ -1498,7 +1597,7 @@ class Engel:
                 if not isinstance(user, int):
                     desc_list.append(f"You casted {skillrow['Skill']} {num_times} time(s) to revive {target.name}.")
             else:
-                self.dfdict['User'].loc[targetid, 'HP'] = min(self.dfdict['User'].loc[targetid, 'HP'] + hprecovery, self.calcstats(targetid)['HP'])
+                self.dfdict['User'].loc[targetid, 'HP'] = min(self.dfdict['User'].loc[targetid, 'HP'] + hprecovery, t_hp)
                 if not isinstance(user, int):
                     desc_list.append(f"You casted {skillrow['Skill']} on {target.name}, healing {hprecovery} HP.")
         else:
@@ -1774,16 +1873,18 @@ class Engel:
                     return discord.Embed(description = self.infoautolb(user, skill))
                 else:
                     return discord.Embed(description = self.usernotfound)
-            elif arg[0] in ('skill', 'revive', 'lb', 'hp', 'hpskill', 'lbskill', 'skillhp', 'skilllb'):
+            elif arg[0] in ('skill', 'revive', 'heroskill', 'lb', 'hpskill', 'skillhero', 'lbskill', 'skillhp', 'skilllb'):
                 if len(arg) == 1:
                     # list of skills
                     return self.listskill()
                 elif user.id in self.dfdict['User'].index:
                     consumehp = 0
                     consumelb = 0
-                    if arg[0] in ('lb', 'lbskill', 'skilllb'):
+                    if arg[0] in ('hero', 'heroskill'):
+                        consumelb = 2
+                    elif arg[0] in ('lb', 'lbskill', 'skilllb'):
                         consumelb = 1
-                    elif arg[0] in ('hp', 'hpskill', 'skillhp'):
+                    elif arg[0] in ('hpskill', 'skillhp'):
                         consumehp = 1
                     elif arg[0] == 'revive':
                         consumehp = -1
@@ -1968,6 +2069,8 @@ class Engel:
                     return self.infochangelog(arg[1])
                 else:
                     return self.infochangelog()
+            elif arg[0] in ('futureplans', 'futureplan', 'future'):
+                return self.infofutureplan()
             elif arg[0] in ('rate', 'gacha'):
                 return self.ratemanual()
             else:
