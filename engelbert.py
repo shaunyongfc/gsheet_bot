@@ -24,6 +24,8 @@ class Engel:
         self.hpregen = 0.2
         self.apregen = 6
         self.levelcap = 99
+        self.upgradecap = 10
+        self.unlockcost = 5
         self.raidcap = 120
         self.raidcap2 = 79
         self.revivehours = 3
@@ -89,6 +91,7 @@ class Engel:
             ('Skill', 'SkillID'),
             ('User', 'User'),
             ('Raid', 'Raid'),
+            ('Esper', 'EsperID'),
             ('Log', ''),
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
@@ -167,10 +170,10 @@ class Engel:
         )
         self.manual['job'] = ((
             'Description', (
-                'Your jobs determine most of your stats.'
-                'You have 100% growth rate of main job and 50% of each sub job.'
-                f"Main job can be changed every {self.cdjob} hours, but changing sub jobs has no limit."
-                'Changing main job also resets your sub jobs. They can be changed anytime however.'
+                'Your jobs determine most of your stats.',
+                'You have 100% growth rate of main job and 50% of each sub job.',
+                f"Main job can be changed every {self.cdjob} hours, but changing sub jobs has no limit.",
+                'Changing main job also resets your sub jobs. They can be changed anytime however.',
             )),(
             'Commands', (
                 '- Type `=char job` to find list of jobs and their growth rate.',
@@ -387,6 +390,23 @@ class Engel:
         self.dfdict = dict()
         self.dfsync()
         self.levelexp_init()
+        self.upgradecost_init()
+    def levelexp_init(self):
+        # initialize level - EXP table
+        basejp = 50
+        self.nextlevelexp = []
+        self.levelexp = [0]
+        expsum = 0
+        for i in range(self.levelcap):
+            self.nextlevelexp.append(basejp + math.floor(i ** 1.7 * 4))
+            expsum += self.nextlevelexp[i]
+            self.levelexp.append(expsum)
+    def upgradecost_init(self):
+        # initialize dark matter / auracite upgradecost
+        basenumber = 5
+        self.nextupgrade = []
+        for i in range(self.upgradecap):
+            self.nextupgrade.append(basenumber + i + 1)
     def indextransform(self, index):
         # to counter google sheet eating user ids
         if isinstance(index, (int, float)):
@@ -398,6 +418,20 @@ class Engel:
                 return int(index[1:])
             else:
                 return index
+    def unlock_parse(self, input, reverse=0):
+        # parse EX_Unlock and Esper_Unlock into dict
+        if reverse == 0:
+            parsed_unlock = input.split('/')
+            unlock_dict = dict()
+            for unlock in parsed_unlock:
+                unlock_list = unlock.split(',')
+                unlock_dict[unlock_list[0]] = int(unlock_list[1])
+            return unlock_dict
+        else:
+            unlock_list = []
+            for k, v in unlock_dict.items():
+                unlock_list.append(f"{k},{v}")
+            return '/'.join(unlock_list)
     def dfsync(self):
         # sync online sheet into local data
         for sheetname, indexname in self.sheettuples:
@@ -460,16 +494,6 @@ class Engel:
                 return candidates[0]
             else:
                 return 'NOTFOUND'
-    def levelexp_init(self):
-        # initialize level - EXP table
-        basejp = 50
-        self.nextlevelexp = []
-        self.levelexp = [0]
-        expsum = 0
-        for i in range(self.levelcap):
-            self.nextlevelexp.append(basejp + math.floor(i ** 1.7 * 4))
-            expsum += self.nextlevelexp[i]
-            self.levelexp.append(expsum)
     def calclevel(self, exp):
         # calculate level from total EXP
         level = 0
@@ -506,8 +530,10 @@ class Engel:
     def calcstats(self, userid, usertype='User', moddict=None, stat=None):
         if usertype == 'User':
             # calculate stats given user id
+            userrow = self.dfdict['User'].loc[userid]
             userdict = dict()
             userdict['Level'] = self.calclevel(self.dfdict['User'].loc[userid, 'EXP'])
+            baserow = self.dfdict['Base'].loc[userrow['Base']]
             if stat == 'ALL':
                 statlist = self.statlist
             elif stat == None:
@@ -515,35 +541,50 @@ class Engel:
             else:
                 statlist = [stat]
             for statname in statlist:
-                userdict[statname] = self.dfdict['Base'].loc[self.dfdict['User'].loc[userid, 'Base'], statname]
+                userdict[statname] = baserow[statname]
             level_tup = (
                 ('Main', userdict['Level'] + 1),
                 ('Sub1', userdict['Level'] // 2 + 1),
                 ('Sub2', (userdict['Level'] + 1) // 2)
             )
             for job_col, job_level in level_tup:
-                job_id = self.dfdict['User'].loc[userid, job_col]
-                for statname in statlist:
-                    userdict[statname] += self.dfdict['Job'].loc[job_id, statname] * job_level
+                jobrow = self.dfdict['Job'].loc[userrow[job_col]]
+                # EX job upgrade changes
+                if jobrow['Hidden'] == 'ex':
+                    stat_perc = (self.upgradecap / 2 + userrow['EX_Up']) / (self.upgradecap * 1.5)
+                    for statname in statlist:
+                        userdict[statname] += int(jobrow[statname] * job_level * stat_perc)
+                else:
+                    for statname in statlist:
+                        userdict[statname] += jobrow[statname] * job_level
+            # Esper stat changes
+            if userrow['Esper'] != '' and stat in ('ALL', None):
+                esperrow = self.dfdict['Esper'].loc[userrow['Esper']]
+                scaledstat = userdict[esperrow['S_Stat']]
+                for prefix in ('S', 'B1', 'B2'):
+                    if esperrow[f"{prefix}_Stat"] == '':
+                        continue
+                    statmod = (esperrow[f"{prefix}_MIN"] + (esperrow[f"{prefix}_MAX"] - esperrow[f"{prefix}_MIN"]) * userrow['E_Up'] / self.upgradecap) / 100
+                    for statname in esperrow[f"{prefix}_Stat"].split('/'):
+                        userdict[statname] += int(scaledstat * statmod)
             if moddict != None:
                 for k, v in moddict.items():
                     userdict[k] = int(round(userdict[k] * v))
             return userdict
         elif usertype == 'Raid':
             # calculate raid stats given raid name
-            raid = userid
+            raidrow = self.dfdict['Raid'].loc[userid]
             raiddict = dict()
-            base = self.dfdict['Raid'].loc[raid, 'Base']
-            jobid = self.dfdict['Base'].loc[base, 'Main']
-            jobrow = self.dfdict['Job'].loc[jobid]
+            baserow = self.dfdict['Base'].loc[raidrow['Base']]
+            jobrow = self.dfdict['Job'].loc[baserow['Main']]
             if stat == None or stat == 'ALL':
                 for statname in self.statlist2:
-                    raiddict[statname] = self.dfdict['Base'].loc[base, statname] + jobrow[statname] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
+                    raiddict[statname] = baserow[statname] + jobrow[statname] * (raidrow['Level'] + 1)
             if stat == 'HP' or stat == 'ALL':
-                raiddict['HP'] = self.dfdict['Base'].loc[base, 'HP'] + jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] + 1)
-                if self.dfdict['Raid'].loc[raid, 'Level'] > self.raidcap2:
+                raiddict['HP'] = baserow['HP'] + jobrow['HP'] * (raidrow['Level'] + 1)
+                if raidrow['Level'] > self.raidcap2:
                     raiddict['HP'] = raiddict['HP'] * 2
-                    raiddict['HP'] += jobrow['HP'] * (self.dfdict['Raid'].loc[raid, 'Level'] - self.raidcap2)
+                    raiddict['HP'] += jobrow['HP'] * (raidrow['Level'] - self.raidcap2)
             if moddict != None:
                 for k, v in moddict.items():
                     raiddict[statname] = int(round(raiddict[statname] * v))
@@ -763,7 +804,9 @@ class Engel:
                 'i4': 10,
                 'i5': 0,
                 'i6': 0,
-                'i7': 0
+                'i7': 0,
+                'EX_Up': 0,
+                'E_Up': 0,
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
             self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
@@ -772,7 +815,8 @@ class Engel:
         return replystr
     def raiddamage(self, raid, damage):
         # function for a raid to take damage
-        self.dfdict['Raid'].loc[raid, 'HP'] = int(max(self.dfdict['Raid'].loc[raid, 'HP'] - damage, 0))
+        raidrow = self.dfdict['Raid'].loc[raid]
+        self.dfdict['Raid'].loc[raid, 'HP'] = int(max(raidrow['HP'] - damage, 0))
         # if kill
         if self.dfdict['Raid'].loc[raid, 'HP'] == 0:
             # item drop
@@ -780,7 +824,7 @@ class Engel:
             for k in self.drop_rate.keys():
                 if isinstance(k, str):
                     continue
-                if k > self.dfdict['Raid'].loc[raid, 'Level']:
+                if k > raidrow['Level']:
                     break
                 else:
                     drop_level = k
@@ -792,14 +836,14 @@ class Engel:
             else:
                 item_drop = (item1,)
             # level up the raid and fully recovers
-            if raid == self.dfdict['Raid'].loc[raid, 'Base']:
-                if self.dfdict['Raid'].loc[raid, 'Level'] < self.raidcap:
-                    self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+            if raid == raidrow['Base']:
+                if raidrow['Level'] < self.raidcap:
+                    raidrow['Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = self.raidcap2 + 1
             else:
-                if self.dfdict['Raid'].loc[raid, 'Level'] < self.raidcap2:
-                    self.dfdict['Raid'].loc[raid, 'Level'] = self.dfdict['Raid'].loc[raid, 'Level'] + 1
+                if raidrow['Level'] < self.raidcap2:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = 0
             self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstats(raid, usertype='Raid', stat='HP')['HP']
@@ -1112,26 +1156,29 @@ class Engel:
     def infouser(self, user):
         # generate info embed of specific user
         embed = discord.Embed()
-        row = self.dfdict['User'].loc[user.id]
+        userrow = self.dfdict['User'].loc[user.id]
         embed.title = user.name
         # basic info
         desc_list = []
-        userdict = self.calcstats(row.name, stat='ALL')
-        desc_list.append(f"Base: {row['Base']}")
+        userdict = self.calcstats(userrow.name, stat='ALL')
+        baserow = self.dfdict['Base'].loc[userrow['Base']]
+        if baserow['Hidden'] == 'ex':
+            desc_list.append(f"EX Base: {baserow.name}")
+        else:
+            desc_list.append(f"Base: {userrow['Base']}")
         if userdict['Level'] == self.levelcap:
             desc_list.append(f"Level: {userdict['Level']} (MAX)")
         else:
             desc_list.append(f"Level: {userdict['Level']}")
-            desc_list.append(f"*Next Level: {self.levelexp[userdict['Level'] + 1] - row['EXP']} EXP*")
-        desc_list.append(f"HP: {row['HP']}/{userdict['HP']}")
-        desc_list.append(f"AP: {row['AP']}/{userdict['AP']}")
-        if row['LB'] == 100:
+            desc_list.append(f"*Next Level: {self.levelexp[userdict['Level'] + 1] - userrow['EXP']} EXP*")
+        desc_list.append(f"HP: {userrow['HP']}/{userdict['HP']}")
+        desc_list.append(f"AP: {userrow['AP']}/{userdict['AP']}")
+        if userrow['LB'] == 100:
             desc_list.append(f"LB: **MAX**")
         else:
-            desc_list.append(f"LB: {row['LB']}%")
-        desc_list.append(f"Gil: {row['Gil']}")
-        if row['A_Skill'] != '':
-            desc_list.append(f"Status: {self.dfdict['Skill'].loc[row['A_Skill'], 'Skill']} ({row['A_Duration']})")
+            desc_list.append(f"LB: {userrow['LB']}%")
+        if userrow['A_Skill'] != '':
+            desc_list.append(f"Status: {self.dfdict['Skill'].loc[userrow['A_Skill'], 'Skill']} ({userrow['A_Duration']})")
         embed.description = '\n'.join(desc_list)
         # field of stats
         field_list = []
@@ -1140,35 +1187,51 @@ class Engel:
         embed.add_field(name='Stats', value='\n'.join(field_list))
         # field of current jobs
         field_list = []
-        for job_col in ('Main', 'Sub1', 'Sub2'):
-            job_line = f"{job_col}: {self.dfdict['Job'].loc[row[job_col], 'Job']}"
-            field_list.append(job_line)
-        skillid = self.dfdict['Job'].loc[row['Main'], 'Skill']
+        jobrow = self.dfdict['Job'].loc[userrow['Main']]
+        if jobrow['Hidden'] == 'ex':
+            if userrow['EX_Up'] == self.upgradecap:
+                plus_str = 'MAX'
+            else:
+                plus_str = f"+{userrow['EX_Up']}"
+            field_list.append(f"Main: {jobrow['Job']} ({plus_str})")
+        else:
+            field_list.append(f"Main: {jobrow['Job']}")
+        for job_col in ('Sub1', 'Sub2'):
+            field_list.append(f"{job_col}: {self.dfdict['Job'].loc[userrow[job_col], 'Job']}")
+        if userrow['Esper'] != '':
+            if userrow['E_Up'] == self.upgradecap:
+                plus_str = 'MAX'
+            else:
+                plus_str = f"+{userrow['E_Up']}"
+            field_list.append(f"Esper: {self.dfdict['Esper'].loc[userrow['Esper'], 'Esper']} ({plus_str})")
+        if baserow['Hidden'] == 'ex':
+            field_list.append(f"Limit Break: {self.dfdict['Skill'].loc[userrow['Main'], 'Skill']}")
+        skillid = self.dfdict['Job'].loc[userrow['Main'], 'Skill']
         field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[skillid, 'Skill']}")
-        embed.add_field(name='Jobs', value='\n'.join(field_list))
+        embed.add_field(name='Setup', value='\n'.join(field_list))
         # auto setting
         field_list = []
-        if row['LB_Auto'] != 'off':
-            field_list.append(f"LB Skill: {self.dfdict['Skill'].loc[row['LB_Auto'], 'Skill']}")
+        if userrow['LB_Auto'] != 'off':
+            field_list.append(f"LB Skill: {self.dfdict['Skill'].loc[userrow['LB_Auto'], 'Skill']}")
         else:
             field_list.append(f"LB Skill: *off*")
-        if row['I_Auto'] != 'off':
-            field_list.append(f"Item: {self.dfdict['Skill'].loc[row['I_Auto'], 'Skill']} ({row[row['I_Auto']]})")
+        if userrow['I_Auto'] != 'off':
+            field_list.append(f"Item: {self.dfdict['Skill'].loc[userrow['I_Auto'], 'Skill']} ({userrow[userrow['I_Auto']]})")
         else:
             field_list.append(f"Item: *off*")
-        field_list.append(f"HP Threshold: {row['I_Thres']}%")
+        field_list.append(f"HP Threshold: {userrow['I_Thres']}%")
         embed.add_field(name='Auto Setting', value='\n'.join(field_list))
         # show revival timer if dead
-        if row['HP'] == 0:
-            thres = datetime.strptime(row['TS_Dead'], mydtformat) + timedelta(hours=engel.revivehours)
+        if userrow['HP'] == 0:
+            thres = datetime.strptime(userrow['TS_Dead'], mydtformat) + timedelta(hours=engel.revivehours)
             revivaltd = thres - datetime.now()
             revivalstr = f"{revivaltd.seconds // 60 + 1} minutes remaining."
             embed.add_field(name='Revival Time', value=revivalstr, inline=False)
         # decoration
-        thumbnail_url = self.dfdict['Base'].loc[row['Base'], 'Url']
+        thumbnail_url = self.dfdict['Base'].loc[userrow['Base'], 'Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
-        embed_colour = self.dfdict['Base'].loc[row['Base'], 'Colour']
+        embed_colour = self.dfdict['Base'].loc[userrow['Base'], 'Colour']
         if embed_colour != '':
             embed.colour = int(embed_colour, 16)
         return embed

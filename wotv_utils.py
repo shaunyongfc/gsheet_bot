@@ -116,7 +116,7 @@ class WotvUtils:
                 (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
                 (('pvp', 'arena', 'class', 'guild'), 'party'),
                 (('event', 'raid', 'tower', 'box'), 'event'),
-                (('shop',), 'shop'),
+                (('shop', 'whimsy'), 'shop'),
                 (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
             )
         }

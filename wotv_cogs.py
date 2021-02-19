@@ -134,13 +134,24 @@ class WotvGeneral(commands.Cog):
                 namelist = []
                 startlist = []
                 endlist = []
+                event_count = 0
                 for eventname, eventstart, eventend in v:
+                    event_count += 1
                     namelist.append(eventname)
                     startlist.append(datetime.strftime(datetime.strptime(eventstart, mydtformat), printdtformat))
                     endlist.append(datetime.strftime(datetime.strptime(eventend, mydtformat), printdtformat))
-                embed.add_field(name=k.capitalize(), value='\n'.join(namelist))
-                embed.add_field(name='Start', value='\n'.join(startlist))
-                embed.add_field(name='End', value='\n'.join(endlist))
+                    if event_count == 10:
+                        embed.add_field(name=k.capitalize(), value='\n'.join(namelist))
+                        embed.add_field(name='Start', value='\n'.join(startlist))
+                        embed.add_field(name='End', value='\n'.join(endlist))
+                        namelist = []
+                        startlist = []
+                        endlist = []
+                        event_count = 0
+                if event_count > 0:
+                    embed.add_field(name=k.capitalize(), value='\n'.join(namelist))
+                    embed.add_field(name='Start', value='\n'.join(startlist))
+                    embed.add_field(name='End', value='\n'.join(endlist))
             await ctx.send(embed = embed)
         else:
             for k, v in events.items():
@@ -171,6 +182,9 @@ class WotvGeneral(commands.Cog):
                                     replystr += f" `{eventddnum} {eventddstr}s`"
                                 elif eventddnum == 1:
                                     replystr += f" `{eventddnum} {eventddstr}`"
+                        if len(replystr) > 1800:
+                            await ctx.send(replystr)
+                            replystr = '(Cont.)'
             await ctx.send(replystr)
 
     @commands.command(aliases=['rand', 'random', 'choice'])
