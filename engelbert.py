@@ -288,8 +288,8 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- EX Base: trade Dark Matters for EX Base and spend Dark Matters to upgrade.',
-            '- Esper: trade Auracites for an esper for passive stat bonus. Not sure whether to make them upgradeable yet.',
+            '- EX Base: spend Dark Matters to unlock EX bases to upgrade their unique main jobs.',
+            '- Esper: spend Auracites to unlock espers for passive stat bonus and to upgrade them.',
             '- Trial: spend AP to spawn individual trial, beat them for rewards. Planning to have more complicated battle mechanics than raid.'
         )
         self.changelog = (
@@ -553,7 +553,10 @@ class Engel:
                 if jobrow['Hidden'] == 'ex':
                     stat_perc = (self.upgradecap / 2 + userrow['EX_Up']) / (self.upgradecap * 1.5)
                     for statname in statlist:
-                        userdict[statname] += int(jobrow[statname] * job_level * stat_perc)
+                        if statname in ('HP', 'AP'):
+                            userdict[statname] += jobrow[statname] * job_level
+                        else:
+                            userdict[statname] += int(jobrow[statname] * job_level * stat_perc)
                 else:
                     for statname in statlist:
                         userdict[statname] += jobrow[statname] * job_level
@@ -647,70 +650,74 @@ class Engel:
                 self.dfdict['User'].loc[user, 'A_Duration'] = new_duration
     def userattack(self, attacker, defender, zero_attack=0):
         # perform an attack between users
-        if self.dfdict['User'].loc[attacker, 'A_Skill'] != '':
-            a_skilltup = (self.dfdict['User'].loc[attacker, 'A_Skill'], self.dfdict['User'].loc[attacker, 'A_Potency'])
+        attackrow = self.dfdict['User'].loc[attacker]
+        defendrow = self.dfdict['User'].loc[defender]
+        if attackrow['A_Skill'] != '':
+            a_skilltup = (attackrow['A_Skill'], attackrow['A_Potency'])
         else:
             a_skilltup = None
-        if self.dfdict['User'].loc[defender, 'A_Skill'] != '':
-            d_skilltup = (self.dfdict['User'].loc[defender, 'A_Skill'], self.dfdict['User'].loc[defender, 'A_Potency'])
+        if defendrow['A_Skill'] != '':
+            d_skilltup = (defendrow['A_Skill'], defendrow['A_Potency'])
         else:
             d_skilltup = None
         damage, hitrate = self.calcdamage(attacker, defender, a_skilltup, d_skilltup)
         # check attack criteria
-        if self.dfdict['User'].loc[attacker, 'HP'] == 0:
+        if attackrow['HP'] == 0:
             return (0, damage, hitrate, 'You are dead!')
-        elif self.dfdict['User'].loc[attacker, 'AP'] < self.attack_apcost:
+        elif attackrow['AP'] < self.attack_apcost:
             return (0, damage, hitrate, 'Not enough AP!')
-        elif self.dfdict['User'].loc[defender, 'HP'] == 0:
+        elif defendrow['HP'] == 0:
             return (0, damage, hitrate, 'Target is dead!')
         elif zero_attack:
             return (0, damage, hitrate)
         else:
             # use lb
             lb_use = 0
-            if self.dfdict['User'].loc[attacker, 'LB_Auto'] != 'off' and self.dfdict['User'].loc[attacker, 'LB'] == 100:
-                skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker, 'LB_Auto']]
-                if self.dfdict['User'].loc[attacker, 'A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+            if attackrow['LB_Auto'] != 'off' and attackrow['LB'] == 100:
+                skillrow = self.dfdict['Skill'].loc[attackrow['LB_Auto']]
+                if attackrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                     lb_use = self.infoskill(attacker, skillrow.name, consumelb=1)
+                    attackrow = self.dfdict['User'].loc[attacker]
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
-                        a_skilltup = (self.dfdict['User'].loc[attacker, 'A_Skill'], self.dfdict['User'].loc[attacker, 'A_Potency'])
+                        a_skilltup = (attackrow['A_Skill'], attackrow['A_Potency'])
                         damage, hitrate = self.calcdamage(attacker, defender, a_skilltup, d_skilltup)
             self.userconsumeduration(attacker)
             # consume AP
-            self.dfdict['User'].loc[attacker, 'AP'] = int(self.dfdict['User'].loc[attacker, 'AP'] - self.attack_apcost)
+            self.dfdict['User'].loc[attacker, 'AP'] = int(attackrow['AP'] - self.attack_apcost)
             # calculate critical or hit rate
             if hitrate > 1:
                 hit = 1 + ((hitrate - 1) > random.random())
             else:
                 hit = hitrate > random.random()
             # EXP gain
-            a_level = self.calclevel(self.dfdict['User'].loc[attacker, 'EXP'])
-            d_level = self.calclevel(self.dfdict['User'].loc[defender, 'EXP'])
+            a_level = self.calclevel(attackrow['EXP'])
+            d_level = self.calclevel(defendrow['EXP'])
             exp_gain = 15 + damage * hit // 30 + d_level * 2
             # bonus EXP for killing
             kill = self.userdamage(defender, damage * hit)
             if kill:
                 exp_gain += d_level * 2
-            self.dfdict['User'].loc[attacker, 'EXP'] = self.dfdict['User'].loc[attacker, 'EXP'] + exp_gain
+            self.dfdict['User'].loc[attacker, 'EXP'] = attackrow['EXP'] + exp_gain
             # defender EXP regardless of hit
             defender_exp_gain = 10 + damage * hit // 45 + a_level * 2
-            self.dfdict['User'].loc[defender, 'EXP'] = self.dfdict['User'].loc[defender, 'EXP'] + defender_exp_gain
+            self.dfdict['User'].loc[defender, 'EXP'] = defendrow['EXP'] + defender_exp_gain
             # LB gain
             lb_gain = ((d_level - 1) // a_level + 1) * 10
-            lb_gain = min(100 - self.dfdict['User'].loc[attacker, 'LB'], lb_gain)
-            self.dfdict['User'].loc[attacker, 'LB'] = self.dfdict['User'].loc[attacker, 'LB'] + lb_gain
+            lb_gain = min(100 - attackrow['LB'], lb_gain)
+            self.dfdict['User'].loc[attacker, 'LB'] = attackrow['LB'] + lb_gain
             # defender LB gain
             defender_lb_gain = ((a_level - 1) // d_level + 1) * 10
-            defender_lb_gain = min(100 - self.dfdict['User'].loc[defender, 'LB'], defender_lb_gain)
-            self.dfdict['User'].loc[defender, 'LB'] = self.dfdict['User'].loc[defender, 'LB'] + defender_lb_gain
+            defender_lb_gain = min(100 - defendrow['LB'], defender_lb_gain)
+            self.dfdict['User'].loc[defender, 'LB'] = defendrow['LB'] + defender_lb_gain
             # Gil gain
-            self.dfdict['User'].loc[attacker, 'Gil'] = self.dfdict['User'].loc[attacker, 'Gil'] + self.attack_apcost
+            self.dfdict['User'].loc[attacker, 'Gil'] = attackrow['Gil'] + self.attack_apcost
             return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain, lb_use)
     def userdamage(self, defender, damage):
         # function for a user to take damage
-        self.dfdict['User'].loc[defender, 'HP'] = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
-        if self.dfdict['User'].loc[defender, 'HP'] == 0:
+        new_hp = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
+        self.dfdict['User'].loc[defender, 'HP'] = new_hp
+        if new_hp == 0:
             self.dfdict['User'].loc[defender, 'TS_Dead'] = datetime.strftime(datetime.now(), mydtformat)
             return 1
         else:
@@ -838,7 +845,7 @@ class Engel:
             # level up the raid and fully recovers
             if raid == raidrow['Base']:
                 if raidrow['Level'] < self.raidcap:
-                    raidrow['Level'] = raidrow['Level'] + 1
+                    self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = self.raidcap2 + 1
             else:
@@ -852,15 +859,16 @@ class Engel:
             return 0
     def raidattack(self, user, raid, zero_attack=0):
         # perform an attack between an user and a raid
-        if self.dfdict['User'].loc[user, 'A_Skill'] != '':
-            a_skilltup = (self.dfdict['User'].loc[user, 'A_Skill'], self.dfdict['User'].loc[user, 'A_Potency'])
+        userrow = self.dfdict['User'].loc[user]
+        if userrow['A_Skill'] != '':
+            a_skilltup = (userrow['A_Skill'], userrow['A_Potency'])
         else:
             a_skilltup = None
         damage, hitrate, raid_damage, raid_hitrate = self.calcdamage(user, raid, a_skilltup=a_skilltup, counter=1, raid=1)
         # check attack criteria
-        if self.dfdict['User'].loc[user, 'HP'] == 0:
+        if userrow['HP'] == 0:
             return (0, damage, hitrate, raid_damage, raid_hitrate, 'You are dead!')
-        elif self.dfdict['User'].loc[user, 'AP'] < self.attack_apcost:
+        elif userrow['AP'] < self.attack_apcost:
             return (0, damage, hitrate, raid_damage, raid_hitrate, 'Not enough AP!')
         elif zero_attack:
             return (0, damage, hitrate, raid_damage, raid_hitrate)
@@ -868,35 +876,37 @@ class Engel:
             # use item
             item_use = 0
             u_hp = self.calcstats(user, stat='HP')['HP']
-            hp_perc = self.dfdict['User'].loc[user, 'HP'] / u_hp
-            if self.dfdict['User'].loc[user, 'I_Auto'] != 'off' and hp_perc < self.dfdict['User'].loc[user, 'I_Thres'] / 100:
-                skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'I_Auto']]
-                while self.dfdict['User'].loc[user, self.dfdict['User'].loc[user, 'I_Auto']] > 0:
+            hp_perc = userrow['HP'] / u_hp
+            if userrow['I_Auto'] != 'off' and hp_perc < userrow['I_Thres'] / 100:
+                skillrow = self.dfdict['Skill'].loc[userrow['I_Auto']]
+                while self.dfdict['User'].loc[user, userrow['I_Auto']] > 0:
                     item_use += self.infoitem(user, skillrow.name)
-                    if self.dfdict['User'].loc[user, 'HP'] / u_hp >= self.dfdict['User'].loc[user, 'I_Thres'] / 100:
+                    if self.dfdict['User'].loc[user, 'HP'] / u_hp >= userrow['I_Thres'] / 100:
                         break
+                userrow = self.dfdict['User'].loc[user]
             # use lb
             lb_use = 0
-            if self.dfdict['User'].loc[user, 'LB_Auto'] != 'off' and self.dfdict['User'].loc[user, 'LB'] == 100:
-                skillrow = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user, 'LB_Auto']]
-                if self.dfdict['User'].loc[user, 'A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
+            if userrow['LB_Auto'] != 'off' and userrow['LB'] == 100:
+                skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
+                if userrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                     lb_use = self.infoskill(user, skillrow.name, consumelb=1)
+                    userrow = self.dfdict['User'].loc[user]
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
-                        a_skilltup = (self.dfdict['User'].loc[user, 'A_Skill'], self.dfdict['User'].loc[user, 'A_Potency'])
+                        a_skilltup = (userrow['A_Skill'], userrow['A_Potency'])
                         damage, hitrate, raid_damage, raid_hitrate = self.calcdamage(user, raid, a_skilltup=a_skilltup, counter=1, raid=1)
             self.userconsumeduration(user)
             # consume AP
-            self.dfdict['User'].loc[user, 'AP'] = int(self.dfdict['User'].loc[user, 'AP'] - self.attack_apcost)
+            self.dfdict['User'].loc[user, 'AP'] = int(userrow['AP'] - self.attack_apcost)
             # LB gain
-            u_level = self.calclevel(self.dfdict['User'].loc[user, 'EXP'])
+            u_level = self.calclevel(userrow['EXP'])
             r_level = self.dfdict['Raid'].loc[raid, 'Level']
             if r_level > u_level:
                 lb_gain = 20
             else:
                 lb_gain = 10
-            lb_gain = min(100 - self.dfdict['User'].loc[user, 'LB'], lb_gain)
-            self.dfdict['User'].loc[user, 'LB'] = self.dfdict['User'].loc[user, 'LB'] + lb_gain
+            lb_gain = min(100 - userrow['LB'], lb_gain)
+            self.dfdict['User'].loc[user, 'LB'] = userrow['LB'] + lb_gain
             # check critical or hit
             if hitrate > 1:
                 hit = 1 + ((hitrate - 1) > random.random())
@@ -911,9 +921,9 @@ class Engel:
                 # Item drop
                 for itemid in kill:
                     self.dfdict['User'].loc[user, itemid] = self.dfdict['User'].loc[user, itemid] + 1
-            self.dfdict['User'].loc[user, 'EXP'] = self.dfdict['User'].loc[user, 'EXP'] + exp_gain
+            self.dfdict['User'].loc[user, 'EXP'] = userrow['EXP'] + exp_gain
             # Gil gain
-            self.dfdict['User'].loc[user, 'Gil'] = self.dfdict['User'].loc[user, 'Gil'] + self.attack_apcost
+            self.dfdict['User'].loc[user, 'Gil'] = userrow['Gil'] + self.attack_apcost
             # raid counter attack
             if raid_hitrate > 1:
                 raid_hit = 1 + ((raid_hitrate - 1) > random.random())
