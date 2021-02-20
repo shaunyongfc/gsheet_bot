@@ -26,8 +26,9 @@ class Engel:
         self.levelcap = 99
         self.upgradecap = 10
         self.unlockcost = 5
-        self.raidcap = 120
-        self.raidcap2 = 79
+        self.raidcap = 149
+        self.raidcap2 = 99
+        self.raidcap3 = 49
         self.revivehours = 3
         self.cdjob = 12
         self.cdbase = 24
@@ -73,16 +74,28 @@ class Engel:
                 'i1': 100
             },
             100: {
-                'i2': 38,
+                'i2': 40,
                 'i3': 25,
-                'i4': 15,
-                'i5': 2,
+                'i4': 12,
+                'i5': 3,
                 'i6': 10,
                 'i7': 10
             },
             '100': {
                 'i1': 80,
                 'i2': 20
+            },
+            120: {
+                'i2': 32,
+                'i3': 20,
+                'i4': 15,
+                'i5': 3,
+                'i6': 15,
+                'i7': 15
+            },
+            '120': {
+                'i1': 70,
+                'i2': 30
             }
         }
         self.sheettuples = (
@@ -271,9 +284,9 @@ class Engel:
                 '- Raids level up and revive with full HP when you defeat them.',
                 '- Raids will loop back to initial levels when they hit certain levels.',
                 f"- Group 1 levels will loop between {self.raidcap2 + 1} and {self.raidcap}.",
-                f"- Group 2 levels will loop between 0 and {self.raidcap2}.",
-            )
-            )
+                f"- Group 2 levels will loop between {self.raidcap3 + 1} and {self.raidcap2}.",
+                f"- Group 3 levels will loop between 0 and {self.raidcap3}.",
+            ))
         )
         manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
@@ -390,7 +403,6 @@ class Engel:
         self.dfdict = dict()
         self.dfsync()
         self.levelexp_init()
-        self.upgradecost_init()
     def levelexp_init(self):
         # initialize level - EXP table
         basejp = 50
@@ -401,12 +413,14 @@ class Engel:
             self.nextlevelexp.append(basejp + math.floor(i ** 1.7 * 4))
             expsum += self.nextlevelexp[i]
             self.levelexp.append(expsum)
-    def upgradecost_init(self):
-        # initialize dark matter / auracite upgradecost
-        basenumber = 5
-        self.nextupgrade = []
-        for i in range(self.upgradecap):
-            self.nextupgrade.append(basenumber + i + 1)
+    def upgradecost(self, up, unlockcost=None):
+        # return dark matter / auracite upgradecost
+        if unlockcost == None:
+            return 2 + up
+        elif unlockcost == 10:
+            return 3 + up * 2
+        else:
+            return self.levelcap
     def indextransform(self, index):
         # to counter google sheet eating user ids
         if isinstance(index, (int, float)):
@@ -590,28 +604,34 @@ class Engel:
                     raiddict['HP'] += jobrow['HP'] * (raidrow['Level'] - self.raidcap2)
             if moddict != None:
                 for k, v in moddict.items():
-                    raiddict[statname] = int(round(raiddict[statname] * v))
+                    raiddict[k] = int(round(raiddict[k] * v))
             return raiddict
     def calcdamage(self, attacker, defender, a_skilltup=None, d_skilltup=None, counter=0, raid=0):
         # calculate damage given attacker and defender
         # skill check
         skilltuplist = []
         if a_skilltup != None:
-            if self.dfdict['Skill'].loc[a_skilltup[0], 'Stat'] == 'COMBO':
-                skilltuplist += [
-                    (a, 'Main', 0) for a in self.dfdict['Skill'].loc[a_skilltup[0], 'Main'].split('/')
-                ] + [
-                    (a, 'Sub', 0) for a in self.dfdict['Skill'].loc[a_skilltup[0], 'Sub'].split('/')
-                ]
+            skillrow = self.dfdict['Skill'].loc[a_skilltup[0]]
+            if skillrow['Stat'] == 'COMBO':
+                for subpotency in ('Main', 'Sub'):
+                    if skillrow[subpotency] == '':
+                        continue
+                    for subskillid in skillrow[subpotency].split('/'):
+                        subskillrow = self.dfdict['Skill'].loc[subskillid]
+                        if subskillrow['Healing'] == 0:
+                            skilltuplist.append((subskillid, subpotency, 0))
             else:
                 skilltuplist += [(*a_skilltup, 0)]
         if d_skilltup != None:
-            if self.dfdict['Skill'].loc[d_skilltup[0], 'Stat'] == 'COMBO':
-                skilltuplist += [
-                    (a, 'Main', 1) for a in self.dfdict['Skill'].loc[d_skilltup[0], 'Main'].split('/')
-                ] + [
-                    (a, 'Sub', 1) for a in self.dfdict['Skill'].loc[d_skilltup[0], 'Sub'].split('/')
-                ]
+            skillrow = self.dfdict['Skill'].loc[d_skilltup[0]]
+            if skillrow['Stat'] == 'COMBO':
+                for subpotency in ('Main', 'Sub'):
+                    if skillrow[subpotency] == '':
+                        continue
+                    for subskillid in skillrow[subpotency].split('/'):
+                        subskillrow = self.dfdict['Skill'].loc[subskillid]
+                        if subskillrow['Healing'] == 0:
+                            skilltuplist.append((subskillid, subpotency, 1))
             else:
                 skilltuplist += [(*d_skilltup, 1)]
         # stat modifier dict
@@ -674,7 +694,10 @@ class Engel:
             # use lb
             lb_use = 0
             if attackrow['LB_Auto'] != 'off' and attackrow['LB'] == 100:
-                skillrow = self.dfdict['Skill'].loc[attackrow['LB_Auto']]
+                if attackrow['LB_Auto'] == 'ex':
+                    skillrow = self.dfdict['Skill'].loc[attackrow['Main']]
+                else:
+                    skillrow = self.dfdict['Skill'].loc[attackrow['LB_Auto']]
                 if attackrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                     lb_use = self.infoskill(attacker, skillrow.name, consumelb=1)
                     attackrow = self.dfdict['User'].loc[attacker]
@@ -848,8 +871,13 @@ class Engel:
                     self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = self.raidcap2 + 1
-            else:
+            elif '2' in raid:
                 if raidrow['Level'] < self.raidcap2:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
+                else:
+                    self.dfdict['Raid'].loc[raid, 'Level'] = self.raidcap3 + 1
+            else:
+                if raidrow['Level'] < self.raidcap3:
                     self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = 0
@@ -887,7 +915,10 @@ class Engel:
             # use lb
             lb_use = 0
             if userrow['LB_Auto'] != 'off' and userrow['LB'] == 100:
-                skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
+                if userrow['LB_Auto'] == 'ex':
+                    skillrow = self.dfdict['Skill'].loc[userrow['Main']]
+                else:
+                    skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
                 if userrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                     lb_use = self.infoskill(user, skillrow.name, consumelb=1)
                     userrow = self.dfdict['User'].loc[user]
@@ -1222,7 +1253,10 @@ class Engel:
         # auto setting
         field_list = []
         if userrow['LB_Auto'] != 'off':
-            field_list.append(f"LB Skill: {self.dfdict['Skill'].loc[userrow['LB_Auto'], 'Skill']}")
+            if userrow['LB_Auto'] == 'ex':
+                field_list.append(f"LB: {self.dfdict['Skill'].loc[userrow['Main'], 'Skill']}")
+            else:
+                field_list.append(f"LB Skill: {self.dfdict['Skill'].loc[userrow['LB_Auto'], 'Skill']}")
         else:
             field_list.append(f"LB Skill: *off*")
         if userrow['I_Auto'] != 'off':
@@ -1433,16 +1467,25 @@ class Engel:
     def infoautolb(self, user, skill):
         # generate result embed of setting auto lb
         userid = user.id
-        if skill == 'off' and self.dfdict['User'].loc[user.id, 'LB_Auto'] != 'off':
+        userrow = self.dfdict['User'].loc[user.id]
+        if skill == 'off' and userrow['LB_Auto'] != 'off':
             self.dfdict['User'].loc[user.id, 'LB_Auto'] = 'off'
             self.syncpend = 1
             return f"{user.name} auto LB is now turned off."
         else:
-            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
-            if self.dfdict['User'].loc[user.id, 'LB_Auto'] != skillid:
+            if skill == 'ex':
+                skillid = 'ex'
+                if 'ex' not in userrow['Main']:
+                    return f"{user.name} current main job does not have limit break."
+            else:
+                skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+            if userrow['LB_Auto'] != skillid:
                 self.dfdict['User'].loc[user.id, 'LB_Auto'] = skillid
                 self.syncpend = 1
-                return f"{user.name} auto LB is now set to {skill}."
+                if skill == 'ex':
+                    return f"{user.name} auto LB is now set to limit break."
+                else:
+                    return f"{user.name} auto LB is now set to {skill}."
         return f"This is {user.name} current setting."
     def infoautoitem(self, user, skill):
         # generate result embed of setting auto item
@@ -1569,12 +1612,20 @@ class Engel:
         embed = discord.Embed()
         if isinstance(user, int):
             userid = user
+            userrow = self.dfdict['User'].loc[userid]
             skillid = skill
         else:
             userid = user.id
-            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+            userrow = self.dfdict['User'].loc[userid]
+            if 'ex' in skill:
+                skillid = userrow['Main']
+                if 'ex' not in skillid:
+                    embed.description = 'Your current main job does not have limit break.'
+                    return embed
+                consumelb = max(1, consumelb)
+            else:
+                skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
             embed.title = f"{user.name} - {skill}"
-        userrow = self.dfdict['User'].loc[userid]
         skillrow = self.dfdict['Skill'].loc[skillid]
         desc_list = []
         # healing with HP
@@ -1608,7 +1659,18 @@ class Engel:
         t_hp = self.calcstats(targetid, stat='HP')['HP']
         hpcost = math.ceil(u_hp * self.skill_hpcost)
         apcost = self.skill_apcost
-        hprecovery = math.floor(u_hp * skillrow[potency])
+        # check if lb combo involves healing
+        hprecovery = 0
+        if skillrow['Healing']:
+            hprecovery = math.floor(u_hp * skillrow[potency])
+        elif skillrow['Stat'] == 'COMBO':
+            for subpotency in ('Main', 'Sub'):
+                if skillrow[subpotency] == '':
+                    continue
+                for subskillid in skillrow[subpotency].split('/'):
+                    subskillrow = self.dfdict['Skill'].loc[subskillid]
+                    if subskillrow['Healing']:
+                        hprecovery += math.floor(u_hp * subskillrow[subpotency])
         # no EXP gain if HP consume
         if consumehp == 1:
             exp_gain = 0
@@ -1721,7 +1783,11 @@ class Engel:
             else:
                 _, damage, hitrate, hit, kill, exp_gain, defender_exp_gain, lb_use = result_tup
                 if lb_use > 0:
-                    skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker.id, 'LB_Auto'], 'Skill']
+                    skillid = self.dfdict['User'].loc[attacker.id, 'LB_Auto']
+                    if skillid == 'ex':
+                        skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[attacker.id, 'Main'], 'Skill']
+                    else:
+                        skill = self.dfdict['Skill'].loc[skillid, 'Skill']
                     field_list.append(f"You consumed LB gauge to cast {skill}.")
                     exp_gain_total += lb_use
                 if hit == 2:
@@ -1795,7 +1861,11 @@ class Engel:
                     else:
                         field_list.append(f"You consumed {item_use} {skill}s.")
                 if lb_use > 0:
-                    skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user.id, 'LB_Auto'], 'Skill']
+                    skillid = self.dfdict['User'].loc[user.id, 'LB_Auto']
+                    if skillid == 'ex':
+                        skill = self.dfdict['Skill'].loc[self.dfdict['User'].loc[user.id, 'Main'], 'Skill']
+                    else:
+                        skill = self.dfdict['Skill'].loc[skillid, 'Skill']
                     field_list.append(f"You consumed LB gauge to cast {skill}.")
                     exp_gain_total += lb_use
                 if hit == 2:
@@ -1933,21 +2003,23 @@ class Engel:
                 else:
                     return discord.Embed(description = self.usernotfound)
             elif arg[0] in ('autolbskill', 'autolb'):
-                if len(arg) == 1:
-                    # list of skills
-                    return self.listskill()
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1].lower() == 'off':
-                        skill = 'off'
+                if user.id in self.dfdict['User'].index:
+                    if len(arg) == 1:
+                        skill = 'ex'
                     else:
-                        skill = self.find_index(' '.join(arg[1:]), 'Skill')
-                        if skill == 'NOTFOUND':
-                            return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
+                        if arg[1].lower() == 'off':
+                            skill = 'off'
+                        elif arg[1].lower() == 'ex':
+                            skill = 'ex'
+                        else:
+                            skill = self.find_index(' '.join(arg[1:]), 'Skill')
+                            if skill == 'NOTFOUND':
+                                return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
                     return discord.Embed(description = self.infoautolb(user, skill))
                 else:
                     return discord.Embed(description = self.usernotfound)
             elif arg[0] in ('skill', 'revive', 'heroskill', 'lb', 'hpskill', 'skillhero', 'lbskill', 'skillhp', 'skilllb'):
-                if len(arg) == 1:
+                if len(arg) == 1 and arg[0] not in ('lb', 'lbskill', 'skilllb'):
                     # list of skills
                     return self.listskill()
                 elif user.id in self.dfdict['User'].index:
@@ -1961,38 +2033,44 @@ class Engel:
                         consumehp = 1
                     elif arg[0] == 'revive':
                         consumehp = -1
-                    elif arg[1].lower() == 'lb':
-                        consumelb = 1
-                        arg = arg[1:]
-                    elif arg[1].lower() == 'hp':
-                        consumehp = 1
-                        arg = arg[1:]
-                    elif arg[1].lower() == 'revive':
-                        consumehp = -1
-                        arg = arg[1:]
-                    skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
-                    skill = self.find_index(skillargs[0], 'Skill')
-                    if skill == 'NOTFOUND':
-                        return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
-                    if len(skillargs) == 3:
-                        if skillargs[2].lower() == 'hp':
-                            consumehp = 1
-                        elif skillargs[2].lower() == 'revive':
-                            consumehp = -1
-                        elif skillargs[2].lower() == 'lb':
+                    elif len(arg) > 1:
+                        if arg[1].lower() == 'lb':
                             consumelb = 1
-                    if len(skillargs) > 1:
-                        try:
-                            target = await commands.MemberConverter().convert(ctx, skillargs[1])
-                            if target.id in self.dfdict['User'].index:
-                                return self.infoskill(user, skill, target, consumehp, consumelb)
-                            else:
-                                return discord.Embed(description = self.targetnotfound)
-                        except commands.BadArgument:
-                            return discord.Embed(description = self.targetnotfound)
+                            arg = arg[1:]
+                        elif arg[1].lower() == 'hp':
+                            consumehp = 1
+                            arg = arg[1:]
+                        elif arg[1].lower() == 'revive':
+                            consumehp = -1
+                            arg = arg[1:]
+                    if consumelb == 1 and len(arg) == 1:
+                        skill = 'ex'
+                    elif arg[1].lower() == 'ex':
+                        skill = 'ex'
                     else:
-                        return self.infoskill(user, skill, user, consumehp, consumelb)
-                    return discord.Embed(description = 'Try `=charhelp skill`.')
+                        skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
+                        skill = self.find_index(skillargs[0], 'Skill')
+                        if skill == 'NOTFOUND':
+                            return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
+                        if len(skillargs) == 3:
+                            if skillargs[2].lower() == 'hp':
+                                consumehp = 1
+                            elif skillargs[2].lower() == 'revive':
+                                consumehp = -1
+                            elif skillargs[2].lower() == 'lb':
+                                consumelb = 1
+                        if len(skillargs) > 1:
+                            try:
+                                target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                                if target.id in self.dfdict['User'].index:
+                                    return self.infoskill(user, skill, target, consumehp, consumelb)
+                                else:
+                                    return discord.Embed(description = self.targetnotfound)
+                            except commands.BadArgument:
+                                return discord.Embed(description = self.targetnotfound)
+                    if skill == 'ex' and consumehp != 0:
+                        return discord.Embed(description = 'Nice try.')
+                    return self.infoskill(user, skill, user, consumehp, consumelb)
                 else:
                     return discord.Embed(description = self.usernotfound)
             elif arg[0] == 'item':
