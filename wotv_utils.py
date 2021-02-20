@@ -38,6 +38,17 @@ class WotvUtils:
                 'Stat Up': '',
                 'RES Up': 'RES'
             },
+            'magicites': {
+                'S': 400,
+                'M': 800,
+                'L': 1600,
+                'XL': 32000
+            },
+            'esper_exp': {
+                1: 1699380,
+                2: 6727933,
+                3: 16821904
+            },
             'brackets': self.bracket_init(),
             'emotes': self.emotes_init(),
             'colours': {
@@ -71,6 +82,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('20th February 2021', (
+                    'Magicite Calculator - calculate EXP required from certain star and magicites you have (`=help esper`).',
+                )),
                 ('6th February 2021', (
                     '(beta) Engelbert Tamagotchi - fluff tamagotchi function `=char help` or `=tamagotchi help` or `=engel help`',
                 )),
@@ -146,6 +160,7 @@ class WotvUtils:
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.')),
             ('Engelbert Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
+            'Note that it is a group of functions entirely separated from the rest of the bot so all related commands start with `=char`, `=tamagotchi` or `=engel`.',
             'Enter `=char help` or `=tamagotchi help` or `=engel help` for more info.'))
         )
         self.help_events = (
@@ -290,6 +305,14 @@ class WotvUtils:
                 '- accuracy/evasion',
                 '- crit rate/evade/damage',
                 '- poison/stop/(etc) res'
+            )),
+            ('Magicite Calculator', ('**= magicite / esperexp**',
+                'Input the number of S, M, L, XL magicites, star of esper you are raising from and bonus to calculate if you have enough magicites.',
+                'Starting from 1-star esper, 100% bonus, non-neutral by default.',
+                'Arguments separated by `|` for each value followed by their values.',
+                'e.g. `=magicite s 300 | m 400 | xl 80 | star 3 | bonus 90`',
+                'e.g. `=magicite xl 100 | star 2 | bonus 100 | neutral` for neutral espers like Odin or Bahamut.'
+                'Note: Not to be confused with `=calc` which is simple math calculation command.'
             )),
             ('Disclaimer and Sources',
                 ('SQEX and Gumi (obviously).',

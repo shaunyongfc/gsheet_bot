@@ -662,6 +662,76 @@ class WotvEsper(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command(aliases=['magicite', 'esperexp', 'espermagicite'])
+    async def wotvmagicite(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
+        if len(arg) == 0:
+            await ctx.send('Try `=help esper`.')
+            return
+        embed = discord.Embed(
+            colour = wotv_utils.dicts['embed']['default_colour']
+        )
+        magicites = {k: 0 for k in wotv_utils.dicts['magicites'].keys()}
+        esper_start = 1
+        bonus = 100
+        neutral = 0
+        args = ' '.join(arg)
+        embed.title = args
+        # convert arg list to split with | instead
+        arg = [a.lower().strip() for a in args.split('|')]
+        for argstr in arg:
+            # find position and value of number
+            if argstr == 'neutral':
+                neutral = 1
+                continue
+            re_match = wotv_utils.revalues.search(argstr.rstrip('%'))
+            try:
+                paramval = int(re_match.group())
+                paramstr = argstr[0:re_match.start()].strip()
+                if paramstr in ('star', 'stars') and paramval in (1, 2, 3):
+                    esper_start = paramval
+                elif paramstr in ('bonus',) and 0 <= paramval <= 100:
+                    bonus = paramval
+                else:
+                    for k in wotv_utils.dicts['magicites'].keys():
+                        if paramstr == k.lower():
+                            magicites[k] = max(paramval, 0)
+                            break
+            except AttributeError:
+                pass
+        # actual calculations
+        req_exp = sum([wotv_utils.dicts['esper_exp'][a] for a in range(esper_start, 4, 1)])
+        total_exp = 0
+        for k, v in magicites.items():
+            if neutral:
+                total_exp += int(v * wotv_utils.dicts['magicites'][k] * (100 + bonus) / 100 * 0.75)
+            else:
+                total_exp += v * wotv_utils.dicts['magicites'][k] * int((100 + bonus) / 100)
+        if neutral:
+            xl_exp = wotv_utils.dicts['magicites']['XL'] * (100 + bonus) / 100 * 0.75
+        else:
+            xl_exp = wotv_utils.dicts['magicites']['XL'] * (100 + bonus) / 100
+        # presenting results
+        field_list = [
+            f"Starting from `{esper_start}-star`",
+            f"Bonus: `{bonus}%`"
+        ] + [
+            f"{k} Magicites: `{v}`" for k, v in magicites.items()
+        ]
+        if neutral:
+            field_list.append('Neutral Esper')
+        embed.add_field(name='Inputs', value='\n'.join(field_list), inline=True)
+        field_list = [
+            f"Required EXP: `{req_exp}` (`{req_exp / xl_exp:.1f}` XL)",
+            f"Total EXP: `{total_exp}` (`{total_exp / xl_exp:.1f}` XL)"
+        ]
+        if total_exp > req_exp:
+            field_list.append(f"Enough with leftovers of `{(total_exp - req_exp) / xl_exp:.1f}` XL.")
+        elif req_exp > total_exp:
+            field_list.append(f"Insufficient of `{(req_exp - total_exp) / xl_exp:.1f}` XL.")
+        embed.add_field(name='Results', value='\n'.join(field_list), inline=True)
+        await ctx.send(embed = embed)
+
     @commands.command(aliases=['esper'])
     async def wotvesper(self, ctx, *arg):
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
