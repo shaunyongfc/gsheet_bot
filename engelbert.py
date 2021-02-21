@@ -179,6 +179,36 @@ class Engel:
                 '- Type `=char base (base name)` (e.g. `=char base lasswell`) to read info of the base.',
                 '- Type `=char base start (base name)` (e.g. `=char base start jake`) to start your character.',
                 '- Type `=char base change (base name)` (e.g. `=char base change rain`) to change the base of your character.',
+            )),(
+            'EX Base', (
+                'EX bases are premium bases traded using Dark Matters.',
+                'They come with unique jobs that have low starting stats',
+                'After upgrading the EX bases with Dark Matters, the unique jobs will have higher stats than other bases.',
+                'Unique jobs also come with powerful Limit Break that are special skills that can only consume LB gauge or Hero Drink.'
+            )),(
+            'EX Base Commands', (
+                '- Type `=char exbase` to find list of available EX bases and their unlock / upgrade status.',
+                '- Type `=char exbase (base name)` (e.g. `=char exbase hyoh`) to read info of the EX base.',
+                '- Type `=char exbase change (base name)` (e.g. `=char exbase change ildyra`) to change the base of your character.',
+                '- Type `=char exbase unlock (base name)` (e.g. `=char exbase unlock tifa`) to unlock the EX base.',
+                '- Type `=char exbase up (base name)` (e.g. `=char exbase up ace`) to upgrade the EX base.',
+                '- Type `=char job main ex` to change main job into the unique job.'
+            ))
+        )
+        self.manual['esper'] = ((
+            'Description', (
+                'Espers are stat boosts traded using Auracites.',
+                'The boosts all scale on one stat different to each esper.',
+                'After upgrading the espers with Auracites, the boosts will become more powerful.',
+                'The scaled stat might be decreased at first but will become boosts with enough upgrades.'
+            )),(
+            'Commands', (
+                '- Type `=char esper` to find list of espers and their unlock / upgrade status.',
+                '- Type `=char esper (esper name)` (e.g. `=char esper shiva`) to read info of the esper.',
+                '- Type `=char esper change (esper name)` (e.g. `=char esper change ifrit`) to change the esper of your character.',
+                '- Type `=char esper unlock (esper name)` (e.g. `=char esper unlock titan`) to unlock the esper.',
+                '- Type `=char esper up (esper name)` (e.g. `=char esper up siren`) to upgrade the esper.',
+                '- Type `=char esper off` to unequip the esper of your character.',
             ))
         )
         self.manual['job'] = ((
@@ -193,7 +223,8 @@ class Engel:
                 '- Type `=char job main (job name)` (e.g. `=char job main red mage`) to change main job.',
                 '- Type `=char job sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
                 '- Type `=char job sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
-                '- Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.'
+                '- Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.',
+                '- Type `=char job main ex` to change main job into unique job (EX base only).'
             ))
         )
         self.manual['skill'] = ((
@@ -218,6 +249,8 @@ class Engel:
                 '- Type `=char lbskill (skill name)` (e.g. `=char lbskill cure`) to consume lb.',
                 '- Type `=char heroskill (skill name)` (e.g. `=char lbskill cure`) to consume item Hero Drink.',
                 '- Type `=char skill (skill name) | (user ping)` (e.g. `=char heroskill protect | @Caelum`) to cast on others.',
+                '- Type `=char lbskill` to cast Limit Break (EX base unique job only).',
+                '- Type `=char heroskill ex` to cast Limit Break with Hero Drink (EX base unique job only).'
             )),(
             'Healing Skills', (
                 '- Healing amount is scaled with your max HP.',
@@ -231,6 +264,7 @@ class Engel:
                 '- It is activated when your LB gauge is full and (unless healing) no active buff or debuff',
                 '- Note that auto item will activate before auto lb.',
                 '- Type `=char autolbskill (skill name)` (e.g. `=char autolbskill brave`).',
+                '- Type `=char autolbskill`(e.g. `=char autolbskill brave`) to set Limit Break (EX base unique job only).',
                 '- Type `=char autolbskill off` to turn off.',
             ))
         )
@@ -283,6 +317,7 @@ class Engel:
             'Levels', (
                 '- Raids level up and revive with full HP when you defeat them.',
                 '- Raids will loop back to initial levels when they hit certain levels.',
+                '- Raids higher than level 80 will have more drops but higher HP.'
                 f"- Group 1 levels will loop between {self.raidcap2 + 1} and {self.raidcap}.",
                 f"- Group 2 levels will loop between {self.raidcap3 + 1} and {self.raidcap2}.",
                 f"- Group 3 levels will loop between 0 and {self.raidcap3}.",
@@ -301,11 +336,14 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- EX Base: spend Dark Matters to unlock EX bases to upgrade their unique main jobs.',
-            '- Esper: spend Auracites to unlock espers for passive stat bonus and to upgrade them.',
-            '- Trial: spend AP to spawn individual trial, beat them for rewards. Planning to have more complicated battle mechanics than raid.'
+            '- Trial/Tower: spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
         )
         self.changelog = (
+            ('21st February 2021', (
+                '- EX Base (`=charhelp base`).',
+                '- Esper (`=charhelp esper`).',
+                '- Raids now separated into 3 groups (`=charhelp raid`) with raised level cap that also come with higher drop rate (`=char rate`).'
+            )),
             ('18th February 2021', (
                 '- Tried again to make help commands more readable...',
                 '- Buffs now take effect when you are attacked by other players, but duration is not consumed.',
@@ -399,6 +437,17 @@ class Engel:
                 '(beta) Launch!',
             ))
         )
+        self.colours = {
+            'fire': 0xE47051,
+            'ice': 0xA4B3F0,
+            'wind': 0xA3E053,
+            'earth': 0xF6D993,
+            'thunder': 0xF5F464,
+            'water': 0xAAFAFC,
+            'light': 0xFCFCFC,
+            'dark': 0xE083F4,
+            'neutral': 0x7F8486
+        }
         self.spreadsheet = client.open(id_dict['Engel Sheet'])
         self.dfdict = dict()
         self.dfsync()
@@ -413,14 +462,6 @@ class Engel:
             self.nextlevelexp.append(basejp + math.floor(i ** 1.7 * 4))
             expsum += self.nextlevelexp[i]
             self.levelexp.append(expsum)
-    def upgradecost(self, up, unlockcost=None):
-        # return dark matter / auracite upgradecost
-        if unlockcost == None:
-            return 2 + up
-        elif unlockcost == 10:
-            return 3 + up * 2
-        else:
-            return self.levelcap
     def indextransform(self, index):
         # to counter google sheet eating user ids
         if isinstance(index, (int, float)):
@@ -432,20 +473,6 @@ class Engel:
                 return int(index[1:])
             else:
                 return index
-    def unlock_parse(self, input, reverse=0):
-        # parse EX_Unlock and Esper_Unlock into dict
-        if reverse == 0:
-            parsed_unlock = input.split('/')
-            unlock_dict = dict()
-            for unlock in parsed_unlock:
-                unlock_list = unlock.split(',')
-                unlock_dict[unlock_list[0]] = int(unlock_list[1])
-            return unlock_dict
-        else:
-            unlock_list = []
-            for k, v in unlock_dict.items():
-                unlock_list.append(f"{k},{v}")
-            return '/'.join(unlock_list)
     def dfsync(self):
         # sync online sheet into local data
         for sheetname, indexname in self.sheettuples:
@@ -482,6 +509,10 @@ class Engel:
             df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item']
             indices = df['Skill']
             indexer = lambda x: x['Skill']
+        elif dfname == 'EX Base':
+            df = self.dfdict['Base'][self.dfdict['Base']['Hidden'] == 'ex']
+            indices = df.index
+            indexer = lambda x: x.name
         else:
             df = self.dfdict[dfname]
             if 'Hidden' in df.columns:
@@ -489,6 +520,9 @@ class Engel:
             if dfname == 'Job':
                 indices = df['Job']
                 indexer = lambda x: x['Job']
+            elif dfname == 'Esper':
+                indices = df['Esper']
+                indexer = lambda x: x['Esper']
             elif dfname == 'Skill':
                 indices = df['Skill']
                 indexer = lambda x: x['Skill']
@@ -508,6 +542,32 @@ class Engel:
                 return candidates[0]
             else:
                 return 'NOTFOUND'
+    def unlock_parse(self, input, reverse=0):
+        # parse EX_Unlock and Esper_Unlock into dict
+        if reverse == 0:
+            if input == '':
+                return dict()
+            parsed_unlock = input.split('/')
+            unlock_dict = dict()
+            for unlock in parsed_unlock:
+                unlock_list = unlock.split(',')
+                unlock_dict[unlock_list[0]] = int(unlock_list[1])
+            return unlock_dict
+        else:
+            unlock_list = []
+            for k, v in input.items():
+                unlock_list.append(f"{k},{v}")
+            return '/'.join(unlock_list)
+    def calcupcost(self, up, unlockcost=None):
+        # return dark matter / auracite upgradecost
+        if unlockcost == None:
+            return 2 + up
+        elif unlockcost == 5:
+            return 2 + up
+        elif unlockcost == 10:
+            return 3 + up * 2
+        else:
+            return self.levelcap
     def calclevel(self, exp):
         # calculate level from total EXP
         level = 0
@@ -542,6 +602,7 @@ class Engel:
             else:
                 return 1 - modifier
     def calcstats(self, userid, usertype='User', moddict=None, stat=None):
+        # returns dict of stats
         if usertype == 'User':
             # calculate stats given user id
             userrow = self.dfdict['User'].loc[userid]
@@ -565,7 +626,7 @@ class Engel:
                 jobrow = self.dfdict['Job'].loc[userrow[job_col]]
                 # EX job upgrade changes
                 if jobrow['Hidden'] == 'ex':
-                    stat_perc = (self.upgradecap / 2 + userrow['EX_Up']) / (self.upgradecap * 1.5)
+                    stat_perc = (self.upgradecap + userrow['EX_Up']) / (self.upgradecap * 2)
                     for statname in statlist:
                         if statname in ('HP', 'AP'):
                             userdict[statname] += jobrow[statname] * job_level
@@ -599,15 +660,16 @@ class Engel:
                     raiddict[statname] = baserow[statname] + jobrow[statname] * (raidrow['Level'] + 1)
             if stat == 'HP' or stat == 'ALL':
                 raiddict['HP'] = baserow['HP'] + jobrow['HP'] * (raidrow['Level'] + 1)
-                if raidrow['Level'] > self.raidcap2:
+                if raidrow['Level'] > 79:
                     raiddict['HP'] = raiddict['HP'] * 2
-                    raiddict['HP'] += jobrow['HP'] * (raidrow['Level'] - self.raidcap2)
+                    raiddict['HP'] += jobrow['HP'] * (raidrow['Level'] - 79)
             if moddict != None:
                 for k, v in moddict.items():
                     raiddict[k] = int(round(raiddict[k] * v))
             return raiddict
     def calcdamage(self, attacker, defender, a_skilltup=None, d_skilltup=None, counter=0, raid=0):
         # calculate damage given attacker and defender
+        # returns tuples to be parsed by other functions
         # skill check
         skilltuplist = []
         if a_skilltup != None:
@@ -670,6 +732,7 @@ class Engel:
                 self.dfdict['User'].loc[user, 'A_Duration'] = new_duration
     def userattack(self, attacker, defender, zero_attack=0):
         # perform an attack between users
+        # returns tuples to be parsed in other functions
         attackrow = self.dfdict['User'].loc[attacker]
         defendrow = self.dfdict['User'].loc[defender]
         if attackrow['A_Skill'] != '':
@@ -738,6 +801,7 @@ class Engel:
             return (1, damage, hitrate, hit, kill, exp_gain, defender_exp_gain, lb_use)
     def userdamage(self, defender, damage):
         # function for a user to take damage
+        # returns boolean whether user is killed
         new_hp = int(max(self.dfdict['User'].loc[defender, 'HP'] - damage, 0))
         self.dfdict['User'].loc[defender, 'HP'] = new_hp
         if new_hp == 0:
@@ -747,6 +811,7 @@ class Engel:
             return 0
     def userregenall(self, now=None):
         # hourly automatic regen for all
+        # no return values
         if now != None:
             self.new_log('hourlyregen', datetime.strftime(now, mydtformat))
         for index, row in self.dfdict['User'].iterrows():
@@ -767,51 +832,85 @@ class Engel:
         self.syncpend = 1
     def userrevive(self, userid):
         # revive dead user and log it
+        # no return values
         self.dfdict['User'].loc[userid, 'HP'] = self.calcstats(userid, stat='HP')['HP']
         self.dfdict['User'].loc[userid, 'TS_Dead'] = ''
         self.syncpend = 1
-    def userjobchange(self, user, job, job_col='Main'):
+    def userjobchange(self, user, job, job_col='Main', ignore_ts=0, is_id=0):
         # change user main or sub job
-        dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
-        jobid = dfjob[dfjob['Job'] == job].tail(1).index.tolist()[0]
+        # returns tuples to be parsed by embed function
+        userrow = self.dfdict['User'].loc[user.id]
+        if is_id:
+            jobid = job
+        elif job == 'ex':
+            baserow = self.dfdict['Base'].loc[userrow['Base']]
+            if baserow['Hidden'] != 'ex':
+                return (0, 2)
+            else:
+                jobid = baserow['Main']
+        else:
+            dfjob = self.dfdict['Job'][self.dfdict['Job']['Hidden'] == '']
+            jobid = dfjob[dfjob['Job'] == job].tail(1).index.tolist()[0]
         if job_col == 'Main':
-            if self.dfdict['User'].loc[user.id, 'TS_Job'] != '':
-                thres = datetime.strptime(self.dfdict['User'].loc[user.id, 'TS_Job'], mydtformat) + timedelta(hours=self.cdjob)
-                now = datetime.now()
-                if now < thres:
-                    remaining = thres - now
-                    return (0, 0, remaining.seconds)
+            if ignore_ts == 0:
+                if userrow['TS_Job'] != '':
+                    thres = datetime.strptime(userrow['TS_Job'], mydtformat) + timedelta(hours=self.cdjob)
+                    now = datetime.now()
+                    if now < thres:
+                        remaining = thres - now
+                        return (0, 0, remaining.seconds)
             if self.dfdict['User'].loc[user.id, 'Main'] == jobid:
                 return (0, 1)
             self.dfdict['User'].loc[user.id, 'Main'] = jobid
+            # check if auto skill is LB
+            if 'ex' in userrow['Main'] and 'ex' not in jobid:
+                self.dfdict['User'].loc[user.id, 'LB_Auto'] = 'off'
             # reset sub jobs
             sub1jobid = self.dfdict['Job'].loc[jobid, 'Sub1']
             self.dfdict['User'].loc[user.id, 'Sub1'] = sub1jobid
             sub2jobid = self.dfdict['Job'].loc[jobid, 'Sub2']
             self.dfdict['User'].loc[user.id, 'Sub2'] = sub2jobid
-            self.dfdict['User'].loc[user.id, 'TS_Job'] = datetime.strftime(datetime.now(), mydtformat)
+            if ignore_ts == 0:
+                self.dfdict['User'].loc[user.id, 'TS_Job'] = datetime.strftime(datetime.now(), mydtformat)
             return (1, self.dfdict['Job'].loc[sub1jobid, 'Job'], self.dfdict['Job'].loc[sub2jobid, 'Job'])
         else:
             for jcol in ('Main', 'Sub1', 'Sub2'):
-                if self.dfdict['User'].loc[user.id, jcol] == jobid:
+                if userrow[jcol] == jobid:
                     return (0, jcol)
             self.dfdict['User'].loc[user.id, job_col] = jobid
             return (1,)
-    def userbase(self, user, base):
+    def userbasechange(self, user, base):
         # change base or start a user
+        # returns string directly to be encased in excecution
+        desc_list = []
         baserow = self.dfdict['Base'].loc[base]
         if user.id in self.dfdict['User'].index:
-            thres = datetime.strptime(self.dfdict['User'].loc[user.id, 'TS_Base'], mydtformat) + timedelta(hours=self.cdbase)
+            userrow = self.dfdict['User'].loc[user.id]
+            thres = datetime.strptime(userrow['TS_Base'], mydtformat) + timedelta(hours=self.cdbase)
             now = datetime.now()
             if now < thres:
                 remaining = thres - now
                 return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before {user.name} can change base."
-            if self.dfdict['User'].loc[user.id, 'Base'] == base:
+            if userrow['Base'] == base:
                 return f"{user.name}, it is your current base."
             else:
+                # check if EX
+                if baserow['Hidden'] == 'ex':
+                    exdict = self.unlock_parse(userrow['EX_Unlock'])
+                    if baserow['Main'] not in exdict.keys():
+                        return f"Unlock the EX base first with `=char exbase unlock {base}`."
+                    self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
+                    desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
+                else:
+                    self.dfdict['User'].loc[user.id, 'EX_Up'] = 0
+                    desc_list.append(f"{user.name} base now changed to {base}.")
+                # check if previous job is unique
+                if 'ex' in userrow['Main']:
+                    result_tup = self.userjobchange(user, baserow['Main'], ignore_ts=1, is_id=1)
+                    desc_list.append(f"Main job now changed to {self.dfdict['Job'].loc[baserow['Main'], 'Job']}.")
+                    desc_list.append(f"Sub jobs now changed to {result_tup[1]} and {result_tup[2]}.")
                 self.dfdict['User'].loc[user.id, 'Base'] = base
                 self.dfdict['User'].loc[user.id, 'TS_Base'] = datetime.strftime(datetime.now(), mydtformat)
-                replystr = f"{user.name} base now changed to {base}."
         else:
             # initialize user
             new_user = {
@@ -840,11 +939,13 @@ class Engel:
             }
             userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
             self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
-            replystr = f"{user.name} registered with {base}!"
+            desc_list.append(f"{user.name} registered with {base}.")
+            desc_list.append(f"Default job is {self.dfdict['Job'].loc[baserow['Main'], 'Job']} (check `=char job`).")
         self.syncpend = 1
-        return replystr
+        return '\n'.join(desc_list)
     def raiddamage(self, raid, damage):
         # function for a raid to take damage
+        # returns tuple of item drops if dead, otherwise returns 0
         raidrow = self.dfdict['Raid'].loc[raid]
         self.dfdict['Raid'].loc[raid, 'HP'] = int(max(raidrow['HP'] - damage, 0))
         # if kill
@@ -887,6 +988,7 @@ class Engel:
             return 0
     def raidattack(self, user, raid, zero_attack=0):
         # perform an attack between an user and a raid
+        # returns tuples to be parsed by other functions
         userrow = self.dfdict['User'].loc[user]
         if userrow['A_Skill'] != '':
             a_skilltup = (userrow['A_Skill'], userrow['A_Potency'])
@@ -1058,6 +1160,33 @@ class Engel:
         if len(field_list) > 0:
             embed.add_field(name='-', value='\n'.join(field_list))
         return embed
+    def listexbase(self, user=None):
+        # generate embed of list of available ex bases
+        embed = discord.Embed()
+        if user == None:
+            embed.title = 'List of EX Bases'
+        else:
+            embed.title = f"List of EX Bases ({user.name})"
+        embed.description = '`=charhelp base` for more info.'
+        base_count = 0
+        base_list = []
+        if user != None:
+            exdict = self.unlock_parse(self.dfdict['User'].loc[user.id, 'EX_Unlock'])
+        else:
+            exdict = dict()
+        for index, row in self.dfdict['Base'][self.dfdict['Base']['Hidden'] == 'ex'].iterrows():
+            base_str = ''
+            base_str += f"{index}"
+            if row['Main'] in exdict.keys():
+                base_str += f":star: (+{exdict[row['Main']]}) "
+            base_list.append(base_str)
+            base_count += 1
+            if base_count % 10 == 0:
+                embed.add_field(name='-', value='\n'.join(base_list))
+                base_list = []
+        if len(base_list) > 0:
+            embed.add_field(name='-', value='\n'.join(base_list))
+        return embed
     def listraid(self):
         # generate embed of list of available bases
         embed = discord.Embed()
@@ -1134,9 +1263,11 @@ class Engel:
         df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item']
         skill_list = []
         skill_count = 0
-        for _, row in df.iterrows():
-            if row['Stat'] == 'EXP':
-                skill_list.append(f"**{row['Skill']}**\n - Valuable rare item for future use.")
+        for index, row in df.iterrows():
+            if index == 'i6':
+                skill_list.append(f"**{row['Skill']}**\n - Valuable rare item related to EX bases.")
+            elif index == 'i7':
+                skill_list.append(f"**{row['Skill']}**\n - Valuable rare item related to espers.")
             else:
                 skill_list.append(f"**{row['Skill']}**\n - Restores {row['Main'] * 100:.0f}% {row['Stat']}.")
             skill_count += 1
@@ -1145,6 +1276,37 @@ class Engel:
                 skill_list = []
         if len(skill_list) > 0:
             embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
+        return embed
+    def listesper(self, user=None):
+        # generate embed of list of available espers
+        embed = discord.Embed()
+        if user == None:
+            embed.title = 'List of Espers'
+        else:
+            embed.title = f"List of Espers ({user.name})"
+        embed.description = '`=charhelp esper` for more info.'
+        esper_list = []
+        esper_count = 0
+        if user != None:
+            esperdict = self.unlock_parse(self.dfdict['User'].loc[user.id, 'E_Unlock'])
+        else:
+            esperdict = dict()
+        for index, row in self.dfdict['Esper'].iterrows():
+            esper_str = ''
+            esper_str += f"**{row['Esper']}**"
+            if index in esperdict.keys():
+                esper_str += f":star: (+{esperdict[index]})"
+            esper_str += '\n - '
+            esper_str += f" Converts {row['S_Stat']} into {row['B1_Stat']}"
+            if row['B2_Stat'] != '':
+                esper_str += f" and {row['B2_Stat']}"
+            esper_list.append(esper_str)
+            esper_count += 1
+            if esper_count % 10 == 0:
+                embed.add_field(name='-', value='\n'.join(esper_list))
+                esper_list = []
+        if len(esper_list) > 0:
+            embed.add_field(name='-', value='\n'.join(esper_list))
         return embed
     def infojobchange(self, user, jobchange_dict):
         # generate info embed of job change
@@ -1156,26 +1318,176 @@ class Engel:
             if k == 'Main':
                 result_tup = self.userjobchange(user, v)
                 if result_tup[0]:
-                    desc_list = (
-                        'Success! Your jobs are now the following:',
-                        f"Main: {v}",
-                        f"Sub1: {result_tup[1]}",
-                        f"Sub2: {result_tup[2]}")
-                    change = 1
-                elif result_tup[1]:
-                    desc_list.append('It is already your current main job!')
+                    desc_list = ['Success! Your jobs are now the following:']
+                    if v == 'ex':
+                        jobid = self.dfdict['Base'].loc[self.dfdict['User'].loc[user.id, 'Base'], 'Main']
+                        desc_list.append(f"Main: {self.dfdict['Job'].loc[jobid, 'Job']}")
+                    else:
+                        desc_list.append(f"Main: {v}")
+                    desc_list.append(f"Sub1: {result_tup[1]}")
+                    desc_list.append(f"Sub2: {result_tup[2]}")
+                    self.syncpend = 1
+                elif result_tup[1] == 1:
+                    desc_list.append('It is already your current main job.')
+                elif result_tup[1] == 2:
+                    desc_list.append('Your current base does not have unique job.')
                 else:
                     desc_list.append(f"{result_tup[2] // 3600} hours {result_tup[2] % 3600 // 60} minutes left before you can change your main job.")
             else:
                 result_tup = self.userjobchange(user, v, k)
                 if result_tup[0]:
                     desc_list.append(f"Success! Your {k} is now {v}.")
-                    change = 1
+                    self.syncpend = 1
                 else:
                     desc_list.append(f"{v} is already your {result_tup[1]} job!")
-        if change:
-            self.syncpend = 1
         embed.description = '\n'.join(desc_list)
+        return embed
+    def infoesperchange(self, user, esper):
+        # generate info embed of esper change
+        embed = discord.Embed()
+        embed.title = f"{user.name} Esper Change"
+        userrow = self.dfdict['User'].loc[user.id]
+        if esper == userrow['Esper']:
+            embed.description = 'It is already your current esper.'
+            return embed
+        desc_list = []
+        if esper == 'off':
+            self.dfdict['User'].loc[user.id, 'Esper'] = ''
+            self.dfdict['User'].loc[user.id, 'E_Up'] = 0
+            desc_list.append(f"You now unequipped your esper.")
+        else:
+            esperid = self.dfdict['Esper'][self.dfdict['Esper']['Esper'] == esper].tail(1).index.tolist()[0]
+            esperrow = self.dfdict['Esper'].loc[esperid]
+            thumbnail_url = esperrow['Url']
+            if thumbnail_url != '':
+                embed.set_thumbnail(url=thumbnail_url)
+            embed.colour = self.colours[esperrow['Element'].lower()]
+            esperdict = self.unlock_parse(userrow['E_Unlock'])
+            if esperid not in esperdict.keys():
+                desc_list.append(f"You need to unlock it first using {esperrow['Cost']} Auracites.")
+                desc_list.append(f"Type `=char esper unlock {esper}` to unlock.")
+            else:
+                self.dfdict['User'].loc[user.id, 'Esper'] = esperid
+                self.dfdict['User'].loc[user.id, 'E_Up'] = esperdict[esperid]
+                if esperdict[esperid] == self.upgradecap:
+                    desc_list.append(f"Your esper is now changed to {esper} (MAX).")
+                else:
+                    desc_list.append(f"Your esper is now changed to {esper} (+{esperdict[esperid]}).")
+        embed.description = '\n'.join(desc_list)
+        self.syncpend = 1
+        return embed
+    def infoupesper(self, user, esper, unlock=0):
+        # generate info embed of unlocking or upgrading ex base
+        embed = discord.Embed()
+        embed.title = f"{user.name} - {esper}"
+        userrow = self.dfdict['User'].loc[user.id]
+        esperid = self.dfdict['Esper'][self.dfdict['Esper']['Esper'] == esper].tail(1).index.tolist()[0]
+        esperrow = self.dfdict['Esper'].loc[esperid]
+        thumbnail_url = esperrow['Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
+        embed.colour = self.colours[esperrow['Element'].lower()]
+        esperdict = self.unlock_parse(userrow['E_Unlock'])
+        desc_list = []
+        if esperid in esperdict.keys():
+            if unlock:
+                embed.description = f"You already unlocked {esper}."
+                return embed
+            elif esperdict[esperid] == self.upgradecap:
+                embed.description = f"Your {esper} cannot be upgraded any further."
+                return embed
+            else:
+                upcost = self.calcupcost(esperdict[esperid] + 1, unlockcost=esperrow['Cost'])
+                if userrow['i7'] < upcost:
+                    desc_list.append(f"You need {upcost} Auracites to upgrade.")
+                    desc_list.append(f"You do not have enough Auracites.")
+                else:
+                    esperdict[esperid] = esperdict[esperid] + 1
+                    if userrow['Esper'] == esperid: # check if currently equipped
+                        self.dfdict['User'].loc[user.id, 'E_Up'] = esperdict[esperid]
+                    self.dfdict['User'].loc[user.id, 'i7'] = userrow['i7'] - upcost
+                    self.dfdict['User'].loc[user.id, 'E_Unlock'] = self.unlock_parse(esperdict, reverse=1)
+                    self.syncpend = 1
+                    desc_list.append(f"You spent {upcost} Auracites.")
+                    if esperdict[esperid] == self.upgradecap:
+                        desc_list.append(f"Your {esper} is now MAX.")
+                        desc_list.append(f"Your {esper} now cannot be upgraded any further.")
+                    else:
+                        upcost = self.calcupcost(esperdict[esperid] + 1, unlockcost=esperrow['Cost'])
+                        desc_list.append(f"Your {esper} is now +{esperdict[esperid]} (Next: {upcost} Auracites).")
+        else:
+            if unlock == 0:
+                embed.description = f"Type `=char esper unlock {esper}` to unlock first."
+                return embed
+            elif userrow['i7'] < esperrow['Cost']:
+                desc_list.append(f"You need {esperrow['Cost']} Auracites to unlock.")
+                desc_list.append(f"You do not have enough Auracites.")
+            else:
+                esperdict[esperid] = 0
+                self.dfdict['User'].loc[user.id, 'i7'] = userrow['i7'] - esperrow['Cost']
+                self.dfdict['User'].loc[user.id, 'E_Unlock'] = self.unlock_parse(esperdict, reverse=1)
+                self.syncpend = 1
+                upcost = self.calcupcost(esperdict[esperid] + 1, unlockcost=esperrow['Cost'])
+                desc_list.append(f"You spent {esperrow['Cost']} Auracites to unlock {esper} (Next: {upcost} Auracites).")
+                desc_list.append(f"Note: type `=char esper change {esper}` to change esper.")
+        embed.description = '\n'.join(desc_list)
+        embed.add_field(name='Auracites left', value=str(self.dfdict['User'].loc[user.id, 'i7']))
+        return embed
+    def infoupexbase(self, user, base, unlock=0):
+        # generate info embed of unlocking or upgrading ex base
+        embed = discord.Embed()
+        embed.title = f"{user.name} - {base}"
+        userrow = self.dfdict['User'].loc[user.id]
+        baserow = self.dfdict['Base'].loc[base]
+        thumbnail_url = baserow['Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
+        embed.colour = self.colours[baserow['Element'].lower()]
+        exdict = self.unlock_parse(userrow['EX_Unlock'])
+        desc_list = []
+        if baserow['Main'] in exdict.keys():
+            if unlock:
+                embed.description = f"You already unlocked {base}."
+                return embed
+            elif exdict[baserow['Main']] == self.upgradecap:
+                embed.description = f"Your {base} cannot be upgraded any further."
+                return embed
+            else:
+                upcost = self.calcupcost(exdict[baserow['Main']] + 1)
+                if userrow['i6'] < upcost:
+                    desc_list.append(f"You need {upcost} Dark Matters to upgrade.")
+                    desc_list.append(f"You do not have enough Dark Matters.")
+                else:
+                    exdict[baserow['Main']] = exdict[baserow['Main']] + 1
+                    if userrow['Base'] == base: # check if currently equipped
+                        self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
+                    self.dfdict['User'].loc[user.id, 'i6'] = userrow['i6'] - upcost
+                    self.dfdict['User'].loc[user.id, 'EX_Unlock'] = self.unlock_parse(exdict, reverse=1)
+                    self.syncpend = 1
+                    desc_list.append(f"You spent {upcost} Dark Matters.")
+                    if exdict[baserow['Main']] == self.upgradecap:
+                        desc_list.append(f"Your {base} is now MAX.")
+                        desc_list.append(f"Your {base} now cannot be upgraded any further.")
+                    else:
+                        upcost = self.calcupcost(exdict[baserow['Main']] + 1)
+                        desc_list.append(f"Your {base} is now +{exdict[baserow['Main']]} (Next: {upcost} Dark Matters).")
+        else:
+            if unlock == 0:
+                embed.description = f"Type `=char exbase unlock {base}` to unlock first."
+                return embed
+            elif userrow['i6'] < self.unlockcost:
+                desc_list.append(f"You need {self.unlockcost} Dark Matters to unlock.")
+                desc_list.append(f"You do not have enough Dark Matters.")
+            else:
+                exdict[baserow['Main']] = 0
+                self.dfdict['User'].loc[user.id, 'i6'] = userrow['i6'] - self.unlockcost
+                self.dfdict['User'].loc[user.id, 'EX_Unlock'] = self.unlock_parse(exdict, reverse=1)
+                self.syncpend = 1
+                upcost = self.calcupcost(exdict[baserow['Main']] + 1)
+                desc_list.append(f"You spent {self.unlockcost} Dark Matters to unlock {base} (Next: {upcost} Dark Matters).")
+                desc_list.append(f"Note: type `=char exbase change {base}` to change base.")
+        embed.description = '\n'.join(desc_list)
+        embed.add_field(name='Dark Matters left', value=str(self.dfdict['User'].loc[user.id, 'i6']))
         return embed
     def infobase(self, base):
         # generate info embed of specific base
@@ -1190,9 +1502,98 @@ class Engel:
         thumbnail_url = row['Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
-        embed_colour = row['Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[row['Element'].lower()]
+        return embed
+    def infoesper(self, esper, user=None):
+        # generate embed of list of available espers
+        embed = discord.Embed()
+        esperid = self.dfdict['Esper'][self.dfdict['Esper']['Esper'] == esper].tail(1).index.tolist()[0]
+        row = self.dfdict['Esper'].loc[esperid]
+        embed.title = esper
+        # if existing user, display upgrade condition and cost
+        if user != None:
+            desc_str = user.name
+            esperdict = self.unlock_parse(self.dfdict['User'].loc[user.id, 'E_Unlock'])
+            if row.name in esperdict.keys():
+                desc_str += ' unlocked'
+                if esperdict[row.name] == self.upgradecap:
+                    desc_str += ' (MAX).'
+                else:
+                    up_cost = self.calcupcost(esperdict[row.name] + 1, row['Cost'])
+                    desc_str += f" (+{esperdict[row.name]}). `{up_cost}` Auracites to upgrade."
+            else:
+                desc_str += f" did not unlock. {row['Cost']} Auracites to unlock."
+            embed.description = desc_str
+        field_list = []
+        field_list.append(f"{row['S_Stat']}: `{row['S_MIN']}` to `{row['S_MAX']}`% of {row['S_Stat']}")
+        field_list.append(f"{row['B1_Stat']}: `{row['B1_MIN']}` to `{row['B1_MAX']}`% of {row['S_Stat']}")
+        if row['B2_Stat'] != '':
+            field_list.append(f"{row['B2_Stat']}: `{row['B2_MIN']}` to `{row['B2_MAX']}`% of {row['S_Stat']}")
+        embed.add_field(name='Stat Bonuses', value='\n'.join(field_list))
+        embed.add_field(name='Cost', value=row['Cost'])
+        thumbnail_url = row['Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
+        embed.colour = self.colours[row['Element'].lower()]
+        return embed
+    def infoexbase(self, base, user=None):
+        # generate info embed of specific EX base
+        embed = discord.Embed()
+        row = self.dfdict['Base'].loc[base]
+        embed.title = base
+        # if existing user, display upgrade condition and cost
+        if user != None:
+            desc_str = user.name
+            exdict = self.unlock_parse(self.dfdict['User'].loc[user.id, 'EX_Unlock'])
+            if row['Main'] in exdict.keys():
+                desc_str += ' unlocked'
+                if exdict[row['Main']] == self.upgradecap:
+                    desc_str += ' (MAX).'
+                else:
+                    up_cost = self.calcupcost(exdict[row['Main']] + 1)
+                    desc_str += f" (+{exdict[row['Main']]}). `{up_cost}` Dark Matters to upgrade."
+            else:
+                desc_str += f" did not unlock. {self.unlockcost} Dark Matters to unlock."
+            embed.description = desc_str
+        # base stats field
+        field_list = []
+        for stat in self.statlist2:
+            field_list.append(f"{stat}: `{row[stat]}`")
+        jobrow = self.dfdict['Job'].loc[row['Main']]
+        embed.add_field(name='Base Stats', value='\n'.join(field_list))
+        # unique main job
+        field_list = []
+        for stat in self.statlist2:
+            field_list.append(f"{stat}: `{int(jobrow[stat] / 2)}` to `{jobrow[stat]}`")
+        skillrow = self.dfdict['Skill'].loc[row['Main']]
+        field_list.append(f"Limit Break: {skillrow['Skill']}")
+        # limit break description
+        skill_desc = ''
+        during_battle = 0
+        if skillrow['Stat'] == 'COMBO':
+            effect_list = []
+            for subpotency in ('Main', 'Sub'):
+                if skillrow[subpotency] == '':
+                    continue
+                for subskillid in skillrow[subpotency].split('/'):
+                    subskillrow = self.dfdict['Skill'].loc[subskillid]
+                    if subskillrow['Healing']:
+                        effect_list.append('heals')
+                    elif subskillrow['Ally'] > 0:
+                        effect_list.append(f"increases self {subskillrow['Stat']}")
+                        during_battle = 1
+                    else:
+                        effect_list.append(f"partially ignores enemy {subskillrow['Stat']}")
+                        during_battle = 1
+        effect_str = ' and '.join(effect_list)
+        if during_battle:
+            effect_str += ' during battle'
+        field_list.append(f"({effect_str})")
+        embed.add_field(name=f"Unique Main - {jobrow['Job']}", value='\n'.join(field_list))
+        thumbnail_url = row['Url']
+        if thumbnail_url != '':
+            embed.set_thumbnail(url=thumbnail_url)
+        embed.colour = self.colours[row['Element'].lower()]
         return embed
     def infouser(self, user):
         # generate info embed of specific user
@@ -1239,13 +1640,15 @@ class Engel:
             field_list.append(f"Main: {jobrow['Job']}")
         for job_col in ('Sub1', 'Sub2'):
             field_list.append(f"{job_col}: {self.dfdict['Job'].loc[userrow[job_col], 'Job']}")
-        if userrow['Esper'] != '':
+        if userrow['Esper'] == '':
+            field_list.append(f"Esper: *off*")
+        else:
             if userrow['E_Up'] == self.upgradecap:
                 plus_str = 'MAX'
             else:
                 plus_str = f"+{userrow['E_Up']}"
             field_list.append(f"Esper: {self.dfdict['Esper'].loc[userrow['Esper'], 'Esper']} ({plus_str})")
-        if baserow['Hidden'] == 'ex':
+        if jobrow['Hidden'] == 'ex':
             field_list.append(f"Limit Break: {self.dfdict['Skill'].loc[userrow['Main'], 'Skill']}")
         skillid = self.dfdict['Job'].loc[userrow['Main'], 'Skill']
         field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[skillid, 'Skill']}")
@@ -1275,9 +1678,7 @@ class Engel:
         thumbnail_url = self.dfdict['Base'].loc[userrow['Base'], 'Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
-        embed_colour = self.dfdict['Base'].loc[userrow['Base'], 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[baserow['Element'].lower()]
         return embed
     def infoinventory(self, user):
         # generate inventory embed of specific user
@@ -1300,9 +1701,7 @@ class Engel:
         thumbnail_url = self.dfdict['Base'].loc[userrow['Base'], 'Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
-        embed_colour = self.dfdict['Base'].loc[userrow['Base'], 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[self.dfdict['Base'].loc[userrow['Base'], 'Element'].lower()]
         return embed
     def inforaid(self, raid):
         # generate info embed of specific raid
@@ -1321,9 +1720,7 @@ class Engel:
         thumbnail_url = self.dfdict['Base'].loc[row['Base'], 'Url']
         if thumbnail_url != '':
             embed.set_thumbnail(url=thumbnail_url)
-        embed_colour = self.dfdict['Base'].loc[row['Base'], 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[self.dfdict['Base'].loc[row['Base'], 'Element'].lower()]
         return embed
     def infoduel(self, attacker, defender):
         # generate result embed of a duel
@@ -1389,9 +1786,7 @@ class Engel:
                 field_list.append('It is a draw!')
         embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         defender_base = self.dfdict['User'].loc[defender.id, 'Base']
-        embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[self.dfdict['Base'].loc[defender_base, 'Element'].lower()]
         return embed
     def infogacha(self, user, num_times=10, free=0):
         # generate result embed of a gacha session
@@ -1816,9 +2211,7 @@ class Engel:
                 field_list.append(f"LB: {self.dfdict['User'].loc[user.id, 'LB']}%")
             embed.add_field(name = user.name, value = '\n'.join(field_list))
         defender_base = self.dfdict['User'].loc[defender.id, 'Base']
-        embed_colour = self.dfdict['Base'].loc[defender_base, 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[self.dfdict['Base'].loc[defender_base, 'Element'].lower()]
         if exp_gain_total + defender_exp_gain_total > 0:
             self.syncpend = 1
         return embed
@@ -1910,9 +2303,7 @@ class Engel:
         field_list.append(f"HP: {self.dfdict['Raid'].loc[raid, 'HP']}")
         embed.add_field(name = raid, value = '\n'.join(field_list))
         raid_base = self.dfdict['Raid'].loc[raid, 'Base']
-        embed_colour = self.dfdict['Base'].loc[raid_base, 'Colour']
-        if embed_colour != '':
-            embed.colour = int(embed_colour, 16)
+        embed.colour = self.colours[self.dfdict['Base'].loc[raid_base, 'Element'].lower()]
         if exp_gain_total > 0:
             self.syncpend = 1
             self.raidsync = 1
@@ -1953,23 +2344,66 @@ class Engel:
                         base = self.find_index(' '.join(arg[2:]), 'Base')
                         if base == 'NOTFOUND':
                             return discord.Embed(description = 'Base not found. Try checking `=char base`.')
-                        return discord.Embed(description = self.userbase(user, base))
+                        return discord.Embed(description = self.userbasechange(user, base))
                     else:
                         base = self.find_index(' '.join(arg[1:]), 'Base')
                         if base == 'NOTFOUND':
                             return discord.Embed(description = 'Base not found. Try checking `=char base`.')
                         return self.infobase(base)
+            elif arg[0] in ('exbase', 'ex'):
+                if len(arg) == 1:
+                    # list of ex bases
+                    if user.id in self.dfdict['User'].index:
+                        return self.listexbase(user)
+                    else:
+                        return self.listexbase()
+                else:
+                    # various operations
+                    if len(arg) > 2 and arg[1] in ('unlock', 'upgrade', 'up'):
+                        # unlock or upgrade ex base
+                        if user.id in self.dfdict['User'].index.tolist():
+                            if arg[1] == 'unlock':
+                                unlock = 1
+                            else:
+                                unlock = 0
+                            base = self.find_index(' '.join(arg[2:]), 'EX Base')
+                            if base == 'NOTFOUND':
+                                return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
+                            else:
+                                return self.infoupexbase(user, base, unlock=unlock)
+                        else:
+                            return discord.Embed(description = self.usernotfound)
+                    elif len(arg) > 2 and arg[1]  == 'change':
+                        # change into ex base
+                        if user.id in self.dfdict['User'].index.tolist():
+                            base = self.find_index(' '.join(arg[2:]), 'EX Base')
+                            if base == 'NOTFOUND':
+                                return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
+                            return discord.Embed(description = self.userbasechange(user, base))
+                        else:
+                            return discord.Embed(description = self.usernotfound)
+                    else:
+                        base = self.find_index(' '.join(arg[1:]), 'EX Base')
+                        if base == 'NOTFOUND':
+                            return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
+                        if user.id in self.dfdict['User'].index:
+                            return self.infoexbase(base, user)
+                        else:
+                            return self.infoexbase(base)
             elif arg[0] == 'job':
                 if len(arg) == 1:
                     # list of jobs
                     return self.listjob()
                 elif user.id in self.dfdict['User'].index:
                     if arg[1].lower() in ('main', 'change') and len(arg) > 2:
-                        job = self.find_index(' '.join(arg[2:]), 'Job')
-                        if job == 'NOTFOUND':
-                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                        if arg[2].lower() == 'ex':
+                            return self.infojobchange(user, {'Main': 'ex'})
                         else:
-                            return self.infojobchange(user, {'Main': job})
+                            job = self.find_index(' '.join(arg[2:]), 'Job')
+                            if job == 'NOTFOUND':
+                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                            else:
+                                return self.infojobchange(user, {'Main': job})
                     elif arg[1].lower() == 'sub1' and len(arg) > 2:
                         job = self.find_index(' '.join(arg[2:]), 'Job')
                         if job == 'NOTFOUND':
@@ -2101,6 +2535,53 @@ class Engel:
                     return discord.Embed(description = 'Try `=charhelp item`.')
                 else:
                     return discord.Embed(description = self.usernotfound)
+            elif arg[0] == 'esper':
+                if len(arg) == 1:
+                    # list of espers
+                    if user.id in self.dfdict['User'].index:
+                        return self.listesper(user)
+                    else:
+                        return self.listesper()
+                else:
+                    # various operations
+                    if len(arg) > 2 and arg[1].lower() in ('unlock', 'upgrade', 'up'):
+                        # unlock or upgrade esper
+                        if user.id in self.dfdict['User'].index.tolist():
+                            if arg[1].lower() == 'unlock':
+                                unlock = 1
+                            else:
+                                unlock = 0
+                            esper = self.find_index(' '.join(arg[2:]), 'Esper')
+                            if esper == 'NOTFOUND':
+                                return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
+                            else:
+                                return self.infoupesper(user, esper, unlock=unlock)
+                        else:
+                            return discord.Embed(description = self.usernotfound)
+                    elif arg[1].lower() == 'change':
+                        # change esper
+                        if user.id in self.dfdict['User'].index.tolist():
+                            esper = self.find_index(' '.join(arg[2:]), 'Esper')
+                            if esper == 'NOTFOUND':
+                                return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
+                            else:
+                                return self.infoesperchange(user, esper)
+                        else:
+                            return discord.Embed(description = self.usernotfound)
+                    elif arg[1].lower() == 'off':
+                        # unequip esper
+                        if user.id in self.dfdict['User'].index.tolist():
+                            return self.infoesperchange(user, 'off')
+                        else:
+                            return discord.Embed(description = self.usernotfound)
+                    else:
+                        esper = self.find_index(' '.join(arg[1:]), 'Esper')
+                        if esper == 'NOTFOUND':
+                            return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
+                        if user.id in self.dfdict['User'].index:
+                            return self.infoesper(esper, user)
+                        else:
+                            return self.infoesper(esper)
             elif arg[0] == 'autoitem':
                 if len(arg) == 1:
                     # list of skills
