@@ -96,7 +96,19 @@ class Engel:
             '120': {
                 'i1': 70,
                 'i2': 30
-            }
+            },
+            140: {
+                'i2': 25,
+                'i3': 15,
+                'i4': 16,
+                'i5': 4,
+                'i6': 20,
+                'i7': 20
+            },
+            '140': {
+                'i1': 65,
+                'i2': 35
+            },
         }
         self.sheettuples = (
             ('Base', 'Base'),
@@ -184,7 +196,8 @@ class Engel:
                 'EX bases are premium bases traded using Dark Matters.',
                 'They come with unique jobs that have low starting stats',
                 'After upgrading the EX bases with Dark Matters, the unique jobs will have higher stats than other bases.',
-                'Unique jobs also come with powerful Limit Break that are special skills that can only consume LB gauge or Hero Drink.'
+                'Unique jobs also come with powerful Limit Break that are special skills that can only consume LB gauge or Hero Drink.',
+                f"Max upgrade is {self.upgradecap}."
             )),(
             'EX Base Commands', (
                 '- Type `=char exbase` to find list of available EX bases and their unlock / upgrade status.',
@@ -200,7 +213,8 @@ class Engel:
                 'Espers are stat boosts traded using Auracites.',
                 'The boosts all scale on one stat different to each esper.',
                 'After upgrading the espers with Auracites, the boosts will become more powerful.',
-                'The scaled stat might be decreased at first but will become boosts with enough upgrades.'
+                'The scaled stat might be decreased at first but will become boosts with enough upgrades.',
+                f"Max upgrade is {self.upgradecap}."
             )),(
             'Commands', (
                 '- Type `=char esper` to find list of espers and their unlock / upgrade status.',
@@ -901,6 +915,8 @@ class Engel:
                         return f"Unlock the EX base first with `=char exbase unlock {base}`."
                     self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
                     desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
+                    if 'ex' not in userrow['Main']:
+                        desc_list.append(f"Change into unique job with `=char job main ex`.")
                 else:
                     self.dfdict['User'].loc[user.id, 'EX_Up'] = 0
                     desc_list.append(f"{user.name} base now changed to {base}.")
@@ -1070,7 +1086,7 @@ class Engel:
     def helpmanual(self, kw=''):
         # generate help manual
         embed = discord.Embed()
-        kw = kw.lower().rstrip('s').replace('char', 'character')
+        kw = kw.lower().rstrip('s').replace('char', 'character').replace('exbase', 'base')
         if kw in self.manual.keys():
             embed.title = f"{kw.title()} Help"
             for field_name, field_value in self.manual[kw]:
@@ -1589,6 +1605,8 @@ class Engel:
         if during_battle:
             effect_str += ' during battle'
         field_list.append(f"({effect_str})")
+        # main skill
+        field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[jobrow['Skill'], 'Skill']}")
         embed.add_field(name=f"Unique Main - {jobrow['Job']}", value='\n'.join(field_list))
         thumbnail_url = row['Url']
         if thumbnail_url != '':

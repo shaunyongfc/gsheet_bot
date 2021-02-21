@@ -569,8 +569,13 @@ class WotvVc(commands.Cog):
             'Party Max': []
         }
         ele = arg[0].lower().replace('lightning', 'thunder')
-        embed.title = f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}"
-        embed.colour = wotv_utils.dicts['colours'][ele]
+        try:
+            embed.title = f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}"
+            embed.colour = wotv_utils.dicts['colours'][ele]
+        except KeyError:
+            embed.description = 'No element found. Or did you mean to use `=vs` or `=vc`?'
+            await ctx.send(embed = embed)
+            return
         # Search each vc
         for index, row in df.iterrows():
             for col in effects_dict.keys():
