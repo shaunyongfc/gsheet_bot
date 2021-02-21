@@ -561,11 +561,11 @@ class Engel:
     def calcupcost(self, up, unlockcost=None):
         # return dark matter / auracite upgradecost
         if unlockcost == None:
-            return 2 + up
+            return up
         elif unlockcost == 5:
-            return 2 + up
+            return up
         elif unlockcost == 10:
-            return 3 + up * 2
+            return 1 + int(up * 1.5)
         else:
             return self.levelcap
     def calclevel(self, exp):
