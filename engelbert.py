@@ -164,7 +164,7 @@ class Engel:
                 '- You can only evade attacks if your AGI is higher than the opponent.',
                 '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`',
                 '- Evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
-                '- They use the same formula: 1~25 = 2% per point, 26~75 = 1% per point.',
+                '- They use the same formula: 1% per 2 point.',
                 '- Critical damage is 2x regular damage.',
             )),(
             'PVP', (
@@ -349,14 +349,18 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- Stats adjusment across the board, mainly increasing DEX / AGI values so they hold similar values as other stats but each point scales less towards critical and evasion rates.',
-            '- Esper boosts will also be adjusted accordingly.',
             '- Trial/Tower: spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
             '- Use of excess EXP (your EXP is still being tracked so not to worry).',
-            '- Esper Expansion: esper gauge and in-battle-buffs',
-            '- (if we survive this far) EX Base passives'
+            '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
+            '- (if we survive this far...) EX Base passives'
         )
         self.changelog = (
+            ('24th February 2021', (
+                '- Stats adjusment across the board, mainly increasing DEX / AGI values so they hold similar values as other stats.',
+                '- Now 1% critical / evasion rate per 2 points of DEX / AGI difference.',
+                '- Esper boosts are adjusted accordingly, now their boosts are more spread out and even.',
+                '- Further finetuning might happen if balance is wonky...',
+            )),
             ('23rd February 2021', (
                 '- Changed how commands are parsed, please let me know if any commands are not working properly.',
                 '- A few commands slightly shortened.',
@@ -616,19 +620,20 @@ class Engel:
         # calculate critical or hit rate from dex - agi
         if accuracy == 0:
             return 1
-        elif accuracy >= 75:
+        elif accuracy >= 200:
             return 2
-        elif accuracy <= -75:
+        elif accuracy <= -200:
             return 0
         else:
+            return 1 + round(accuracy / 200, 2)
             if abs(accuracy) >= 25:
                 modifier = 0.5 - 0.25 + abs(accuracy) * 0.01
             else:
                 modifier = abs(accuracy) * 0.02
             if accuracy > 0:
-                return 1 + modifier
+                return 1 + accuracy // 2
             else:
-                return 1 - modifier
+                return 1 - accuracy // 2
     def calcstats(self, userid, usertype='User', moddict=None, stat=None):
         # returns dict of stats
         if usertype == 'User':
@@ -1332,7 +1337,10 @@ class Engel:
             esper_str = ''
             esper_str += f"**{row['Esper']}**"
             if index in esperdict.keys():
-                esper_str += f":star: (+{esperdict[index]})"
+                if esperdict[index] == self.upgradecap:
+                    esper_str += f":star: (MAX)"
+                else:
+                    esper_str += f":star: (+{esperdict[index]})"
             esper_str += '\n - '
             esper_str += f" Converts {row['S_Stat']} into {row['B1_Stat']}"
             if row['B2_Stat'] != '':
