@@ -354,7 +354,7 @@ class Engel:
             '- Trial/Tower: spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
             '- Use of excess EXP (your EXP is still being tracked so not to worry).',
             '- Esper Expansion: esper gauge and in-battle-buffs',
-            '(if we survive this far) - EX Base passives'
+            '- (if we survive this far) EX Base passives'
         )
         self.changelog = (
             ('23rd February 2021', (
@@ -2418,7 +2418,7 @@ class Engel:
                         target = await commands.MemberConverter().convert(ctx, ' '.join(arg[argstart:]))
                         if target.id in self.dfdict['User'].index:
                             targeterror = 0
-                            return self.infouser(member)
+                            return self.infouser(target)
                     except commands.BadArgument:
                         pass
             elif argkw == 'base':
