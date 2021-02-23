@@ -121,8 +121,8 @@ class Engel:
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
-        self.usernotfound = 'Choose a base first with `=char base start (base name)`. Try `=charhelp base`.'
-        self.targetnotfound = 'User not found or did not start a character.'
+        self.usernotfound = 'Choose a base first with `=char start (base name)`. Check `=char base for available bases.`.'
+        self.targeterror = 'User not found or did not start a character.'
         self.defaultfooter = 'Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...'
         self.manual = dict()
         self.manual['character'] = ((
@@ -142,10 +142,9 @@ class Engel:
                 '- For other stats please refer to battle mechanics. (`=charhelp battle`)',
             )),(
             'Train', (
-                '- Mainly gained from raids. (`=charhelp raid`)',
                 '- Type `=char train` or `=char train (number of AP)` (e.g. `=char train 10`) to quickly spend AP for EXP.',
-                '- You can use items that restore LB to gain EXP.',
-                '- Type `=char train (number) (item name)` (e.g. `=char train 3 hero`).',
+                '- You can use Hero Drinks to gain EXP.',
+                '- Type `=char train (number) hero` (e.g. `=char train 3 hero`).',
             )),(
             'Hourly Regen', (
                 f"- Your HP and AP regen {self.hpregen * 100}% and {self.apregen} respectively every hour.",
@@ -189,7 +188,7 @@ class Engel:
             'Commands', (
                 '- Type `=char base` to find list of available bases.',
                 '- Type `=char base (base name)` (e.g. `=char base lasswell`) to read info of the base.',
-                '- Type `=char base start (base name)` (e.g. `=char base start jake`) to start your character.',
+                '- Type `=char start (base name)` (e.g. `=char base start jake`) to start your character.',
                 '- Type `=char base change (base name)` (e.g. `=char base change rain`) to change the base of your character.',
             )),(
             'EX Base', (
@@ -205,7 +204,7 @@ class Engel:
                 '- Type `=char exbase change (base name)` (e.g. `=char exbase change ildyra`) to change the base of your character.',
                 '- Type `=char exbase unlock (base name)` (e.g. `=char exbase unlock tifa`) to unlock the EX base.',
                 '- Type `=char exbase up (base name)` (e.g. `=char exbase up ace`) to upgrade the EX base.',
-                '- Type `=char job main ex` to change main job into the unique job.'
+                '- Type `=char main ex` to change main job into the unique job.'
             ))
         )
         self.manual['esper'] = ((
@@ -234,11 +233,11 @@ class Engel:
             )),(
             'Commands', (
                 '- Type `=char job` to find list of jobs and their growth rate.',
-                '- Type `=char job main (job name)` (e.g. `=char job main red mage`) to change main job.',
-                '- Type `=char job sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
-                '- Type `=char job sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
-                '- Type `=char job subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.',
-                '- Type `=char job main ex` to change main job into unique job (EX base only).'
+                '- Type `=char main (job name)` (e.g. `=char job main red mage`) to change main job.',
+                '- Type `=char sub1 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 1.',
+                '- Type `=char sub2 (job name)` (e.g. `=char job sub1 assassin`) to change sub job 2.',
+                '- Type `=char subs (job name) | (job name)` (e.g. `=char job subs green mage | mechanic`) to change both sub jobs at once.',
+                '- Type `=char main ex` to change main job into unique job (EX base only).'
             ))
         )
         self.manual['skill'] = ((
@@ -350,9 +349,20 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
+            '- Stats adjusment across the board, mainly increasing DEX / AGI values so they hold similar values as other stats but each point scales less towards critical and evasion rates.',
+            '- Esper boosts will also be adjusted accordingly.',
             '- Trial/Tower: spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
+            '- Use of excess EXP (your EXP is still being tracked so not to worry).',
+            '- Esper Expansion: esper gauge and in-battle-buffs',
+            '(if we survive this far) - EX Base passives'
         )
         self.changelog = (
+            ('23rd February 2021', (
+                '- Changed how commands are parsed, please let me know if any commands are not working properly.',
+                '- A few commands slightly shortened.',
+                '- Some older and longer commands are depreciated.',
+                '- You can no longer use Elixirs to train, only Hero Drinks (if anyone is even using...).'
+            )),
             ('21st February 2021', (
                 '- EX Base (`=charhelp base`).',
                 '- Esper (`=charhelp esper`).',
@@ -500,14 +510,18 @@ class Engel:
         # sync local data into online sheet
         df = self.dfdict['User'].copy()
         df.index = pd.Index([self.indextransform(a) for a in df.index.tolist()], name='User')
-        set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
-        if self.logsync:
-            set_with_dataframe(self.spreadsheet.worksheet('Log'), self.dfdict['Log'], include_index=False)
-            self.logsync = 0
-        if self.raidsync:
-            set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
-            self.raidsync = 0
-        self.syncpend = 0
+        try:
+            set_with_dataframe(self.spreadsheet.worksheet('User'), df, include_index=True)
+            if self.logsync:
+                set_with_dataframe(self.spreadsheet.worksheet('Log'), self.dfdict['Log'], include_index=False)
+                self.logsync = 0
+            if self.raidsync:
+                set_with_dataframe(self.spreadsheet.worksheet('Raid'), self.dfdict['Raid'], include_index=True)
+                self.raidsync = 0
+            self.syncpend = 0
+            return 1
+        except gspread.exceptions.APIError as e:
+            return e
     def new_log(self, event,timestamp):
         # write a new log
         new_log = {
@@ -776,7 +790,7 @@ class Engel:
                 else:
                     skillrow = self.dfdict['Skill'].loc[attackrow['LB_Auto']]
                 if attackrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
-                    lb_use = self.infoskill(attacker, skillrow.name, consumelb=1)
+                    lb_use = self.infoskill(attacker, skillrow.name, argop=2)
                     attackrow = self.dfdict['User'].loc[attacker]
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
@@ -894,69 +908,73 @@ class Engel:
             self.dfdict['User'].loc[user.id, job_col] = jobid
             return (1,)
     def userbasechange(self, user, base):
-        # change base or start a user
+        # change base
         # returns string directly to be encased in excecution
         desc_list = []
         baserow = self.dfdict['Base'].loc[base]
-        if user.id in self.dfdict['User'].index:
-            userrow = self.dfdict['User'].loc[user.id]
-            thres = datetime.strptime(userrow['TS_Base'], mydtformat) + timedelta(hours=self.cdbase)
-            now = datetime.now()
-            if now < thres:
-                remaining = thres - now
-                return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before {user.name} can change base."
-            if userrow['Base'] == base:
-                return f"{user.name}, it is your current base."
-            else:
-                # check if EX
-                if baserow['Hidden'] == 'ex':
-                    exdict = self.unlock_parse(userrow['EX_Unlock'])
-                    if baserow['Main'] not in exdict.keys():
-                        return f"Unlock the EX base first with `=char exbase unlock {base}`."
-                    self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
-                    desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
-                    if 'ex' not in userrow['Main']:
-                        desc_list.append(f"Change into unique job with `=char job main ex`.")
-                else:
-                    self.dfdict['User'].loc[user.id, 'EX_Up'] = 0
-                    desc_list.append(f"{user.name} base now changed to {base}.")
-                # check if previous job is unique
-                if 'ex' in userrow['Main']:
-                    result_tup = self.userjobchange(user, baserow['Main'], ignore_ts=1, is_id=1)
-                    desc_list.append(f"Main job now changed to {self.dfdict['Job'].loc[baserow['Main'], 'Job']}.")
-                    desc_list.append(f"Sub jobs now changed to {result_tup[1]} and {result_tup[2]}.")
-                self.dfdict['User'].loc[user.id, 'Base'] = base
-                self.dfdict['User'].loc[user.id, 'TS_Base'] = datetime.strftime(datetime.now(), mydtformat)
+        userrow = self.dfdict['User'].loc[user.id]
+        thres = datetime.strptime(userrow['TS_Base'], mydtformat) + timedelta(hours=self.cdbase)
+        now = datetime.now()
+        if now < thres:
+            remaining = thres - now
+            return f"{remaining.seconds // 3600} hours {remaining.seconds % 3600 // 60} minutes left before {user.name} can change base."
+        if userrow['Base'] == base:
+            return f"{user.name}, it is your current base."
         else:
-            # initialize user
-            new_user = {
-                'Base': base,
-                'HP': baserow['HP'],
-                'AP': baserow['AP'],
-                'EXP': 0,
-                'Main': baserow['Main'],
-                'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
-                'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
-                'LB': 0,
-                'Gil': 0,
-                'TS_Base': datetime.strftime(datetime.now(), mydtformat),
-                'I_Thres': 50,
-                'I_Auto': 'off',
-                'LB_Auto': 'off',
-                'i1': 0,
-                'i2': 0,
-                'i3': 0,
-                'i4': 10,
-                'i5': 0,
-                'i6': 0,
-                'i7': 0,
-                'EX_Up': 0,
-                'E_Up': 0,
-            }
-            userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
-            self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
-            desc_list.append(f"{user.name} registered with {base}.")
-            desc_list.append(f"Default job is {self.dfdict['Job'].loc[baserow['Main'], 'Job']} (check `=char job`).")
+            # check if EX
+            if baserow['Hidden'] == 'ex':
+                exdict = self.unlock_parse(userrow['EX_Unlock'])
+                if baserow['Main'] not in exdict.keys():
+                    return f"Unlock the EX base first with `=char exbase unlock {base}`."
+                self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
+                desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
+                if 'ex' not in userrow['Main']:
+                    desc_list.append(f"Change into unique job with `=char job main ex`.")
+            else:
+                self.dfdict['User'].loc[user.id, 'EX_Up'] = 0
+                desc_list.append(f"{user.name} base now changed to {base}.")
+            # check if previous job is unique
+            if 'ex' in userrow['Main']:
+                result_tup = self.userjobchange(user, baserow['Main'], ignore_ts=1, is_id=1)
+                desc_list.append(f"Main job now changed to {self.dfdict['Job'].loc[baserow['Main'], 'Job']}.")
+                desc_list.append(f"Sub jobs now changed to {result_tup[1]} and {result_tup[2]}.")
+            self.dfdict['User'].loc[user.id, 'Base'] = base
+            self.dfdict['User'].loc[user.id, 'TS_Base'] = datetime.strftime(datetime.now(), mydtformat)
+        self.syncpend = 1
+        return '\n'.join(desc_list)
+    def userstart(self, user, base):
+        # start a user
+        # returns string directly to be encased in excecution
+        desc_list = []
+        baserow = self.dfdict['Base'].loc[base]
+        new_user = {
+            'Base': base,
+            'HP': baserow['HP'],
+            'AP': baserow['AP'],
+            'EXP': 0,
+            'Main': baserow['Main'],
+            'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
+            'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
+            'LB': 0,
+            'Gil': 0,
+            'TS_Base': datetime.strftime(datetime.now(), mydtformat),
+            'I_Thres': 50,
+            'I_Auto': 'off',
+            'LB_Auto': 'off',
+            'i1': 0,
+            'i2': 0,
+            'i3': 0,
+            'i4': 10,
+            'i5': 0,
+            'i6': 0,
+            'i7': 0,
+            'EX_Up': 0,
+            'E_Up': 0,
+        } # to have inventory 0 added automatically
+        userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
+        self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
+        desc_list.append(f"{user.name} registered with {base}.")
+        desc_list.append(f"Default job is {self.dfdict['Job'].loc[baserow['Main'], 'Job']} (check `=char job`).")
         self.syncpend = 1
         return '\n'.join(desc_list)
     def raiddamage(self, raid, damage):
@@ -1038,7 +1056,7 @@ class Engel:
                 else:
                     skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
                 if userrow['A_Skill'] == '' or self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
-                    lb_use = self.infoskill(user, skillrow.name, consumelb=1)
+                    lb_use = self.infoskill(user, skillrow.name, argop=2)
                     userrow = self.dfdict['User'].loc[user]
                     if not self.dfdict['Skill'].loc[skillrow.name, 'Healing']:
                         # recalculate damage and hit rate
@@ -1194,7 +1212,10 @@ class Engel:
             base_str = ''
             base_str += f"{index}"
             if row['Main'] in exdict.keys():
-                base_str += f":star: (+{exdict[row['Main']]}) "
+                if exdict[row['Main']] == self.upgradecap:
+                    base_str += f":star: (MAX) "
+                else:
+                    base_str += f":star: (+{exdict[row['Main']]}) "
             base_list.append(base_str)
             base_count += 1
             if base_count % 10 == 0:
@@ -1846,36 +1867,32 @@ class Engel:
         self.syncpend = 1
         embed.description = '\n'.join(desc_list)
         return embed
-    def infotrain(self, user, ap_consume=3, skill=None):
+    def infotrain(self, user, num_times=3, argop=0):
         # generate result embed of a training session
         embed = discord.Embed()
         embed.title = f"{user.name} Training"
         total_exp_gain = 0
-        if skill == None:
-            ap_consume = min(self.dfdict['User'].loc[user.id, 'AP'], ap_consume)
-            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - ap_consume
-            self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + ap_consume
-            for _ in range(ap_consume):
+        if argop == 0:
+            num_times = min(self.dfdict['User'].loc[user.id, 'AP'], num_times)
+            self.dfdict['User'].loc[user.id, 'AP'] = self.dfdict['User'].loc[user.id, 'AP'] - num_times
+            self.dfdict['User'].loc[user.id, 'Gil'] = self.dfdict['User'].loc[user.id, 'Gil'] + num_times
+            for _ in range(num_times):
                 exp_gain = 20 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
                 total_exp_gain += exp_gain
                 self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain # gains EXP
             if total_exp_gain > 0:
                 self.syncpend = 1
-            embed.description = f"You spent {ap_consume} AP and gained {total_exp_gain} EXP."
+            embed.description = f"You spent {num_times} AP and gained {total_exp_gain} EXP."
         else:
-            skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
-            if 'LB' not in self.dfdict['Skill'].loc[skillid, 'Stat'].split('/'):
-                embed.description = f"You can only train with items that restore LB."
-                return embed
-            ap_consume = min(self.dfdict['User'].loc[user.id, skillid], ap_consume)
-            self.dfdict['User'].loc[user.id, skillid] = self.dfdict['User'].loc[user.id, skillid] - ap_consume
-            for _ in range(ap_consume):
+            num_times = min(self.dfdict['User'].loc[user.id, 'i3'], num_times)
+            self.dfdict['User'].loc[user.id, 'i3'] = self.dfdict['User'].loc[user.id, 'i3'] - num_times
+            for _ in range(num_times):
                 exp_gain = 50 + self.calclevel(self.dfdict['User'].loc[user.id, 'EXP']) * 2
                 total_exp_gain += exp_gain
                 self.dfdict['User'].loc[user.id, 'EXP'] = self.dfdict['User'].loc[user.id, 'EXP'] + exp_gain # gains EXP
             if total_exp_gain > 0:
                 self.syncpend = 1
-            embed.description = f"You consumed {ap_consume} {skill}(s) and gained {total_exp_gain} EXP."
+            embed.description = f"You consumed {num_times} Hero Drink(s) and gained {total_exp_gain} EXP."
         return embed
     def infoautolb(self, user, skill):
         # generate result embed of setting auto lb
@@ -2020,7 +2037,7 @@ class Engel:
         embed.add_field(name = 'Quantity Left', value = str(self.dfdict['User'].loc[userid, skillid]))
         self.syncpend = 1
         return embed
-    def infoskill(self, user, skill, target=None, consumehp=0, consumelb=0):
+    def infoskill(self, user, skill, target=None, argop=0):
         # generate result embed of a skill
         embed = discord.Embed()
         if isinstance(user, int):
@@ -2035,23 +2052,22 @@ class Engel:
                 if 'ex' not in skillid:
                     embed.description = 'Your current main job does not have limit break.'
                     return embed
-                consumelb = max(1, consumelb)
+                # check consumption type
+                if argop not in (2, 3):
+                    argop = 2
             else:
                 skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
             embed.title = f"{user.name} - {skill}"
         skillrow = self.dfdict['Skill'].loc[skillid]
         desc_list = []
-        # healing with HP
-        if consumehp == 1 and skillrow['Healing']:
+        # check criteria
+        if argop == 1 and skillrow['Healing']:
             embed.description = 'You cannot consume HP for healing skills.'
             return embed
-        # check if skill available and what potency
-        if consumelb == 1 and userrow['LB'] < 100:
+        if argop == 2 and userrow['LB'] < 100:
             embed.description = f'Your LB gauge is not full yet.'
             return embed
-        elif consumelb == 2 and userrow['i3'] < 1:
-            embed.description = f'Your ran out of Hero Drinks.'
-            return embed
+        # check skill potency
         if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
             potency = 'Main'
         else:
@@ -2065,13 +2081,12 @@ class Engel:
                 targetid = target.id
         else:
             targetid = target.id
+        targetrow = self.dfdict['User'].loc[targetid]
         if targetid != userid and not skillrow['Ally']:
             embed.description = f"{skill} cannot be casted on others."
             return embed
         u_hp = self.calcstats(userid, stat='HP')['HP']
         t_hp = self.calcstats(targetid, stat='HP')['HP']
-        hpcost = math.ceil(u_hp * self.skill_hpcost)
-        apcost = self.skill_apcost
         # check if lb combo involves healing
         hprecovery = 0
         if skillrow['Healing']:
@@ -2085,60 +2100,73 @@ class Engel:
                     if subskillrow['Healing']:
                         hprecovery += math.floor(u_hp * subskillrow[subpotency])
         # no EXP gain if HP consume
-        if consumehp == 1:
+        if argop == 1:
             exp_gain = 0
         else:
-            exp_gain = self.calclevel(self.dfdict['User'].loc[userid, 'EXP']) + self.calclevel(self.dfdict['User'].loc[targetid, 'EXP'])
+            exp_gain = self.calclevel(userrow['EXP']) + self.calclevel(targetrow['EXP'])
         revive = 0
+        num_times = 1
         # check if is to revive
-        if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == 0:
+        if skillrow['Healing'] and targetrow['HP'] == 0:
             num_times = math.ceil(t_hp / hprecovery)
-            if num_times > 1 and consumelb > 0:
+            if num_times > 1 and argop == 2:
                 if isinstance(user, int):
                     return 0
                 else:
                     embed.description = f"You are not strong enough to revive {target.name} with one cast."
                     return embed
             hprecovery = hprecovery * num_times
-            hpcost = hpcost * num_times
-            apcost = apcost * num_times
             exp_gain = exp_gain * num_times
             revive = 1
-            desc_list = ['Target is dead!',
-                f"If you do not mind paying {apcost} AP, type `=char skill {skillrow['Skill']} | target | revive`."
-            ]
-            embed.description = '\n'.join(desc_list)
-            return embed
+            if argop == 0:
+                if isinstance(user, int):
+                    return 0
+                else:
+                    desc_list = ['Target is dead!',
+                        f"If you do not mind paying {self.apcost * num_times} AP, type `=char revive {skillrow['Skill']} | target`."
+                    ]
+                    embed.description = '\n'.join(desc_list)
+                    return embed
         # check if target HP is full
-        if skillrow['Healing'] and self.dfdict['User'].loc[targetid, 'HP'] == t_hp:
+        if skillrow['Healing'] and targetrow['HP'] == t_hp:
             if isinstance(user, int):
                 return 0
             else:
                 embed.description = f"{target.name} HP is full."
                 return embed
         # check HP or AP amount or criteria to consume
-        if consumehp == 1:
+        if argop == 1:
+            hpcost = math.ceil(u_hp * self.skill_hpcost) * num_times
             if userrow['HP'] <= hpcost:
                 embed.description = f"You need at least {hpcost + 1} HP."
                 return embed
             else:
                 desc_list.append(f"You consumed {hpcost} HP.")
-                self.dfdict['User'].loc[userid, 'HP'] = self.dfdict['User'].loc[userid, 'HP'] - hpcost
-        elif consumelb == 1:
+                self.dfdict['User'].loc[userid, 'HP'] = userrow['HP'] - hpcost
+        elif argop == 2:
             self.dfdict['User'].loc[userid, 'LB'] = 0
             desc_list.append(f"You consumed LB gauge.")
-        elif consumelb == 2:
-            self.dfdict['User'].loc[userid, 'i3'] = self.dfdict['User'].loc[userid, 'i3'] - 1
-            desc_list.append(f"You consumed a Hero Drink.")
-        elif userrow['AP'] < apcost:
-            embed.description = f"You need to have at least {apcost} AP."
-            return embed
+        elif argop == 3:
+            if userrow['i3'] < num_times:
+                embed.description = f'Your ran out of Hero Drinks.'
+                return embed
+            else:
+                self.dfdict['User'].loc[userid, 'i3'] = self.dfdict['User'].loc[userid, 'i3'] - num_times
+                if num_times == 1:
+                    desc_list.append(f"You consumed a Hero Drink.")
+                else:
+                    desc_list.append(f"You consumed {num_times} Hero Drinks.")
         else:
-            self.dfdict['User'].loc[userid, 'AP'] = self.dfdict['User'].loc[userid, 'AP'] - apcost
-            self.dfdict['User'].loc[userid, 'Gil'] = self.dfdict['User'].loc[userid, 'Gil'] + apcost
-            desc_list.append(f"You consumed {apcost} AP.")
+            apcost = self.skill_apcost * num_times
+            if userrow['AP'] < apcost:
+                embed.description = f"You need to have at least {apcost} AP."
+                return embed
+            else:
+                self.dfdict['User'].loc[userid, 'AP'] = self.dfdict['User'].loc[userid, 'AP'] - apcost
+                self.dfdict['User'].loc[userid, 'Gil'] = self.dfdict['User'].loc[userid, 'Gil'] + apcost
+                desc_list.append(f"You consumed {apcost} AP.")
         # Actual skill execution
-        self.dfdict['User'].loc[userid, 'EXP'] = self.dfdict['User'].loc[userid, 'EXP'] + exp_gain
+        self.dfdict['User'].loc[userid, 'EXP'] = userrow['EXP'] + exp_gain
         if skillrow['Healing']:
             if revive:
                 self.userrevive(targetid)
@@ -2326,6 +2354,30 @@ class Engel:
             self.syncpend = 1
             self.raidsync = 1
         return embed
+    # admin commands
+    def fredgift(self, *arg):
+        if arg[0] == 'all':
+            sendall = 1
+        elif arg[0].isnumeric():
+            sendall = 0
+            targetid = int(arg[0])
+        else:
+            return 'Target Error'
+        try:
+            num_times = int(arg[1])
+        except ValueError:
+            return 'ValueError'
+        skill = self.find_index(' '.join(arg[2:]), 'Item')
+        if skill == 'NOTFOUND':
+            return 'Item Not Found'
+        skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+        if sendall:
+            self.dfdict['User'][skillid] = self.dfdict['User'][skillid] + num_times
+            self.syncpend = 1
+            return f"Sent {num_times} {skill}(s) to all users."
+        else:
+            self.dfdict['User'].loc[targetid, skillid] = self.dfdict['User'].loc[targetid, skillid] + num_times
+            return f"Sent u{targetid} {num_times} {skill}(s)."
     async def executecommand(self, user, ctx, *arg):
         # main command execution
         if self.maint:
@@ -2333,396 +2385,410 @@ class Engel:
         elif len(arg) == 0:
             return self.helpmanual()
         else:
-            if arg[0] == 'info':
-                if len(arg) == 1:
-                    if user.id in self.dfdict['User'].index:
+            # initialise error parameters
+            if user.id in self.dfdict['User'].index:
+                userfound = 1
+            else:
+                userfound = 0
+            targeterror = 0
+            # process arguments
+            argkw = arg[0].lower()
+            argstart = 0
+            arglen = len(arg)
+            if argkw in ('subs', 'sub1', 'sub2', 'main'):
+                argkw = 'job'
+            elif argkw in ('start',):
+                argkw = 'base'
+            elif argkw in ('hpskill', 'skillhp', 'lb', 'lbskill', 'skilllb', 'heroskill', 'skillhero', 'revive', 'reviveskill', 'skillrevive'):
+                argkw = 'skill'
+            else:
+                argkw = argkw.rstrip('s')
+                argstart += 1
+                arglen -= 1
+            # find and process operations
+            ## commands with lists
+            if argkw == 'info':
+                if arglen == 0:
+                    if userfound:
                         # own info
                         return self.infouser(user)
-                    else:
-                        return discord.Embed(description = self.usernotfound)
                 else:
+                    targeterror = 1
                     try:
-                        member = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
-                        if member.id in self.dfdict['User'].index:
+                        target = await commands.MemberConverter().convert(ctx, ' '.join(arg[argstart:]))
+                        if target.id in self.dfdict['User'].index:
+                            targeterror = 0
                             return self.infouser(member)
-                        else:
-                            return discord.Embed(description = self.targetnotfound)
                     except commands.BadArgument:
-                        return discord.Embed(description = self.targetnotfound)
-            elif arg[0] == 'base':
-                if len(arg) == 1:
+                        pass
+            elif argkw == 'base':
+                if arglen == 0:
                     # list of bases
                     return self.listbase()
                 else:
-                    # various operations
-                    if len(arg) > 2 and arg[1] in ('change', 'start'):
-                        # change base or start of tamagotchi
-                        if user.id in self.dfdict['User'].index.tolist() and arg[1] == 'start':
+                    # find operation
+                    if arglen > 1 and arg[argstart].lower() == 'change' and userfound:
+                        # change base
+                        argop = 1
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart].lower() in ('start', 'change'):
+                        # start of tamagotchi
+                        argop = 2
+                        argstart += 1
+                        if userfound:
                             return discord.Embed(description = 'You already started. See your base by `=char info` or change your base with `=char base change` instead.')
-                        base = self.find_index(' '.join(arg[2:]), 'Base')
-                        if base == 'NOTFOUND':
-                            return discord.Embed(description = 'Base not found. Try checking `=char base`.')
-                        return discord.Embed(description = self.userbasechange(user, base))
                     else:
-                        base = self.find_index(' '.join(arg[1:]), 'Base')
-                        if base == 'NOTFOUND':
-                            return discord.Embed(description = 'Base not found. Try checking `=char base`.')
+                        # check info
+                        argop = 0
+                    # find base
+                    base = self.find_index(' '.join(arg[argstart:]), 'Base')
+                    if base == 'NOTFOUND':
+                        return discord.Embed(description = 'Base not found. Try checking `=char base`.')
+                    # carry out operation
+                    if argop == 1:
+                        return discord.Embed(description = self.userbasechange(user, base))
+                    elif argop == 2:
+                        return discord.Embed(description = self.userstart(user, base))
+                    else:
                         return self.infobase(base)
-            elif arg[0] in ('exbase', 'ex'):
-                if len(arg) == 1:
+            elif argkw in ('exbase', 'ex'):
+                if arglen == 0:
                     # list of ex bases
-                    if user.id in self.dfdict['User'].index:
+                    if userfound:
                         return self.listexbase(user)
                     else:
                         return self.listexbase()
                 else:
-                    # various operations
-                    if len(arg) > 2 and arg[1] in ('unlock', 'upgrade', 'up'):
-                        # unlock or upgrade ex base
-                        if user.id in self.dfdict['User'].index.tolist():
-                            if arg[1] == 'unlock':
-                                unlock = 1
-                            else:
-                                unlock = 0
-                            base = self.find_index(' '.join(arg[2:]), 'EX Base')
-                            if base == 'NOTFOUND':
-                                return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
-                            else:
-                                return self.infoupexbase(user, base, unlock=unlock)
-                        else:
-                            return discord.Embed(description = self.usernotfound)
-                    elif len(arg) > 2 and arg[1]  == 'change':
-                        # change into ex base
-                        if user.id in self.dfdict['User'].index.tolist():
-                            base = self.find_index(' '.join(arg[2:]), 'EX Base')
-                            if base == 'NOTFOUND':
-                                return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
-                            return discord.Embed(description = self.userbasechange(user, base))
-                        else:
-                            return discord.Embed(description = self.usernotfound)
+                    # find operation
+                    if arglen > 1 and arg[argstart].lower() == 'unlock' and userfound:
+                        # unlock ex base
+                        argop = 1
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart].lower() in ('upgrade', 'up') and userfound:
+                        # upgrade ex base
+                        argop = 2
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart].lower() == 'change' and userfound:
+                        # change ex base
+                        argop = 3
+                        argstart += 1
                     else:
-                        base = self.find_index(' '.join(arg[1:]), 'EX Base')
-                        if base == 'NOTFOUND':
-                            return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
-                        if user.id in self.dfdict['User'].index:
+                        # check info
+                        argop = 0
+                    # find ex base
+                    base = self.find_index(' '.join(arg[argstart:]), 'EX Base')
+                    if base == 'NOTFOUND':
+                        return discord.Embed(description = 'EX Base not found. Try checking `=char exbase`.')
+                    # carry out operation
+                    if argop == 1:
+                        return self.infoupexbase(user, base, unlock=1)
+                    elif argop == 2:
+                        return self.infoupexbase(user, base)
+                    elif argop == 3:
+                        return discord.Embed(description = self.userbasechange(user, base))
+                    else:
+                        if userfound:
                             return self.infoexbase(base, user)
                         else:
                             return self.infoexbase(base)
-            elif arg[0] == 'job':
-                if len(arg) == 1:
+            elif argkw == 'job':
+                if arglen == 0:
                     # list of jobs
                     return self.listjob()
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1].lower() in ('main', 'change') and len(arg) > 2:
-                        if arg[2].lower() == 'ex':
-                            return self.infojobchange(user, {'Main': 'ex'})
-                        else:
-                            job = self.find_index(' '.join(arg[2:]), 'Job')
-                            if job == 'NOTFOUND':
-                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
-                            else:
-                                return self.infojobchange(user, {'Main': job})
-                    elif arg[1].lower() == 'sub1' and len(arg) > 2:
-                        job = self.find_index(' '.join(arg[2:]), 'Job')
-                        if job == 'NOTFOUND':
-                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
-                        else:
-                            return self.infojobchange(user, {'Sub1': job})
-                    elif arg[1].lower() == 'sub2' and len(arg) > 2:
-                        job = self.find_index(' '.join(arg[2:]), 'Job')
-                        if job == 'NOTFOUND':
-                            return discord.Embed(description = 'Job not found. Try checking `=char job`.')
-                        else:
-                            return self.infojobchange(user, {'Sub2': job})
-                    elif arg[1].lower() in ('sub', 'subs') and len(arg) > 2:
-                        jobargs = [a.strip() for a in ' '.join(arg[2:]).split('|')]
-                        if len(jobargs) == 1:
-                            job = self.find_index(jobargs[0], 'Job')
-                            if job == 'NOTFOUND':
-                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
-                            else:
-                                return self.infojobchange(user, {'Sub1': job})
-                        else:
-                            job1 = self.find_index(jobargs[0], 'Job')
-                            job2 = self.find_index(jobargs[1], 'Job')
-                            if 'NOTFOUND' in (job1, job2):
-                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
-                            else:
-                                return self.infojobchange(user, {'Sub1': job1, 'Sub2': job2})
+                elif userfound and arglen > 1:
+                    # find operation
+                    if arg[argstart].lower() in ('main', 'change'):
+                        # change main job
+                        argop = 1
+                        argstart += 1
+                    elif arg[argstart].lower() in ('sub', 'subs'):
+                        # change both sub jobs
+                        argop = 2
+                        argstart += 1
+                    elif arg[argstart].lower() == 'sub1':
+                        # change sub job 1
+                        argop = 3
+                        argstart += 1
+                    elif arg[argstart].lower() == 'sub2':
+                        # change sub job 2
+                        argop = 4
+                        argstart += 1
                     else:
-                        # find job and info (not needed atm)
+                        # check info (not needed atm)
                         return discord.Embed(description = 'Try `=charhelp job`.')
+                    # find job and match their destination
+                    if arg[argstart].lower() == 'ex' and argop == 1:
+                        jobchangedict = {'Main': 'ex'}
+                    else:
+                        jobargs = [a.strip() for a in ' '.join(arg[argstart:]).split('|')]
+                        jobchangedict = dict()
+                        if argop == 2 and len(jobargs) == 2:
+                            jobchangedict_keys = ('Sub1', 'Sub2')
+                        elif argop == 4:
+                            jobchangedict_keys = ('Sub2',)
+                        else:
+                            jobchangedict_keys = ('Sub1',)
+                        for i, jobchangedict_key in enumerate(jobchangedict_keys):
+                            job = self.find_index(jobargs[i], 'Job')
+                            if job == 'NOTFOUND':
+                                return discord.Embed(description = 'Job not found. Try checking `=char job`.')
+                            else:
+                                jobchangedict[jobchangedict_key] = job
+                    # carry out operation
+                    return self.infojobchange(user, jobchangedict)
+            elif argkw == 'skill':
+                if arglen == 0:
+                    # list of skills
+                    return self.listskill()
+                elif userfound:
+                    # find operation
+                    consumehp = 0
+                    consumelb = 0
+                    if arglen > 1 and arg[argstart] in ('hp', 'hpskill', 'skillhp'):
+                        # consume hp
+                        argop = 1
+                        argstart += 1
+                    elif arg[argstart] in ('lb', 'lbskill', 'skilllb'):
+                        # consume lb
+                        argop = 2
+                        argstart += 1
+                    elif arg[argstart] in ('hero', 'heroskill', 'skillhero'):
+                        # consume hero drink
+                        argop = 3
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart] in ('revive', 'reviveskill', 'skillrevive'):
+                        # consume AP to revive
+                        argop = 4
+                        argstart += 1
+                    else:
+                        argop = 0
+                    # find skill
+                    if arglen == 1 and argop in (2, 3):
+                        skill = 'ex'
+                        target = None
+                    elif arg[argstart] == 'ex':
+                        skill = 'ex'
+                        target = None
+                    else:
+                        skillargs = [a.strip() for a in ' '.join(arg[argstart:]).split('|')]
+                        skill = self.find_index(skillargs[0], 'Skill')
+                        if skill == 'NOTFOUND':
+                            return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
+                        target = None
+                        if len(skillargs) > 1:
+                            # find target
+                            try:
+                                target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                                if target.id not in self.dfdict['User'].index:
+                                    targeterror = 1
+                            except commands.BadArgument:
+                                targeterror = 1
+                    # carry out operation
+                    if not targeterror:
+                        return self.infoskill(user, skill, target=target, argop=argop)
+            elif argkw == 'item':
+                if arglen == 0:
+                    # list of items
+                    return self.listitem()
+                elif userfound:
+                    # check number of times
+                    num_times = 1
+                    if arglen > 1 and arg[argstart].isnumeric():
+                        num_times = min(int(arg[argstart]), 20)
+                        argstart += 1
+                    # find item
+                    skillargs = [a.strip() for a in ' '.join(arg[argstart:]).split('|')]
+                    skill = self.find_index(skillargs[0], 'Item')
+                    if skill == 'NOTFOUND':
+                        return discord.Embed(description = 'Item not found. Try checking `=char item`.')
+                    target = None
+                    if len(skillargs) > 1:
+                        # find target
+                        try:
+                            target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                            if target.id not in self.dfdict['User'].index:
+                                targeterror = 1
+                        except commands.BadArgument:
+                            targeterror = 1
+                    if not targeterror:
+                        return self.infoitem(user, skill, target=target, num_times=num_times)
+            elif argkw == 'esper':
+                if arglen == 0:
+                    # list of espers
+                    if userfound:
+                        return self.listesper(user)
+                    else:
+                        return self.listesper()
                 else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] in ('autolbskill', 'autolb'):
-                if user.id in self.dfdict['User'].index:
-                    if len(arg) == 1:
+                    # find operation
+                    if arglen > 1 and arg[argstart].lower() == 'unlock' and userfound:
+                        # unlock esper
+                        argop = 1
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart].lower() in ('upgrade', 'up') and userfound:
+                        # upgrade esper
+                        argop = 2
+                        argstart += 1
+                    elif arglen > 1 and arg[argstart].lower() == 'change' and userfound:
+                        # change esper
+                        argop = 3
+                        argstart += 1
+                    elif arg[argstart].lower() == 'off' and userfound:
+                        return self.infoesperchange(user, 'off')
+                    else:
+                        # check info
+                        argop = 0
+                    # find esper
+                    esper = self.find_index(' '.join(arg[argstart:]), 'Esper')
+                    if esper == 'NOTFOUND':
+                        return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
+                    # carry out operation
+                    if argop == 1:
+                        return self.infoupesper(user, esper, unlock=1)
+                    elif argop == 2:
+                        return self.infoupesper(user, esper)
+                    elif argop == 3:
+                        return self.infoesperchange(user, esper)
+                    else:
+                        if userfound:
+                            return self.infoesper(esper, user)
+                        else:
+                            return self.infoesper(esper)
+            elif argkw == 'raid':
+                if arglen == 0:
+                    # list of raids
+                    return self.listraid()
+                elif userfound:
+                    # find operation
+                    if arglen > 1 and arg[argstart] == 'attack':
+                        argop = 1
+                        argstart += 1
+                        arglen -= 1
+                        num_times = 1
+                    elif arglen > 1 and arg[argstart] == 'info':
+                        argop = 0
+                        argstart += 1
+                    else:
+                        argop = 0
+                    if arglen > 1 and arg[argstart].isnumeric():
+                        argop = 1
+                        num_times = min(int(arg[argstart]), 20)
+                        argstart += 1
+                    # find raid
+                    raid = self.find_index(' '.join(arg[argstart:]), 'Raid')
+                    if raid == 'NOTFOUND':
+                        return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
+                    # carry out operation
+                    if argop == 1:
+                        return self.infoattackraid(user, raid, num_times)
+                    else:
+                        return self.inforaid(raid)
+            elif argkw == 'help':
+                if arglen > 0:
+                    return self.helpmanual(arg[argstart])
+                else:
+                    return self.helpmanual()
+            elif argkw in ('changelog', 'version'):
+                if arglen > 0:
+                    return self.infochangelog(arg[argstart])
+                else:
+                    return self.infochangelog()
+            elif argkw in ('futureplan', 'future', 'plan'):
+                return self.infofutureplan()
+            elif argkw in ('rate', 'gacharate'):
+                return self.ratemanual()
+            ## commands all need userid
+            elif userfound:
+                if argkw in ('autolbskill', 'autolb'):
+                    # autolb setting
+                    if arglen == 0:
                         skill = 'ex'
                     else:
-                        if arg[1].lower() == 'off':
+                        if arg[argstart].lower() == 'off':
                             skill = 'off'
-                        elif arg[1].lower() == 'ex':
+                        elif arg[argstart].lower() == 'ex':
                             skill = 'ex'
                         else:
                             skill = self.find_index(' '.join(arg[1:]), 'Skill')
                             if skill == 'NOTFOUND':
                                 return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
                     return discord.Embed(description = self.infoautolb(user, skill))
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] in ('skill', 'revive', 'heroskill', 'lb', 'hpskill', 'skillhero', 'lbskill', 'skillhp', 'skilllb'):
-                if len(arg) == 1 and arg[0] not in ('lb', 'lbskill', 'skilllb'):
-                    # list of skills
-                    return self.listskill()
-                elif user.id in self.dfdict['User'].index:
-                    consumehp = 0
-                    consumelb = 0
-                    if arg[0] in ('hero', 'heroskill'):
-                        consumelb = 2
-                    elif arg[0] in ('lb', 'lbskill', 'skilllb'):
-                        consumelb = 1
-                    elif arg[0] in ('hpskill', 'skillhp'):
-                        consumehp = 1
-                    elif arg[0] == 'revive':
-                        consumehp = -1
-                    elif len(arg) > 1:
-                        if arg[1].lower() == 'lb':
-                            consumelb = 1
-                            arg = arg[1:]
-                        elif arg[1].lower() == 'hp':
-                            consumehp = 1
-                            arg = arg[1:]
-                        elif arg[1].lower() == 'revive':
-                            consumehp = -1
-                            arg = arg[1:]
-                    if consumelb == 1 and len(arg) == 1:
-                        skill = 'ex'
-                    elif arg[1].lower() == 'ex':
-                        skill = 'ex'
+                elif argkw == 'autoitem':
+                    if arglen == 0:
+                        # list of items
+                        return self.listitem()
                     else:
-                        skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
-                        skill = self.find_index(skillargs[0], 'Skill')
-                        if skill == 'NOTFOUND':
-                            return discord.Embed(description = 'Skill not found. Try checking `=char skill`.')
-                        if len(skillargs) == 3:
-                            if skillargs[2].lower() == 'hp':
-                                consumehp = 1
-                            elif skillargs[2].lower() == 'revive':
-                                consumehp = -1
-                            elif skillargs[2].lower() == 'lb':
-                                consumelb = 1
-                        if len(skillargs) > 1:
-                            try:
-                                target = await commands.MemberConverter().convert(ctx, skillargs[1])
-                                if target.id in self.dfdict['User'].index:
-                                    return self.infoskill(user, skill, target, consumehp, consumelb)
-                                else:
-                                    return discord.Embed(description = self.targetnotfound)
-                            except commands.BadArgument:
-                                return discord.Embed(description = self.targetnotfound)
-                    if skill == 'ex' and consumehp != 0:
-                        return discord.Embed(description = 'Nice try.')
-                    return self.infoskill(user, skill, user, consumehp, consumelb)
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] == 'item':
-                if len(arg) == 1:
-                    # list of items
-                    return self.listitem()
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1].isnumeric() and len(arg) > 2:
-                        num_times = min(int(arg[1]), 20)
-                        skillargs = [a.strip() for a in ' '.join(arg[2:]).split('|')]
+                        if arg[argstart].lower() == 'off':
+                            skill = 'off'
+                        else:
+                            if arg[argstart].isnumeric():
+                                return discord.Embed(description = self.infoautoitem(user, int(arg[argstart])))
+                            else:
+                                skill = self.find_index(' '.join(arg[argstart:]), 'Item')
+                                if skill == 'NOTFOUND':
+                                    return discord.Embed(description = 'Item not found. Try checking `=char item`.')
+                            return discord.Embed(description = self.infoautoitem(user, skill))
+                elif argkw in ('inventory', 'inv'):
+                    return self.infoinventory(user)
+                elif argkw == 'daily':
+                    return self.infogacha(user, free=1)
+                elif argkw == 'gacha':
+                    if arglen > 0:
+                        if arg[argstart].isnumeric():
+                            return self.infogacha(user, int(arg[argstart]))
+                    return self.infogacha(user)
+                elif argkw == 'train':
+                    argop = 0
+                    num_times = 1
+                    if arglen > 0:
+                        if arg[argstart].lower() == 'hero':
+                            argop = 1
+                            argstart += 1
+                            arglen -= 1
+                    if arglen > 0:
+                        if arg[argstart].isnumeric():
+                            num_times = int(arg[argstart])
+                            argstart += 1
+                            arglen -= 1
+                    if arglen > 0:
+                        if arg[argstart].lower() == 'hero':
+                            argop = 1
+                    return self.infotrain(user, num_times=num_times, argop=argop)
+                elif argkw == 'attack':
+                    if arglen == 0:
+                        return discord.Embed(description = 'Try `=charhelp battle`.')
                     else:
                         num_times = 1
-                        skillargs = [a.strip() for a in ' '.join(arg[1:]).split('|')]
-                    skill = self.find_index(skillargs[0], 'Item')
-                    if skill == 'NOTFOUND':
-                        return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                    if len(skillargs) > 1:
+                        if arglen > 1 and arg[argstart].isnumeric():
+                            num_times = min(int(arg[argstart]), 20)
+                            argstart += 1
                         try:
-                            target = await commands.MemberConverter().convert(ctx, skillargs[1])
+                            # find member of said name to attack
+                            target = await commands.MemberConverter().convert(ctx, ' '.join(arg[argstart:]))
                             if target.id in self.dfdict['User'].index:
-                                return self.infoitem(user, skill, target=target, num_times=num_times)
+                                return self.infoattack(user, target, num_times)
                             else:
-                                return discord.Embed(description = self.targetnotfound)
+                                targeterror = 1
                         except commands.BadArgument:
-                            return discord.Embed(description = self.targetnotfound)
+                            targeterror = 1
+                elif argkw == 'duel':
+                    if arglen == 0:
+                        return discord.Embed(description = 'Try `=charhelp battle`.')
                     else:
-                        return self.infoitem(user, skill, num_times=num_times)
-                    return discord.Embed(description = 'Try `=charhelp item`.')
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] == 'esper':
-                if len(arg) == 1:
-                    # list of espers
-                    if user.id in self.dfdict['User'].index:
-                        return self.listesper(user)
-                    else:
-                        return self.listesper()
-                else:
-                    # various operations
-                    if len(arg) > 2 and arg[1].lower() in ('unlock', 'upgrade', 'up'):
-                        # unlock or upgrade esper
-                        if user.id in self.dfdict['User'].index.tolist():
-                            if arg[1].lower() == 'unlock':
-                                unlock = 1
+                        try:
+                            # find member of said name to attack
+                            target = await commands.MemberConverter().convert(ctx, ' '.join(arg[argstart:]))
+                            if target.id in self.dfdict['User'].index:
+                                return self.infoduel(user, target)
                             else:
-                                unlock = 0
-                            esper = self.find_index(' '.join(arg[2:]), 'Esper')
-                            if esper == 'NOTFOUND':
-                                return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
-                            else:
-                                return self.infoupesper(user, esper, unlock=unlock)
-                        else:
-                            return discord.Embed(description = self.usernotfound)
-                    elif arg[1].lower() == 'change':
-                        # change esper
-                        if user.id in self.dfdict['User'].index.tolist():
-                            esper = self.find_index(' '.join(arg[2:]), 'Esper')
-                            if esper == 'NOTFOUND':
-                                return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
-                            else:
-                                return self.infoesperchange(user, esper)
-                        else:
-                            return discord.Embed(description = self.usernotfound)
-                    elif arg[1].lower() == 'off':
-                        # unequip esper
-                        if user.id in self.dfdict['User'].index.tolist():
-                            return self.infoesperchange(user, 'off')
-                        else:
-                            return discord.Embed(description = self.usernotfound)
-                    else:
-                        esper = self.find_index(' '.join(arg[1:]), 'Esper')
-                        if esper == 'NOTFOUND':
-                            return discord.Embed(description = 'Esper not found. Try checking `=char esper`.')
-                        if user.id in self.dfdict['User'].index:
-                            return self.infoesper(esper, user)
-                        else:
-                            return self.infoesper(esper)
-            elif arg[0] == 'autoitem':
-                if len(arg) == 1:
-                    # list of skills
-                    return self.listitem()
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1].lower() == 'off':
-                        skill = 'off'
-                    elif arg[1].isnumeric():
-                        return discord.Embed(description = self.infoautoitem(user, int(arg[1])))
-                    else:
-                        skill = self.find_index(' '.join(arg[1:]), 'Item')
-                        if skill == 'NOTFOUND':
-                            return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                    return discord.Embed(description = self.infoautoitem(user, skill))
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] in ('inventory', 'inv') and user.id in self.dfdict['User'].index:
-                return self.infoinventory(user)
-            elif arg[0] in 'daily' and user.id in self.dfdict['User'].index:
-                return self.infogacha(user, free=1)
-            elif arg[0] in 'gacha' and user.id in self.dfdict['User'].index:
-                if len(arg) > 1:
-                    if arg[1].isnumeric():
-                        return self.infogacha(user, int(arg[1]))
-                return self.infogacha(user)
-            elif arg[0] == 'train' and user.id in self.dfdict['User'].index:
-                ap_consume = 1
-                skill = None
-                if len(arg) > 1:
-                    if arg[1].isnumeric():
-                        ap_consume = int(arg[1])
-                        if len(arg) > 2:
-                            skill = self.find_index(' '.join(arg[2:]), 'Item')
-                            if skill == 'NOTFOUND':
-                                return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                    else:
-                        skill = self.find_index(' '.join(arg[1:]), 'Item')
-                        if skill == 'NOTFOUND':
-                            return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                    return self.infotrain(user, ap_consume, skill)
-                return self.infotrain(user)
-            elif arg[0] == 'attack':
-                if len(arg) == 1:
-                    return discord.Embed(description = 'Try `=charhelp char`.')
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1].isnumeric() and len(arg) > 2:
-                        num_times = min(int(arg[1]), 20)
-                        defender_name = ' '.join(arg[2:])
-                    else:
-                        num_times = 1
-                        defender_name = ' '.join(arg[1:])
-                    try:
-                        # find member of said name to attack
-                        defender = await commands.MemberConverter().convert(ctx, defender_name)
-                        if defender.id in self.dfdict['User'].index:
-                            return self.infoattack(user, defender, num_times)
-                        else:
-                            return discord.Embed(description = self.targetnotfound)
-                    except commands.BadArgument:
-                        return discord.Embed(description = self.targetnotfound)
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] == 'duel':
-                if len(arg) == 1:
-                    return discord.Embed(description = 'Try `=charhelp char`.')
-                elif user.id in self.dfdict['User'].index:
-                    try:
-                        # find member of said name to attack
-                        defender = await commands.MemberConverter().convert(ctx, ' '.join(arg[1:]))
-                        if defender.id in self.dfdict['User'].index:
-                            return self.infoduel(user, defender)
-                        else:
-                            return discord.Embed(description = self.targetnotfound)
-                    except commands.BadArgument:
-                        return discord.Embed(description = self.targetnotfound)
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] == 'raid':
-                # to be implemented
-                if len(arg) == 1:
-                    # available raids
-                    return self.listraid()
-                elif user.id in self.dfdict['User'].index:
-                    if arg[1] == 'attack' and len(arg) > 2:
-                        if arg[2].isnumeric() and len(arg) > 3:
-                            num_times = min(int(arg[2]), 20)
-                            raid_name = ' '.join(arg[3:])
-                        else:
-                            num_times = 1
-                            raid_name = ' '.join(arg[2:])
-                        raid = self.find_index(raid_name, 'Raid')
-                        if raid == 'NOTFOUND':
-                            return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
-                        else:
-                            return self.infoattackraid(user, raid, num_times)
-                    elif arg[1] == 'info' and len(arg) > 2:
-                        raid = self.find_index(' '.join(arg[2:]), 'Raid')
-                        if raid == 'NOTFOUND':
-                            return discord.Embed(description = 'Raid not found. Try checking `=char raid`.')
-                        else:
-                            return self.inforaid(raid)
-                    else:
-                        raid = self.find_index(' '.join(arg[1:]), 'Raid')
-                        if raid == 'NOTFOUND':
-                            return discord.Embed(description = 'Try `=charhelp raid`.')
-                        else:
-                            return self.inforaid(raid)
-                else:
-                    return discord.Embed(description = self.usernotfound)
-            elif arg[0] == 'help':
-                if len(arg) > 1:
-                    return self.helpmanual(arg[1])
-                else:
-                    return self.helpmanual()
-            elif arg[0] in ('changelog', 'version'):
-                if len(arg) > 1:
-                    return self.infochangelog(arg[1])
-                else:
-                    return self.infochangelog()
-            elif arg[0] in ('futureplans', 'futureplan', 'future'):
-                return self.infofutureplan()
-            elif arg[0] in ('rate', 'gacha'):
-                return self.ratemanual()
+                                targeterror = 1
+                        except commands.BadArgument:
+                            targeterror = 1
+            if userfound == 0:
+                # user not found
+                return discord.Embed(description = self.usernotfound)
+            elif targeterror:
+                return discord.Embed(description = self.targeterror)
             else:
                 return discord.Embed(description = 'Try `=charhelp`.')
 
@@ -2736,7 +2802,7 @@ class Engelbert(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.bot.get_channel(id_dict['Engel Logs']).send('I restarted.')
+        await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Restarted ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @tasks.loop(minutes=1.0)
     async def timercheck(self):
@@ -2752,11 +2818,15 @@ class Engelbert(commands.Cog):
             if now > thres:
                 engel.userrevive(userid)
 
-    @tasks.loop(seconds=5.0)
+    @tasks.loop(seconds=10.0)
     async def synccheck(self):
         # check if sync is pending
         if engel.syncpend:
-            engel.sheetsync()
+            return_val = engel.sheetsync()
+            if return_val == 1:
+                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
+            else:
+                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @commands.command(aliases=['engelmaint'])
     async def engelbertmaint(self, ctx, *arg):
@@ -2773,10 +2843,18 @@ class Engelbert(commands.Cog):
     async def engelbertsync(self, ctx, *arg):
         # Synchronise Engelbert sheets
         if ctx.message.author.id == id_dict['Owner']:
-            engel.maint = 1
-            engel.dfsync()
-            engel.maint = 0
-            await ctx.send('Google sheet synced for Engelbert.')
+            if len(arg) > 0:
+                if arg[0] in ('s', 'sheetsync'):
+                    return_val = engel.sheetsync()
+                    if return_val == 1:
+                        await ctx.send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
+                    else:
+                        await ctx.send(f"Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+            else:
+                engel.maint = 1
+                engel.dfsync()
+                engel.maint = 0
+                await ctx.send('Google sheet synced for Engelbert.')
 
     @commands.command(aliases=['fred'])
     async def frederika(self, ctx, *arg):
@@ -2788,6 +2866,13 @@ class Engelbert(commands.Cog):
             embed.set_footer(text = engel.defaultfooter)
             await ctx.send(embed = embed)
             await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
+
+    @commands.command(aliases=['fredgift'])
+    async def frederikagift(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Engel Logs']).send(embed = logs_embed(ctx.message))
+        # admin gift command
+        if ctx.message.author.id == id_dict['Owner']:
+            await ctx.send(engel.fredgift(*arg))
 
     @commands.command(aliases=['engelhelp', 'pethelp', 'tamagotchihelp', 'tamahelp', 'charhelp'])
     async def engelberthelp(self, ctx, *arg):
