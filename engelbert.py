@@ -356,10 +356,12 @@ class Engel:
         )
         self.changelog = (
             ('24th February 2021', (
-                '- Stats adjusment across the board, mainly increasing DEX / AGI values so they hold similar values as other stats.',
-                '- Now 1% critical / evasion rate per 2 points of DEX / AGI difference.',
+                '- Stats adjustment across the board (including raids), mainly increasing DEX / AGI values so they hold similar values as other stats.',
+                '- Now 1% critical / evasion rate per 2 points of DEX / AGI difference. (i.e. 200 to hit 100%)',
                 '- Esper boosts are adjusted accordingly, now their boosts are more spread out and even.',
                 '- Further finetuning might happen if balance is wonky...',
+                '- New jobs',
+                '- Lightning and Terra main skills changed to Mirror of Equity and Ruin respectively.',
             )),
             ('23rd February 2021', (
                 '- Changed how commands are parsed, please let me know if any commands are not working properly.',
@@ -842,11 +844,9 @@ class Engel:
             return 1
         else:
             return 0
-    def userregenall(self, now=None):
+    def userregenall(self):
         # hourly automatic regen for all
         # no return values
-        if now != None:
-            self.new_log('hourlyregen', datetime.strftime(now, mydtformat))
         for index, row in self.dfdict['User'].iterrows():
             u_level = self.calclevel(row['EXP'])
             u_hp = self.calcstats(index, stat='HP')['HP']
@@ -1261,7 +1261,7 @@ class Engel:
             desc_list.append(f"{self.dfdict['Skill'].loc[row['Skill'], 'Skill']}")
             job_list.append(f"**{row['Job']}**\n - {' | '.join(desc_list)}")
             job_count += 1
-            if job_count % 10 == 0:
+            if job_count % 12 == 0:
                 embed.add_field(name='-', value='\n'.join(job_list), inline=False)
                 job_list = []
         if len(job_list) > 0:
@@ -2820,6 +2820,10 @@ class Engelbert(commands.Cog):
         thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(hours=1)
         if now.minute == 0 or now > thres:
             engel.userregenall(now)
+            try:
+                engel.new_log('hourlyregen', datetime.strftime(now, mydtformat))
+            except gspread.exceptions.APIError as e:
+                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Hourly Regen Error: {e} ({datetime.strftime(datetime.now(), mydtformat)}).")
         df = engel.dfdict['User'][engel.dfdict['User']['TS_Dead'] != '']
         for userid, row in df.iterrows():
             thres = datetime.strptime(row['TS_Dead'], mydtformat) + timedelta(hours=engel.revivehours)
@@ -2834,7 +2838,7 @@ class Engelbert(commands.Cog):
             if return_val == 1:
                 await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
             else:
-                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @commands.command(aliases=['engelmaint'])
     async def engelbertmaint(self, ctx, *arg):
