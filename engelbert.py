@@ -2819,7 +2819,7 @@ class Engelbert(commands.Cog):
         df = engel.dfdict['Log'][engel.dfdict['Log']['Event'] == 'hourlyregen']
         thres = datetime.strptime(df.tail(1)['Timestamp'].tolist()[0], mydtformat) + timedelta(hours=1)
         if now.minute == 0 or now > thres:
-            engel.userregenall(now)
+            engel.userregenall()
             try:
                 engel.new_log('hourlyregen', datetime.strftime(now, mydtformat))
             except gspread.exceptions.APIError as e:
