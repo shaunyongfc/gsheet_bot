@@ -185,7 +185,8 @@ class WotvGeneral(commands.Cog):
                         if len(replystr) > 1800:
                             await ctx.send(replystr)
                             replystr = '(Cont.)'
-            await ctx.send(replystr)
+            if len(replystr) > 10:
+                await ctx.send(replystr)
 
     @commands.command(aliases=['rand', 'random', 'choice'])
     async def wotvrand(self, ctx, *arg):

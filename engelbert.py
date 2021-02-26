@@ -299,6 +299,7 @@ class Engel:
                 '- You can set item to be automatically consumed before each battle when your HP is low.'
                 '- Type `=char autoitem (item name)` (e.g. `=char autoitem potion`) to set item.',
                 '- Type `=char autoitem (number)` (e.g. `=char autoitem 70`) to adjust HP% threshold.',
+                '- Type `=char autoitem (number) (item name)` (e.g. `=char autoitem 30 phoenix`) to change both.'
                 '- Type `=char autoitem off` to turn off.',
             )),(
             'Gacha', (
@@ -349,12 +350,17 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- Trial/Tower: spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
+            '- Tower: Spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
+            '- Refine: Convert items of lower rarity into items of higher rarity. Need a new item from tower to perform the conversion.',
             '- Use of excess EXP (your EXP is still being tracked so not to worry).',
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
             '- (if we survive this far...) EX Base passives'
         )
         self.changelog = (
+            ('26th February 2021', (
+                '- New EX bases.',
+                '- You can now set your autoitem item and threshold in one line.'
+            )),
             ('24th February 2021', (
                 '- Stats adjustment across the board (including raids), mainly increasing DEX / AGI values so they hold similar values as other stats.',
                 '- Now 1% critical / evasion rate per 2 points of DEX / AGI difference. (i.e. 200 to hit 100%)',
@@ -934,7 +940,7 @@ class Engel:
                 self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
                 desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
                 if 'ex' not in userrow['Main']:
-                    desc_list.append(f"Change into unique job with `=char job main ex`.")
+                    desc_list.append(f"Change into unique job with `=char main ex`.")
             else:
                 self.dfdict['User'].loc[user.id, 'EX_Up'] = 0
                 desc_list.append(f"{user.name} base now changed to {base}.")
@@ -1925,29 +1931,33 @@ class Engel:
                 else:
                     return f"{user.name} auto LB is now set to {skill}."
         return f"This is {user.name} current setting."
-    def infoautoitem(self, user, skill):
+    def infoautoitem(self, user, skill=None, thres=None):
         # generate result embed of setting auto item
         userid = user.id
-        if isinstance(skill, int):
-            if self.dfdict['User'].loc[user.id, 'I_Thres'] != skill:
-                if skill < 1 or skill > 99:
+        replystr_list = []
+        if thres != None:
+            if self.dfdict['User'].loc[user.id, 'I_Thres'] != thres:
+                if thres < 1 or thres > 99:
                     return f"Please set a number between 1-99."
-                self.dfdict['User'].loc[user.id, 'I_Thres'] = skill
+                self.dfdict['User'].loc[user.id, 'I_Thres'] = thres
                 self.syncpend = 1
-                return f"{user.name} auto item HP threshold now set to {skill}%."
+                replystr_list.append(f"{user.name} auto item HP threshold now set to {thres}%.")
         elif skill == 'off' and self.dfdict['User'].loc[user.id, 'I_Auto'] != 'off':
             self.dfdict['User'].loc[user.id, 'I_Auto'] = 'off'
             self.syncpend = 1
             return f"{user.name} auto item is now turned off."
-        else:
+        if skill != None:
             skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
             if 'HP' not in self.dfdict['Skill'].loc[skillid, 'Stat'].split('/'):
                 return f"You must set an item that restores HP."
             if self.dfdict['User'].loc[user.id, 'I_Auto'] != skillid:
                 self.dfdict['User'].loc[user.id, 'I_Auto'] = skillid
                 self.syncpend = 1
-                return f"{user.name} auto item is now set to {skill}."
-        return f"This is {user.name} current setting."
+                replystr_list.append(f"{user.name} auto item is now set to {skill}.")
+        if len(replystr_list) == 0:
+            return f"This is {user.name} current setting."
+        else:
+            return '\n'.join(replystr_list)
     def infoitem(self, user, skill, num_times=1, target=None):
         # generate result embed of a item
         embed = discord.Embed()
@@ -2726,16 +2736,20 @@ class Engel:
                         # list of items
                         return self.listitem()
                     else:
+                        skill = None
+                        thres = None
                         if arg[argstart].lower() == 'off':
                             skill = 'off'
                         else:
                             if arg[argstart].isnumeric():
-                                return discord.Embed(description = self.infoautoitem(user, int(arg[argstart])))
-                            else:
+                                thres = int(arg[argstart])
+                                argstart += 1
+                                arglen -= 1
+                            if arglen > 0:
                                 skill = self.find_index(' '.join(arg[argstart:]), 'Item')
                                 if skill == 'NOTFOUND':
                                     return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                            return discord.Embed(description = self.infoautoitem(user, skill))
+                            return discord.Embed(description = self.infoautoitem(user, skill, thres))
                 elif argkw in ('inventory', 'inv'):
                     return self.infoinventory(user)
                 elif argkw == 'daily':

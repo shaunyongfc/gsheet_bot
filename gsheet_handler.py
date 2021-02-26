@@ -6,7 +6,7 @@ scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
 client = gspread.authorize(creds)
-myspreadsheet = client.open("Octopath WOTV")
+myspreadsheet = client.open("My WOTV")
 ramadaspreadsheet = client.open("Ramada Bot")
 
 class DfHandlerWotv():
