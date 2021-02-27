@@ -668,7 +668,7 @@ class WotvEsper(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=['magicite', 'esperexp', 'espermagicite'])
+    @commands.command(aliases=['magicite', 'magicites', 'esperexp', 'espermagicite'])
     async def wotvmagicite(self, ctx, *arg):
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         if len(arg) == 0:

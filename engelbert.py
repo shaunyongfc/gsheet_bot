@@ -37,6 +37,7 @@ class Engel:
         self.skillduration = 5
         self.attackcap = 20 # number of attacks
         self.gachacost  = 10
+        self.refinecost = 5
         # GACHA RATE
         self.gacha_rate = {
             'i1': 50,
@@ -110,6 +111,43 @@ class Engel:
                 'i2': 35
             },
         }
+        self.refine_rate = {
+            'i1': (100, 'i2', 50),
+            'i2': (30, 'i7', 1),
+            'i3': (30, 'i6', 1),
+            'i4': (4, 'i5', 1),
+            'i5': (2, 'i7', 1),
+            'i6': (2, 'i7', 1),
+            'i7': (2, 'i6', 1)
+        }
+        self.tower_tuples = {
+            4: (100, 50, 'Marilith', ('i7', 5), ('i8', 2),
+                ((10, 'i7', 3), (5, 'i7', 5), (3, 'i7', 5)),
+                ((3000, 'i7', 3), (1000, 'i7', 5), (100, 'i7', 5)), # arbitrary initial values
+                'Enemy has high DEX. Note your DEF/SPR.',
+                'https://caelum.s-ul.eu/esper/p5XM03y3.png'),
+            3: (80, 50, 'Ahriman', ('i6', 3), ('i8', 2),
+                ((10, 'i6', 3), (5, 'i6', 4), (3, 'i6', 4)),
+                ((2000, 'i6', 3), (1000, 'i6', 4), (100, 'i6', 4)), # arbitrary initial values
+                'Enemy has high AGI. Note your DEX.',
+                'https://caelum.s-ul.eu/esper/dZ3BeAWU.png'),
+            2: (60, 50, 'Behemoth', ('i7', 2), ('i8', 1),
+                ((10, 'i7', 2), (5, 'i7', 3), (3, 'i7', 3)),
+                ((1500, 'i7', 2), (800, 'i7', 3), (100, 'i7', 3)), # arbitrary initial values
+                'Enemy has high DEX/ATK/MAG. Survive and defeat it.',
+                'https://caelum.s-ul.eu/esper/S4EL3aLY.png'),
+            1: (40, 50, 'Iron Giant', ('i6', 2), ('i8', 1),
+                ((10, 'i6', 2), (5, 'i6', 3), (3, 'i6', 3)),
+                ((1000, 'i6', 2), (500, 'i6', 3), (100, 'i6', 3)), # arbitrary initial values
+                'Enemy has high HP/DEF/SPR. Have enough DPS to clear within turn limit.',
+                'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
+        }
+        self.tower_stats = {
+            4: (9000, (1800, 1800, 600, 600, 3000, 800)),
+            3: (7000, (1400, 1400, 500, 500, 700, 1000)),
+            2: (5000, (1400, 1400, 500, 500, 700, 500)),
+            1: (3000, (700, 700, 700, 700, 300, 300))
+        }
         self.sheettuples = (
             ('Base', 'Base'),
             ('Job', 'JobID'),
@@ -121,9 +159,9 @@ class Engel:
         )
         self.statlist = ('HP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
-        self.usernotfound = 'Choose a base first with `=char start (base name)`. Check `=char base for available bases.`.'
+        self.usernotfound = 'Choose a base first with `=char start (base name)`. Check `=char base` for available bases.'
         self.targeterror = 'User not found or did not start a character.'
-        self.defaultfooter = 'Now in beta v2. Check changelog for changes. Prone to adjustment/bugs...'
+        self.defaultfooter = 'Beta v3(?). Check `=char changelog` for changes. Prone to adjustment/bugs...'
         self.manual = dict()
         self.manual['character'] = ((
             'Description', (
@@ -308,6 +346,12 @@ class Engel:
                 '- Type `=char gacha` to gacha 10 times.',
                 '- Type `=char gacha (number)` (e.g. `=char gacha 7`) to gacha a number of times.',
                 '- Type `=char rate` to check gacha rate.',
+            )),(
+            'Refine', (
+                f"- Spend {self.refinecost} Arcanas to convert a quantity of items into another item type.",
+                '- Note that Arcanas themselves cannot be refined.',
+                '- Type `=char refine` to find list of available options.',
+                '- Type `=char refine (item name)` (e.g. `=char refine potion`) to refine Potions into Phoenix Downs.'
             ))
         )
         self.manual['raid'] = ((
@@ -337,6 +381,29 @@ class Engel:
                 f"- Group 3 levels will loop between 0 and {self.raidcap3}.",
             ))
         )
+        self.manual['tower'] = ((
+            'Description', (
+                'Tower is a series of floors that you can challenge for rewards.',
+                'Rewards are separated into first clear, repeat clear and achievement missions.',
+                'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
+            )),(
+            'Battle', (
+                '- For current floor bosses, they use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual).',
+                '- You only spend AP once to spawn each tower floor.',
+                '- Unlike usual battles, you are attacked first in tower.',
+                '- You can battle up to 4 phases with 5 turns each, in a total of 20 turns.',
+                '- Your HP is fully recovered in the beginning of each phase.',
+                '- You fail if your HP reaches 0 or cannot kill the floor boss within 20 turns.',
+                '- If you fail the tower battle stays active. You can challenge again without spending AP.',
+                '- However, you cannot start another floor until you give up.'
+            )),(
+            'Commands', (
+                '- Type `=char tower` to find list of available tower floor bosses.',
+                '- Type `=char tower (floor number)` (e.g. `=char tower 1`) to view the info of specific floor.',
+                '- Type `=char tower fight (floor number)` (e.g. `=char tower fight 1`) to fight the specific floor boss.',
+                '- Type `=char tower giveup` to give up an active tower battle.'
+            ))
+        )
         manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
             'Engelbert (beta v2) is an experimental project of Discord bot tamagotchi '
@@ -350,13 +417,17 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- Tower: Spend AP to spawn individual battle, beat them for rewards. Planning to have more complicated battle mechanics than raid.',
-            '- Refine: Convert items of lower rarity into items of higher rarity. Need a new item from tower to perform the conversion.',
+            '- Tower Expansion: Planning to have more complicated battle mechanics than raid.',
+            '- New espers to be unlocked through tower but higher upgrading cost.',
             '- Use of excess EXP (your EXP is still being tracked so not to worry).',
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
             '- (if we survive this far...) EX Base passives'
         )
         self.changelog = (
+            ('27th February 2021', (
+                '- Tower (`=charhelp tower`) - only basic floors for now. To add more in future...',
+                '- Refine (`=charhelp item`)'
+            )),
             ('26th February 2021', (
                 '- New EX bases.',
                 '- You can now set your autoitem item and threshold in one line.'
@@ -589,6 +660,7 @@ class Engel:
                 return dict()
             parsed_unlock = input.split('/')
             unlock_dict = dict()
+            # key = unlocked, value = upgrade level
             for unlock in parsed_unlock:
                 unlock_list = unlock.split(',')
                 unlock_dict[unlock_list[0]] = int(unlock_list[1])
@@ -597,6 +669,23 @@ class Engel:
             unlock_list = []
             for k, v in input.items():
                 unlock_list.append(f"{k},{v}")
+            return '/'.join(unlock_list)
+    def tower_parse(self, input, reverse=0):
+        # parse T_Record into dict
+        if reverse == 0:
+            if input == '':
+                return dict()
+            parsed_unlock = input.split('/')
+            unlock_dict = dict()
+            # key = cleared, value = [min turns, min damage]
+            for unlock in parsed_unlock:
+                unlock_list = unlock.split(',')
+                unlock_dict[int(unlock_list[0])] = [int(a) for a in unlock_list[1:]]
+            return unlock_dict
+        else:
+            unlock_list = []
+            for k, v in input.items():
+                unlock_list.append(f"{k},{v[0]},{v[1]}")
             return '/'.join(unlock_list)
     def calcupcost(self, up, unlockcost=None):
         # return dark matter / auracite upgradecost
@@ -642,9 +731,9 @@ class Engel:
                 return 1 + accuracy // 2
             else:
                 return 1 - accuracy // 2
-    def calcstats(self, userid, usertype='User', moddict=None, stat=None):
+    def calcstats(self, userid, usertype='U', moddict=None, stat=None):
         # returns dict of stats
-        if usertype == 'User':
+        if usertype == 'U':
             # calculate stats given user id
             userrow = self.dfdict['User'].loc[userid]
             userdict = dict()
@@ -690,7 +779,7 @@ class Engel:
                 for k, v in moddict.items():
                     userdict[k] = int(round(userdict[k] * v))
             return userdict
-        elif usertype == 'Raid':
+        elif usertype == 'R':
             # calculate raid stats given raid name
             raidrow = self.dfdict['Raid'].loc[userid]
             raiddict = dict()
@@ -708,6 +797,13 @@ class Engel:
                 for k, v in moddict.items():
                     raiddict[k] = int(round(raiddict[k] * v))
             return raiddict
+        elif usertype == 'T':
+            # calculate tower stats given tower floor
+            towerdict = {k: v for k, v in zip(self.statlist2, self.tower_stats[userid][1])}
+            if moddict != None:
+                for k, v in moddict.items():
+                    towerdict[k] = int(round(towerdict[k] * v))
+            return towerdict
     def calcdamage(self, attacker, defender, a_skilltup=None, d_skilltup=None, counter=0, raid=0):
         # calculate damage given attacker and defender
         # returns tuples to be parsed by other functions
@@ -749,7 +845,14 @@ class Engel:
         # get their status sheets
         attackdict = self.calcstats(attacker, moddict=a_moddict)
         if raid == 1:
-            defenddict = self.calcstats(defender, usertype='Raid', moddict=d_moddict)
+            defenddict = self.calcstats(defender, usertype='R', moddict=d_moddict)
+        elif raid == 2:
+            # tower
+            defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
+            if attackdict['DEF'] > attackdict['SPR']:
+                defenddict['MAG'] = 0
+            else:
+                defenddict['ATK'] = 0
         else:
             defenddict = self.calcstats(defender, moddict=d_moddict)
         # pick higher potential damage
@@ -972,16 +1075,13 @@ class Engel:
             'I_Thres': 50,
             'I_Auto': 'off',
             'LB_Auto': 'off',
-            'i1': 0,
-            'i2': 0,
-            'i3': 0,
             'i4': 10,
-            'i5': 0,
-            'i6': 0,
-            'i7': 0,
             'EX_Up': 0,
             'E_Up': 0,
-        } # to have inventory 0 added automatically
+        }
+        for index in self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item'].index:
+            if index not in new_user.keys():
+                new_user[index] = 0
         userrow = pd.Series(data=new_user.values(), index=new_user.keys(), name=user.id)
         self.dfdict['User'] = self.dfdict['User'].append(userrow).fillna('')
         desc_list.append(f"{user.name} registered with {base}.")
@@ -1027,7 +1127,7 @@ class Engel:
                     self.dfdict['Raid'].loc[raid, 'Level'] = raidrow['Level'] + 1
                 else:
                     self.dfdict['Raid'].loc[raid, 'Level'] = 0
-            self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstats(raid, usertype='Raid', stat='HP')['HP']
+            self.dfdict['Raid'].loc[raid, 'HP'] = self.calcstats(raid, usertype='R', stat='HP')['HP']
             return item_drop
         else:
             return 0
@@ -1109,13 +1209,21 @@ class Engel:
                 raid_hit = raid_hitrate > random.random()
             raid_kill = self.userdamage(user, raid_damage * raid_hit)
             return (1, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain, lb_use, item_use)
+    def towergiveup(self, user):
+        userrow = self.dfdict['User'].loc[user.id]
+        if userrow['Tower'] != '':
+            return f"{user.name} does not have an active tower challenge."
+        else:
+            self.dfdict['User'].loc[user.id, 'Tower'] = ''
+            self.syncpend = 1
+            return f"{user.name} gave up the active tower challenge."
     ############################
     # discord embed generators #
     ############################
     def helpmanual(self, kw=''):
         # generate help manual
         embed = discord.Embed()
-        kw = kw.lower().rstrip('s').replace('char', 'character').replace('exbase', 'base')
+        kw = kw.lower().rstrip('s').replace('char', 'character').replace('exbase', 'base').replace('refine', 'item')
         if kw in self.manual.keys():
             embed.title = f"{kw.title()} Help"
             for field_name, field_value in self.manual[kw]:
@@ -1303,6 +1411,16 @@ class Engel:
         if len(skill_list) > 0:
             embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
         return embed
+    def listrefine(self):
+        # generate embed of list of available items
+        embed = discord.Embed()
+        embed.title = 'List of Refine Options'
+        embed.description = f"`=charhelp item` for more info. Note that refining costs {self.refinecost} Arcanas."
+        for refine_mat, refine_tup in self.refine_rate.items():
+            matname = self.dfdict['Skill'].loc[refine_mat, 'Skill']
+            refinename = self.dfdict['Skill'].loc[refine_tup[1], 'Skill']
+            embed.add_field(name=matname, value=f"Convert {refine_tup[0]} into {refine_tup[2]} {refinename}(s).", inline=False)
+        return embed
     def listitem(self):
         # generate embed of list of available items
         embed = discord.Embed()
@@ -1316,6 +1434,8 @@ class Engel:
                 skill_list.append(f"**{row['Skill']}**\n - Valuable rare item related to EX bases.")
             elif index == 'i7':
                 skill_list.append(f"**{row['Skill']}**\n - Valuable rare item related to espers.")
+            elif index == 'i8':
+                skill_list.append(f"**{row['Skill']}**\n - Material required for refining items.")
             else:
                 skill_list.append(f"**{row['Skill']}**\n - Restores {row['Main'] * 100:.0f}% {row['Stat']}.")
             skill_count += 1
@@ -1358,6 +1478,241 @@ class Engel:
                 esper_list = []
         if len(esper_list) > 0:
             embed.add_field(name='-', value='\n'.join(esper_list))
+        return embed
+    def listtower(self, user):
+        # generate embed of list of available tower floors
+        embed = discord.Embed()
+        embed.title = f"Tower ({user.name})"
+        embed.description = '`=charhelp tower` for more info.'
+        userrow = self.dfdict['User'].loc[user.id]
+        recorddict = self.tower_parse(userrow['T_Record'])
+        if len(recorddict) == 0:
+            next = 1
+        else:
+            next = max(recorddict.keys()) + 1
+        for floor, tower_tup in self.tower_tuples.items():
+            if floor > next:
+                continue
+            field_name = f"{floor} - {tower_tup[2]}"
+            if floor < next:
+                field_name += ' :star:'
+                if recorddict[floor][0] < tower_tup[5][-1][0]:
+                    field_name += ':star:'
+                if recorddict[floor][1] < tower_tup[6][-1][0]:
+                    field_name += ':star:'
+            if floor == userrow['Tower']:
+                field_name = ':crossed_swords: ' + field_name
+            field_list = []
+            field_list.append(f"Level: {tower_tup[0]} | AP: {tower_tup[1]}")
+            embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+        return embed
+    def infotower(self, user, floor):
+        # generate info embed of a tower floor
+        embed = discord.Embed()
+        tower_tup = self.tower_tuples[floor]
+        embed.title = f"{floor} - {tower_tup[2]} ({user.name})"
+        desc_list = []
+        userrow = self.dfdict['User'].loc[user.id]
+        recorddict = self.tower_parse(userrow['T_Record'])
+        if len(recorddict) == 0:
+            next = 1
+        else:
+            next = max(recorddict.keys()) + 1
+        if floor > next:
+            desc_list.append(f"You cannot challenge this floor yet.")
+        elif floor == next:
+            desc_list.append(f"This is your next floor.")
+        else:
+            desc_list.append(f"You cleared this floor.")
+        desc_list.append(f"Level: {tower_tup[0]} | AP: {tower_tup[1]}")
+        item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
+        desc_list.append(f"First Clear: {tower_tup[3][1]} {item}(s)")
+        item = self.dfdict['Skill'].loc[tower_tup[4][0], 'Skill']
+        desc_list.append(f"Repeat Clear: {tower_tup[4][1]} {item}(s)")
+        desc_list.append(f"Hint: {tower_tup[7]}")
+        embed.description = '\n'.join(desc_list)
+        # stats where available
+        if floor in self.tower_stats.keys():
+            towerdict = self.calcstats(floor, usertype='T')
+            field_list = [f"HP: {self.tower_stats[floor][0]}"]
+            for statname, statvalue in towerdict.items():
+                field_list.append(f"{statname}: {statvalue}")
+            embed.add_field(name='Stats', value='\n'.join(field_list))
+        field_list = []
+        # turn taken missions
+        for field_tup in tower_tup[5]:
+            item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+            field_str = f"{field_tup[0]} T: {field_tup[2]} {item}(s)"
+            if floor in recorddict.keys():
+                if recorddict[floor][0] <= field_tup[0]:
+                    field_str += ' :star:'
+            field_list.append(field_str)
+        embed.add_field(name='Turn Rewards', value='\n'.join(field_list))
+        field_list = []
+        # damage taken missions
+        for field_tup in tower_tup[6]:
+            item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+            field_str = f"{field_tup[0]} HP: {field_tup[2]} {item}(s)"
+            if floor in recorddict.keys():
+                if recorddict[floor][0] <= field_tup[0]:
+                    field_str += ' :star:'
+            field_list.append(field_str)
+        embed.add_field(name='Damage Rewards', value='\n'.join(field_list))
+        embed.set_thumbnail(url=tower_tup[8])
+        return embed
+    def infochallengetower(self, user, start=None):
+        # generate info embed of tower challenge
+        embed = discord.Embed()
+        userrow = self.dfdict['User'].loc[user.id]
+        recorddict = self.tower_parse(userrow['T_Record'])
+        if len(recorddict) == 0:
+            next = 1
+        else:
+            next = max(recorddict.keys()) + 1
+        if start == None and userrow['Tower'] == '':
+            embed.description = 'Choose a floor to start first. (`=char tower`)'
+            return embed
+        elif (start == None or start == userrow['Tower']) and  userrow['Tower'] != '':
+            floor = userrow['Tower']
+            tower_tup = self.tower_tuples[floor]
+        elif userrow['Tower'] != '':
+            embed.description = 'You already started another floor.'
+            return embed
+        else:
+            floor = start
+            tower_tup = self.tower_tuples[floor]
+            if floor > next:
+                embed.description = f"You cannot challenge this floor yet."
+                return embed
+            elif userrow['AP'] < tower_tup[1]:
+                embed.description = f"You need {tower_tup[1]} AP to challenge this floor."
+                return embed
+            self.dfdict['User'].loc[user.id, 'AP'] = userrow['AP'] - tower_tup[1]
+            self.dfdict['User'].loc[user.id, 'Tower'] = floor
+            self.syncpend = 1
+        embed.title = f"{user.name} VS {tower_tup[2]}"
+        desc_list = []
+        # calculate damage and hit rate
+        if userrow['LB_Auto'] != '':
+            if userrow['LB_Auto'] == 'ex':
+                skillrow = self.dfdict['Skill'].loc[userrow['Main']]
+            else:
+                skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
+            if skillrow.name == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
+                potency = 'Main'
+            else:
+                potency = 'Sub'
+            desc_list.append(f"{user.name} casted {skillrow['Skill']}.")
+            a_skilltup = (skillrow.name, potency)
+        else:
+            a_skilltup = None
+        damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(user.id, floor, a_skilltup=a_skilltup, raid=2, counter=1)
+        desc_list.append(f"*{tower_tup[2]} has {min(counter_hitrate, 1) * 100:.0f}% of doing {counter_damage} damage.*")
+        desc_list.append(f"*{tower_tup[2]} has {max(counter_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        desc_list.append(f"*{user.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
+        desc_list.append(f"*{user.name} has {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
+        embed.description = '\n'.join(desc_list)
+        # get their HP
+        userhp = self.calcstats(user.id, stat='HP')['HP']
+        towerhp = self.tower_stats[floor][0]
+        turn_taken = 0
+        damage_taken = 0
+        # 4 phases with 5 battles each
+        for phase in range(1, 5, 1):
+            userhp_current = userhp
+            field_name = f"Phase {phase}"
+            field_list = [f"{tower_tup[2]} HP `{towerhp}`"]
+            for _ in range(6):
+                turn_taken += 1
+                # tower boss attacks first
+                if counter_hitrate > 1:
+                    counter_hit = 1 + ((counter_hitrate - 1) > random.random())
+                else:
+                    counter_hit = counter_hitrate > random.random()
+                tower_damage = counter_damage * counter_hit
+                if counter_hit == 2:
+                    field_list.append(f"{tower_tup[2]} landed a critical hit with {tower_damage} damage.")
+                elif counter_hit == 1:
+                    field_list.append(f"{tower_tup[2]} successfully attacked with {tower_damage} damage.")
+                else:
+                    field_list.append(f"{tower_tup[2]} missed.")
+                userhp_current = max(userhp_current - tower_damage, 0)
+                damage_taken += tower_damage
+                if userhp_current == 0:
+                    break
+                # user's turn
+                if hitrate > 1:
+                    hit = 1 + ((hitrate - 1) > random.random())
+                else:
+                    hit = hitrate > random.random()
+                user_damage = damage * hit
+                if hit == 2:
+                    field_list.append(f"You landed a critical hit with {user_damage} damage.")
+                elif hit == 1:
+                    field_list.append(f"You successfully attacked with {user_damage} damage.")
+                else:
+                    field_list.append(f"You missed.")
+                towerhp = max(towerhp - user_damage, 0)
+                if towerhp == 0:
+                    break
+            if userhp_current == 0 or towerhp == 0:
+                break
+            embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+        if turn_taken < 20:
+            embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+        field_name = 'Result'
+        field_list = []
+        # Check results
+        if towerhp > 0:
+            field_list.append(f"You failed.")
+            if userhp_current == 0:
+                field_list.append(f"You are KO-ed.")
+            else:
+                field_list.append(f"Turn limit is up.")
+        else:
+            field_list.append('You won.')
+            self.dfdict['User'].loc[user.id, 'Tower'] = ''
+            if floor == next:
+                recorddict[floor] = (turn_taken, damage_taken)
+                self.dfdict['User'].loc[user.id, tower_tup[3][0]] = userrow[tower_tup[3][0]] + tower_tup[3][1]
+                item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
+                field_list.append(f"You obtained {tower_tup[3][1]} {item}(s).")
+                # new clear
+                for field_tup in tower_tup[5]:
+                    if turn_taken <= field_tup[0]:
+                        item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+                        self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                        field_list.append(f"You cleared within {field_tup[0]} turns. You obtained {field_tup[2]} {item}(s).")
+                for field_tup in tower_tup[6]:
+                    if damage_taken <= field_tup[0]:
+                        item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+                        self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                        field_list.append(f"You took less than {field_tup[0]} damage. You obtained {field_tup[2]} {item}(s).")
+            else:
+                best_turn_taken, best_damage_taken = recorddict[floor]
+                self.dfdict['User'].loc[user.id, tower_tup[4][0]] = userrow[tower_tup[4][0]] + tower_tup[4][1]
+                item = self.dfdict['Skill'].loc[tower_tup[4][0], 'Skill']
+                field_list.append(f"You obtained {tower_tup[4][1]} {item}(s).")
+                # old clear, check if best results
+                if turn_taken < best_turn_taken:
+                    for field_tup in tower_tup[5]:
+                        if turn_taken <= field_tup[0] < best_turn_taken:
+                            item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+                            self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                            field_list.append(f"You cleared within {field_tup[0]} turns. You obtained {field_tup[2]} {item}(s).")
+                    best_turn_taken = turn_taken
+                if damage_taken < best_damage_taken:
+                    for field_tup in tower_tup[6]:
+                        if damage_taken <= field_tup[0] < best_damage_taken:
+                            item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
+                            self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                            field_list.append(f"You took less than {field_tup[0]} damage. You obtained {field_tup[2]} {item}(s).")
+                    best_damage_taken = damage_taken
+                    recorddict[floor] = (best_turn_taken, best_damage_taken)
+            self.dfdict['User'].loc[user.id, 'T_Record'] = self.tower_parse(recorddict, reverse=1)
+            self.syncpend = 1
+        embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+        embed.colour = self.colours[self.dfdict['Base'].loc[userrow['Base'], 'Element'].lower()]
         return embed
     def infojobchange(self, user, jobchange_dict):
         # generate info embed of job change
@@ -1762,7 +2117,7 @@ class Engel:
         row = self.dfdict['Raid'].loc[raid]
         embed.title = raid
         desc_list = []
-        raiddict = self.calcstats(row.name, usertype='Raid', stat='ALL')
+        raiddict = self.calcstats(row.name, usertype='R', stat='ALL')
         desc_list.append(f"Level: {row['Level']}")
         desc_list.append(f"HP: {row['HP']}/{raiddict['HP']}")
         embed.description = '\n'.join(desc_list)
@@ -1784,7 +2139,7 @@ class Engel:
         attackhp_init = attackhp
         defendhp = self.calcstats(defender.id, stat='HP')['HP']
         defendhp_init = defendhp
-        # pick higher potential damage
+        # calculate damage and hit rate
         damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(attacker.id, defender.id, counter=1)
         desc_list = []
         desc_list.append(f"*{attacker.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
@@ -1958,8 +2313,44 @@ class Engel:
             return f"This is {user.name} current setting."
         else:
             return '\n'.join(replystr_list)
+    def inforefine(self, user, skill):
+        # generate result embed of refining an item
+        embed = discord.Embed()
+        userrow = self.dfdict['User'].loc[user.id]
+        skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
+        if skillid == 'i8':
+            embed.description = f"Arcana cannot be refined."
+            return embed
+        skillrow = self.dfdict['Skill'].loc[skillid]
+        refine_tup = self.refine_rate[skillid]
+        refinerow = self.dfdict['Skill'].loc[refine_tup[1]]
+        embed.title = f"{user.name} - Refining {skill} into {refinerow['Skill']}"
+        # detect amount
+        if userrow['i8'] < self.refinecost:
+            embed.description = f"You do not have enough Arcanas. You need {self.refinecost} Arcanas to refine items."
+            return embed
+        elif userrow[skillid] < refine_tup[0]:
+            embed.description = f"You do not have enough {skill}s. You need {refine_tup[0]} {skill}s to refine."
+            return embed
+        # perform the action
+        desc_list = []
+        self.dfdict['User'].loc[user.id, skillid] = userrow[skillid] - refine_tup[0]
+        self.dfdict['User'].loc[user.id, 'i8'] = userrow['i8'] - self.refinecost
+        desc_list.append(f"You consumed {refine_tup[0]} {skill}s and {self.refinecost} Arcanas.")
+        self.dfdict['User'].loc[user.id, refine_tup[1]] = userrow[refine_tup[1]] + refine_tup[2]
+        desc_list.append(f"You gained {refine_tup[2]} {refinerow['Skill']}(s).")
+        embed.description = '\n'.join(desc_list)
+        userrow = self.dfdict['User'].loc[user.id]
+        field_list = (
+            f"{skill} - {userrow[skillid]}",
+            f"{refinerow['Skill']} - {userrow[refine_tup[1]]}",
+            f"Arcana - {userrow['i8']}"
+        )
+        embed.add_field(name='Result', value='\n'.join(field_list))
+        self.syncpend = 1
+        return embed
     def infoitem(self, user, skill, num_times=1, target=None):
-        # generate result embed of a item
+        # generate result embed of using a item
         embed = discord.Embed()
         if isinstance(user, int):
             userid = user
@@ -1970,10 +2361,10 @@ class Engel:
             embed.title = f"{user.name} - {skill}"
         userrow = self.dfdict['User'].loc[userid]
         skillrow = self.dfdict['Skill'].loc[skillid]
-        desc_list = []
         if userrow[skillid] == 0:
             embed.description = f"You ran out of {skillrow['Skill']}."
             return embed
+        desc_list = []
         num_times = min(userrow[skillid], num_times)
         # check target
         if target == None:
@@ -2544,6 +2935,8 @@ class Engel:
                             jobchangedict_keys = ('Sub1', 'Sub2')
                         elif argop == 4:
                             jobchangedict_keys = ('Sub2',)
+                        elif argop == 1:
+                            jobchangedict_keys = ('Main',)
                         else:
                             jobchangedict_keys = ('Sub1',)
                         for i, jobchangedict_key in enumerate(jobchangedict_keys):
@@ -2628,8 +3021,20 @@ class Engel:
                                 targeterror = 1
                         except commands.BadArgument:
                             targeterror = 1
+                    # carry out operation
                     if not targeterror:
                         return self.infoitem(user, skill, target=target, num_times=num_times)
+            elif argkw == 'refine':
+                if arglen == 0:
+                    # list of refine options
+                    return self.listrefine()
+                elif userfound:
+                    # find item
+                    skill = self.find_index(' '.join(arg[argstart:]), 'Item')
+                    if skill == 'NOTFOUND':
+                        return discord.Embed(description = 'Item not found. Try checking `=char item`.')
+                    # carry out operation
+                    return self.inforefine(user, skill)
             elif argkw == 'esper':
                 if arglen == 0:
                     # list of espers
@@ -2717,7 +3122,32 @@ class Engel:
                 return self.ratemanual()
             ## commands all need userid
             elif userfound:
-                if argkw in ('autolbskill', 'autolb'):
+                if argkw == 'tower':
+                    if arglen == 0:
+                        # list of tower floors
+                        return self.listtower(user)
+                    else:
+                        if arg[argstart].lower() in ('giveup', 'give', 'surrender'):
+                            return self.towergiveup(user)
+                        elif arg[argstart].lower() in ('start', 'challenge', 'fight', 'attack'):
+                            argop = 1
+                            argstart += 1
+                            arglen -= 1
+                        else:
+                            argop = 0
+                        if arglen == 0 and argop == 1:
+                            floor = None
+                        else:
+                            if not arg[argstart].isnumeric():
+                                return discord.Embed(description = 'Please give a floor number.')
+                            floor = int(arg[argstart])
+                            if floor not in self.tower_tuples.keys():
+                                return discord.Embed(description = 'Tower floor not found. Try `=char tower`')
+                        if argop == 1:
+                            return self.infochallengetower(user, start=floor)
+                        else:
+                            return self.infotower(user, floor)
+                elif argkw in ('autolbskill', 'autolb'):
                     # autolb setting
                     if arglen == 0:
                         skill = 'ex'
