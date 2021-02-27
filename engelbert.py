@@ -388,6 +388,8 @@ class Engel:
                 'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
             )),(
             'Battle', (
+                '- Your HP in tower is independent of your usual HP. You start from max HP for each fight.',
+                '- Your auto skill will apply for the entire fight. Your usual LB gauge is not affected.',
                 '- For current floor bosses, they use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual).',
                 '- You only spend AP once to spawn each tower floor.',
                 '- Unlike usual battles, you are attacked first in tower.',
@@ -1681,12 +1683,12 @@ class Engel:
                 for field_tup in tower_tup[5]:
                     if turn_taken <= field_tup[0]:
                         item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
-                        self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                        self.dfdict['User'].loc[user.id, field_tup[1]] = self.dfdict['User'].loc[user.id, field_tup[1]] + field_tup[2]
                         field_list.append(f"You cleared within {field_tup[0]} turns. You obtained {field_tup[2]} {item}(s).")
                 for field_tup in tower_tup[6]:
                     if damage_taken <= field_tup[0]:
                         item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
-                        self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                        self.dfdict['User'].loc[user.id, field_tup[1]] = self.dfdict['User'].loc[user.id, field_tup[1]] + field_tup[2]
                         field_list.append(f"You took less than {field_tup[0]} damage. You obtained {field_tup[2]} {item}(s).")
             else:
                 best_turn_taken, best_damage_taken = recorddict[floor]
@@ -1698,14 +1700,14 @@ class Engel:
                     for field_tup in tower_tup[5]:
                         if turn_taken <= field_tup[0] < best_turn_taken:
                             item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
-                            self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                            self.dfdict['User'].loc[user.id, field_tup[1]] = self.dfdict['User'].loc[user.id, field_tup[1]] + field_tup[2]
                             field_list.append(f"You cleared within {field_tup[0]} turns. You obtained {field_tup[2]} {item}(s).")
                     best_turn_taken = turn_taken
                 if damage_taken < best_damage_taken:
                     for field_tup in tower_tup[6]:
                         if damage_taken <= field_tup[0] < best_damage_taken:
                             item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
-                            self.dfdict['User'].loc[user.id, field_tup[1]] = userrow[field_tup[1]] + field_tup[2]
+                            self.dfdict['User'].loc[user.id, field_tup[1]] = self.dfdict['User'].loc[user.id, field_tup[1]] + field_tup[2]
                             field_list.append(f"You took less than {field_tup[0]} damage. You obtained {field_tup[2]} {item}(s).")
                     best_damage_taken = damage_taken
                     recorddict[floor] = (best_turn_taken, best_damage_taken)
