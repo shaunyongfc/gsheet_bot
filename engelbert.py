@@ -1597,7 +1597,7 @@ class Engel:
         embed.title = f"{user.name} VS {tower_tup[2]}"
         desc_list = []
         # calculate damage and hit rate
-        if userrow['LB_Auto'] != '':
+        if userrow['LB_Auto'] != 'off':
             if userrow['LB_Auto'] == 'ex':
                 skillrow = self.dfdict['Skill'].loc[userrow['Main']]
             else:
