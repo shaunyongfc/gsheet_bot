@@ -1498,9 +1498,9 @@ class Engel:
             field_name = f"{floor} - {tower_tup[2]}"
             if floor < next:
                 field_name += ' :star:'
-                if recorddict[floor][0] < tower_tup[5][-1][0]:
+                if recorddict[floor][0] <= tower_tup[5][-1][0]:
                     field_name += ':star:'
-                if recorddict[floor][1] < tower_tup[6][-1][0]:
+                if recorddict[floor][1] <= tower_tup[6][-1][0]:
                     field_name += ':star:'
             if floor == userrow['Tower']:
                 field_name = ':crossed_swords: ' + field_name
@@ -1556,7 +1556,7 @@ class Engel:
             item = self.dfdict['Skill'].loc[field_tup[1], 'Skill']
             field_str = f"{field_tup[0]} HP: {field_tup[2]} {item}(s)"
             if floor in recorddict.keys():
-                if recorddict[floor][0] <= field_tup[0]:
+                if recorddict[floor][1] <= field_tup[0]:
                     field_str += ' :star:'
             field_list.append(field_str)
         embed.add_field(name='Damage Rewards', value='\n'.join(field_list))
@@ -1710,7 +1710,7 @@ class Engel:
                             self.dfdict['User'].loc[user.id, field_tup[1]] = self.dfdict['User'].loc[user.id, field_tup[1]] + field_tup[2]
                             field_list.append(f"You took less than {field_tup[0]} damage. You obtained {field_tup[2]} {item}(s).")
                     best_damage_taken = damage_taken
-                    recorddict[floor] = (best_turn_taken, best_damage_taken)
+                recorddict[floor] = (best_turn_taken, best_damage_taken)
             self.dfdict['User'].loc[user.id, 'T_Record'] = self.tower_parse(recorddict, reverse=1)
             self.syncpend = 1
         embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
