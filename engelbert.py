@@ -390,6 +390,7 @@ class Engel:
             'Battle', (
                 '- Your HP in tower is independent of your usual HP. You start from max HP for each fight.',
                 '- Your auto skill will apply for the entire fight. Your usual LB gauge is not affected.',
+                '- Items cannot be used in tower.',
                 '- For current floor bosses, they use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual).',
                 '- You only spend AP once to spawn each tower floor.',
                 '- Unlike usual battles, you are attacked first in tower.',
@@ -3130,7 +3131,7 @@ class Engel:
                         return self.listtower(user)
                     else:
                         if arg[argstart].lower() in ('giveup', 'give', 'surrender'):
-                            return self.towergiveup(user)
+                            return discord.Embed(description = self.towergiveup(user))
                         elif arg[argstart].lower() in ('start', 'challenge', 'fight', 'attack'):
                             argop = 1
                             argstart += 1
