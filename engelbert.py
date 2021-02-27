@@ -1214,7 +1214,7 @@ class Engel:
             return (1, damage, hitrate, raid_damage, raid_hitrate, hit, kill, raid_hit, raid_kill, exp_gain, lb_use, item_use)
     def towergiveup(self, user):
         userrow = self.dfdict['User'].loc[user.id]
-        if userrow['Tower'] != '':
+        if userrow['Tower'] == '':
             return f"{user.name} does not have an active tower challenge."
         else:
             self.dfdict['User'].loc[user.id, 'Tower'] = ''
@@ -1591,6 +1591,7 @@ class Engel:
                 embed.description = f"You need {tower_tup[1]} AP to challenge this floor."
                 return embed
             self.dfdict['User'].loc[user.id, 'AP'] = userrow['AP'] - tower_tup[1]
+            self.dfdict['User'].loc[user.id, 'Gil'] = userrow['Gil'] + tower_tup[1]
             self.dfdict['User'].loc[user.id, 'Tower'] = floor
             self.syncpend = 1
         embed.title = f"{user.name} VS {tower_tup[2]}"
