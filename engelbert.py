@@ -26,12 +26,12 @@ class Engel:
         self.levelcap = 99
         self.upgradecap = 10
         self.unlockcost = 5
-        self.raidcap = 149
+        self.raidcap = 159
         self.raidcap2 = 99
         self.raidcap3 = 49
         self.revivehours = 3
-        self.cdjob = 6
-        self.cdbase = 12
+        self.cdjob = 1
+        self.cdbase = 4
         self.skill_apcost = 5
         self.skill_hpcost = 0.2 # % HP cost
         self.skillduration = 5
@@ -280,7 +280,7 @@ class Engel:
                 'Espers are stat boosts traded using Auracites.',
                 'The boosts all scale on one stat different to each esper.',
                 'After upgrading the espers with Auracites, the boosts will become more powerful.',
-                'The scaled stat might be decreased at first but will become boosts with enough upgrades.',
+                'The scaled stat might be decreased at first but may become boosts with enough upgrades.',
                 f"Max upgrade is {self.upgradecap}."
             )),(
             'Commands', (
@@ -414,13 +414,14 @@ class Engel:
         self.manual['tower'] = ((
             'Description', (
                 'Tower is a series of floors that you can challenge for rewards.',
+                'You need to clear in sequence, i.e. cannot challenge 3 if you have not cleared 2 yet.'
                 f"Currently up to floor {max(self.tower_tuples.keys())}.",
                 'Rewards are separated into first clear, repeat clear and achievement missions.',
                 'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
             )),(
             'Battle', (
                 '- Your HP in tower is independent of your usual HP. You start from max HP for each fight.',
-                '- Your auto skill will apply for the entire fight. Your usual LB gauge is not affected.',
+                '- Your auto skill will apply for the entire fight. Your usual LB gauge and current status are not used.',
                 '- Items cannot be used in tower.',
                 '- Floor bosses use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual) unless stated otherwise.',
                 '- You only spend AP once to spawn each tower floor.',
@@ -440,10 +441,9 @@ class Engel:
         )
         manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
-            'Engelbert (beta v2) is an experimental project of Discord bot tamagotchi '
-            '(digital pet / avatar / character). It is under constant development so things '
-            'may be subject to change. Have to see if free hosting service can '
-            'handle the frequency of data update too... Feel free to drop some feedback!\n'
+            'Engelbert (v3) is an experimental project of Discord bot tamagotchi '
+            '(digital pet / avatar / character). It is still under constant development so things '
+            'may be subject to change. Feel free to drop some feedback!\n'
             '- Type `=char changelog` for recent changes.\n'
             '- Type `=char futureplan` for tentative future plans.\n'
             '- For more in-depth info of the following, try:\n' +
@@ -457,6 +457,10 @@ class Engel:
         )
         self.changelog = (
             ('1st March 2021', (
+                '- Base change cooldown changed to 4 hours. Main job change cooldown reduced to 1 hour.',
+                '- Raid level cap raised to 159. Level separators will be adjusted in a future date.',
+            )),
+            ('28th February 2021', (
                 '- Base change cooldown halved to 12 hours. Main job change cooldown halved to 6 hours.',
                 '- Tower expansion with new espers unlocked with tower.',
                 '- Tower battle turns were bugged to be 24 instead of 20... Fixed.'
@@ -1526,7 +1530,7 @@ class Engel:
         # generate embed of list of available tower floors
         embed = discord.Embed()
         embed.title = f"Tower ({user.name})"
-        embed.description = '`=charhelp tower` for more info.'
+        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}."
         userrow = self.dfdict['User'].loc[user.id]
         recorddict = self.tower_parse(userrow['T_Record'])
         if len(recorddict) == 0:
@@ -1648,7 +1652,7 @@ class Engel:
             desc_list.append(f"{tower_tup[2]} casted {self.dfdict['Skill'].loc[d_skilltup[0], 'Skill']}.")
         elif floor == 7:
             d_skilltup = None
-            desc_list.append(f"{tower_tup[2]} casted Invincible Moon. Now {tower_tup[2]} is immune to debuffs.")
+            desc_list.append(f"{tower_tup[2]} casted Invincible Moon.")
         else:
             d_skilltup = None
         # calculate damage and hit rate

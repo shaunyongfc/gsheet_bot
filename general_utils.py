@@ -1,4 +1,5 @@
 import discord, re
+from datetime import datetime
 
 def logs_embed(msg):
     # Generate embed for command logging
@@ -8,7 +9,7 @@ def logs_embed(msg):
         embed = discord.Embed(title= f"{msg.guild} | {msg.channel}")
     embed.add_field(name='Content', value=msg.content)
     embed.add_field(name='Author', value=msg.author)
-    embed.add_field(name='Time', value=msg.created_at)
+    embed.add_field(name='Time', value=datetime.strftime(datetime.now(), '%Y/%m/%d %H:%M'))
     return embed
 
 class GeneralUtils():
