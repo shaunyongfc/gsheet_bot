@@ -30,8 +30,8 @@ class Engel:
         self.raidcap2 = 99
         self.raidcap3 = 49
         self.revivehours = 3
-        self.cdjob = 12
-        self.cdbase = 24
+        self.cdjob = 6
+        self.cdbase = 12
         self.skill_apcost = 5
         self.skill_hpcost = 0.2 # % HP cost
         self.skillduration = 5
@@ -121,28 +121,58 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
+            9: (120, 50, 'Magic Pot', ('i6', 5), ('i8', 3),
+                ((5, 'i6', 5), (5, 'i6', 5), (5, 'i6', 5)),
+                ((5000, 'i6', 5), (3000, 'i6', 5), (500, 'i6', 10)),
+                'Endure bombardment of Magic Pot and it will flee after Phase 1.',
+                'https://caelum.s-ul.eu/AIarVqAN.png'),
+            8: (120, 50, 'Tonberry', ('e14', 0), ('i8', 3),
+                ((10, 'i7', 4), (5, 'i7', 5), (3, 'i7', 6)),
+                ((5000, 'i7', 4), (3000, 'i7', 5), (100, 'i7', 6)),
+                'Tonberry reduces your DEF and AGI to 0 but will not attack in Phase 1. Kill quickly.',
+                'https://caelum.s-ul.eu/esper/id37FPgn.png'),
+            7: (120, 50, 'Fenrir', ('e11', 0), ('i8', 3),
+                ((10, 'i7', 4), (5, 'i7', 5), (3, 'i7', 6)),
+                ((5000, 'i7', 4), (3000, 'i7', 5), (1000, 'i7', 6)),
+                'Fenrir is immune to debuffs. Try buffing your own stats.',
+                'https://caelum.s-ul.eu/esper/g3Os0zDz.png'),
+            6: (120, 50, 'Alexander', ('e13', 0), ('i8', 3),
+                ((10, 'i7', 4), (5, 'i7', 5), (3, 'i7', 6)),
+                ((2000, 'i7', 4), (1000, 'i7', 5), (100, 'i7', 6)),
+                'Alexander has high DEF/SPR. Maybe you can lower them?',
+                'https://caelum.s-ul.eu/mR0vPG2a.png'),
+            5: (120, 50, 'Diabolos', ('e12', 0), ('i8', 3),
+                ((10, 'i7', 4), (5, 'i7', 5), (3, 'i7', 6)),
+                ((5000, 'i7', 4), (3000, 'i7', 5), (1000, 'i7', 6)),
+                'Diabolos reduces your SPR to 0. Try to raise AGI to dodge it.',
+                'https://caelum.s-ul.eu/esper/kn082MLW.png'),
             4: (100, 50, 'Marilith', ('i7', 5), ('i8', 2),
                 ((10, 'i7', 3), (5, 'i7', 5), (3, 'i7', 5)),
-                ((3000, 'i7', 3), (1000, 'i7', 5), (100, 'i7', 5)), # arbitrary initial values
+                ((3000, 'i7', 3), (1000, 'i7', 5), (100, 'i7', 5)),
                 'Enemy has high DEX. Note your DEF/SPR.',
                 'https://caelum.s-ul.eu/esper/p5XM03y3.png'),
             3: (80, 50, 'Ahriman', ('i6', 3), ('i8', 2),
                 ((10, 'i6', 3), (5, 'i6', 4), (3, 'i6', 4)),
-                ((2000, 'i6', 3), (1000, 'i6', 4), (100, 'i6', 4)), # arbitrary initial values
+                ((2000, 'i6', 3), (1000, 'i6', 4), (100, 'i6', 4)),
                 'Enemy has high AGI. Note your DEX.',
                 'https://caelum.s-ul.eu/esper/dZ3BeAWU.png'),
             2: (60, 50, 'Behemoth', ('i7', 2), ('i8', 1),
                 ((10, 'i7', 2), (5, 'i7', 3), (3, 'i7', 3)),
-                ((1500, 'i7', 2), (800, 'i7', 3), (100, 'i7', 3)), # arbitrary initial values
+                ((1500, 'i7', 2), (800, 'i7', 3), (100, 'i7', 3)),
                 'Enemy has high DEX/ATK/MAG. Survive and defeat it.',
                 'https://caelum.s-ul.eu/esper/S4EL3aLY.png'),
             1: (40, 50, 'Iron Giant', ('i6', 2), ('i8', 1),
                 ((10, 'i6', 2), (5, 'i6', 3), (3, 'i6', 3)),
-                ((1000, 'i6', 2), (500, 'i6', 3), (100, 'i6', 3)), # arbitrary initial values
+                ((1000, 'i6', 2), (500, 'i6', 3), (100, 'i6', 3)),
                 'Enemy has high HP/DEF/SPR. Have enough DPS to clear within turn limit.',
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            9: (1, (3000, 3000, 9999, 9999, 9999, 0)),
+            8: (9999, (3000, 0, 1200, 1200, 200, 700)),
+            7: (9000, (2000, 2000, 800, 800, 800, 700)),
+            6: (6000, (1200, 1200, 2000, 2000, 1000, 500)),
+            5: (9000, (0, 1600, 600, 600, 900, 700)),
             4: (9000, (1800, 1800, 600, 600, 3000, 800)),
             3: (7000, (1400, 1400, 500, 500, 700, 1000)),
             2: (5000, (1400, 1400, 500, 500, 700, 500)),
@@ -384,6 +414,7 @@ class Engel:
         self.manual['tower'] = ((
             'Description', (
                 'Tower is a series of floors that you can challenge for rewards.',
+                f"Currently up to floor {max(self.tower_tuples.keys())}.",
                 'Rewards are separated into first clear, repeat clear and achievement missions.',
                 'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
             )),(
@@ -391,7 +422,7 @@ class Engel:
                 '- Your HP in tower is independent of your usual HP. You start from max HP for each fight.',
                 '- Your auto skill will apply for the entire fight. Your usual LB gauge is not affected.',
                 '- Items cannot be used in tower.',
-                '- For current floor bosses, they use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual).',
+                '- Floor bosses use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual) unless stated otherwise.',
                 '- You only spend AP once to spawn each tower floor.',
                 '- Unlike usual battles, you are attacked first in tower.',
                 '- You can battle up to 4 phases with 5 turns each, in a total of 20 turns.',
@@ -420,13 +451,16 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- Tower Expansion: Planning to have more complicated battle mechanics than raid.',
-            '- New espers to be unlocked through tower but higher upgrading cost.',
             '- Use of excess EXP (your EXP is still being tracked so not to worry).',
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
             '- (if we survive this far...) EX Base passives'
         )
         self.changelog = (
+            ('1st March 2021', (
+                '- Base change cooldown halved to 12 hours. Main job change cooldown halved to 6 hours.',
+                '- Tower expansion with new espers unlocked with tower.',
+                '- Tower battle turns were bugged to be 24 instead of 20... Fixed.'
+            )),
             ('27th February 2021', (
                 '- Tower (`=charhelp tower`) - only basic floors for now. To add more in future...',
                 '- Refine (`=charhelp item`)'
@@ -698,6 +732,8 @@ class Engel:
             return up
         elif unlockcost == 10:
             return 1 + int(up * 1.5)
+        elif unlockcost == 20:
+            return 2 + up * 4
         else:
             return self.levelcap
     def calclevel(self, exp):
@@ -851,11 +887,15 @@ class Engel:
             defenddict = self.calcstats(defender, usertype='R', moddict=d_moddict)
         elif raid == 2:
             # tower
-            defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
-            if attackdict['DEF'] > attackdict['SPR']:
-                defenddict['MAG'] = 0
+            if defender == 7: # Fenrir
+                defenddict = self.calcstats(defender, usertype='T')
             else:
-                defenddict['ATK'] = 0
+                defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
+            if defender not in (5, 8): # Diabolos and Tonberry
+                if attackdict['DEF'] > attackdict['SPR']:
+                    defenddict['MAG'] = 0
+                else:
+                    defenddict['ATK'] = 0
         else:
             defenddict = self.calcstats(defender, moddict=d_moddict)
         # pick higher potential damage
@@ -1528,8 +1568,12 @@ class Engel:
         else:
             desc_list.append(f"You cleared this floor.")
         desc_list.append(f"Level: {tower_tup[0]} | AP: {tower_tup[1]}")
-        item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
-        desc_list.append(f"First Clear: {tower_tup[3][1]} {item}(s)")
+        if tower_tup[3][1] == 0:
+            esper = self.dfdict['Esper'].loc[tower_tup[3][0], 'Esper']
+            desc_list.append(f"First Clear: {esper} Esper Unlock")
+        else:
+            item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
+            desc_list.append(f"First Clear: {tower_tup[3][1]} {item}(s)")
         item = self.dfdict['Skill'].loc[tower_tup[4][0], 'Skill']
         desc_list.append(f"Repeat Clear: {tower_tup[4][1]} {item}(s)")
         desc_list.append(f"Hint: {tower_tup[7]}")
@@ -1596,6 +1640,17 @@ class Engel:
             self.syncpend = 1
         embed.title = f"{user.name} VS {tower_tup[2]}"
         desc_list = []
+        if floor in (5, 8):
+            if floor == 5:
+                d_skilltup = ('t01', 'Main')
+            elif floor == 8:
+                d_skilltup = ('t04', 'Main')
+            desc_list.append(f"{tower_tup[2]} casted {self.dfdict['Skill'].loc[d_skilltup[0], 'Skill']}.")
+        elif floor == 7:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Invincible Moon. Now {tower_tup[2]} is immune to debuffs.")
+        else:
+            d_skilltup = None
         # calculate damage and hit rate
         if userrow['LB_Auto'] != 'off':
             if userrow['LB_Auto'] == 'ex':
@@ -1610,7 +1665,7 @@ class Engel:
             a_skilltup = (skillrow.name, potency)
         else:
             a_skilltup = None
-        damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(user.id, floor, a_skilltup=a_skilltup, raid=2, counter=1)
+        damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(user.id, floor, a_skilltup=a_skilltup, d_skilltup=d_skilltup, raid=2, counter=1)
         desc_list.append(f"*{tower_tup[2]} has {min(counter_hitrate, 1) * 100:.0f}% of doing {counter_damage} damage.*")
         desc_list.append(f"*{tower_tup[2]} has {max(counter_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
         desc_list.append(f"*{user.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
@@ -1626,24 +1681,27 @@ class Engel:
             userhp_current = userhp
             field_name = f"Phase {phase}"
             field_list = [f"{tower_tup[2]} HP `{towerhp}`"]
-            for _ in range(6):
+            for _ in range(5):
                 turn_taken += 1
                 # tower boss attacks first
-                if counter_hitrate > 1:
-                    counter_hit = 1 + ((counter_hitrate - 1) > random.random())
+                if floor == 8 and phase == 1:
+                    field_list.append(f"{tower_tup[2]} is moving closer...") # Tonberry phase 1
                 else:
-                    counter_hit = counter_hitrate > random.random()
-                tower_damage = counter_damage * counter_hit
-                if counter_hit == 2:
-                    field_list.append(f"{tower_tup[2]} landed a critical hit with {tower_damage} damage.")
-                elif counter_hit == 1:
-                    field_list.append(f"{tower_tup[2]} successfully attacked with {tower_damage} damage.")
-                else:
-                    field_list.append(f"{tower_tup[2]} missed.")
-                userhp_current = max(userhp_current - tower_damage, 0)
-                damage_taken += tower_damage
-                if userhp_current == 0:
-                    break
+                    if counter_hitrate > 1:
+                        counter_hit = 1 + ((counter_hitrate - 1) > random.random())
+                    else:
+                        counter_hit = counter_hitrate > random.random()
+                    tower_damage = counter_damage * counter_hit
+                    if counter_hit == 2:
+                        field_list.append(f"{tower_tup[2]} landed a critical hit with {tower_damage} damage.")
+                    elif counter_hit == 1:
+                        field_list.append(f"{tower_tup[2]} successfully attacked with {tower_damage} damage.")
+                    else:
+                        field_list.append(f"{tower_tup[2]} missed.")
+                    userhp_current = max(userhp_current - tower_damage, 0)
+                    damage_taken += tower_damage
+                    if userhp_current == 0:
+                        break
                 # user's turn
                 if hitrate > 1:
                     hit = 1 + ((hitrate - 1) > random.random())
@@ -1660,6 +1718,10 @@ class Engel:
                 if towerhp == 0:
                     break
             if userhp_current == 0 or towerhp == 0:
+                break
+            elif floor == 9:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]} fled.")
                 break
             embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         if turn_taken < 20:
@@ -1678,9 +1740,16 @@ class Engel:
             self.dfdict['User'].loc[user.id, 'Tower'] = ''
             if floor == next:
                 recorddict[floor] = (turn_taken, damage_taken)
-                self.dfdict['User'].loc[user.id, tower_tup[3][0]] = userrow[tower_tup[3][0]] + tower_tup[3][1]
-                item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
-                field_list.append(f"You obtained {tower_tup[3][1]} {item}(s).")
+                if tower_tup[3][1] == 0:
+                    esper = self.dfdict['Esper'].loc[tower_tup[3][0], 'Esper']
+                    esperdict = self.unlock_parse(userrow['E_Unlock'])
+                    esperdict[tower_tup[3][0]] = 0
+                    self.dfdict['User'].loc[user.id, 'E_Unlock'] = self.unlock_parse(esperdict, reverse=1)
+                    field_list.append(f"You unlocked esper {esper}. :star:")
+                else:
+                    self.dfdict['User'].loc[user.id, tower_tup[3][0]] = userrow[tower_tup[3][0]] + tower_tup[3][1]
+                    item = self.dfdict['Skill'].loc[tower_tup[3][0], 'Skill']
+                    field_list.append(f"You obtained {tower_tup[3][1]} {item}(s).")
                 # new clear
                 for field_tup in tower_tup[5]:
                     if turn_taken <= field_tup[0]:
@@ -1774,8 +1843,11 @@ class Engel:
             embed.colour = self.colours[esperrow['Element'].lower()]
             esperdict = self.unlock_parse(userrow['E_Unlock'])
             if esperid not in esperdict.keys():
-                desc_list.append(f"You need to unlock it first using {esperrow['Cost']} Auracites.")
-                desc_list.append(f"Type `=char esper unlock {esper}` to unlock.")
+                if esperrow['Cost'] > self.unlockcost:
+                    desc_list.append(f"You need to unlock it by clearing its corresponding tower floor first.")
+                else:
+                    desc_list.append(f"You need to unlock it first using {esperrow['Cost']} Auracites.")
+                    desc_list.append(f"Type `=char esper unlock {esper}` to unlock.")
             else:
                 self.dfdict['User'].loc[user.id, 'Esper'] = esperid
                 self.dfdict['User'].loc[user.id, 'E_Up'] = esperdict[esperid]
@@ -1826,7 +1898,10 @@ class Engel:
                         upcost = self.calcupcost(esperdict[esperid] + 1, unlockcost=esperrow['Cost'])
                         desc_list.append(f"Your {esper} is now +{esperdict[esperid]} (Next: {upcost} Auracites).")
         else:
-            if unlock == 0:
+            if esperrow['Cost'] > self.unlockcost:
+                embed.description = f"You need to unlock it by clearing its corresponding tower floor first."
+                return embed
+            elif unlock == 0:
                 embed.description = f"Type `=char esper unlock {esper}` to unlock first."
                 return embed
             elif userrow['i7'] < esperrow['Cost']:
@@ -1932,7 +2007,10 @@ class Engel:
                     up_cost = self.calcupcost(esperdict[row.name] + 1, row['Cost'])
                     desc_str += f" (+{esperdict[row.name]}). `{up_cost}` Auracites to upgrade."
             else:
-                desc_str += f" did not unlock. {row['Cost']} Auracites to unlock."
+                if row['Cost'] > self.unlockcost:
+                    desc_str += f" did not unlock. Clear the corresponding tower floor to unlock."
+                else:
+                    desc_str += f" did not unlock. {row['Cost']} Auracites to unlock."
             embed.description = desc_str
         field_list = []
         field_list.append(f"{row['S_Stat']}: `{row['S_MIN']}` to `{row['S_MAX']}`% of {row['S_Stat']}")
