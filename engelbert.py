@@ -466,7 +466,8 @@ class Engel:
                 '- However, you cannot start another floor until you give up.'
             )),(
             'Commands', (
-                '- Type `=char tower` to find list of available tower floor bosses.',
+                '- Type `=char tower` to find list of available tower floor bosses (top 10 available).',
+                '- Type `=char tower mission` to find list of available tower floor bosses with unfinished missions.',
                 '- Type `=char tower (floor number)` (e.g. `=char tower 1`) to view the info of specific floor.',
                 '- Type `=char tower fight (floor number)` (e.g. `=char tower fight 1`) to fight the specific floor boss.',
                 '- Type `=char tower giveup` to give up an active tower battle.'
@@ -1148,7 +1149,10 @@ class Engel:
                 if baserow['Main'] not in exdict.keys():
                     return f"Unlock the EX base first with `=char exbase unlock {base}`."
                 self.dfdict['User'].loc[user.id, 'EX_Up'] = exdict[baserow['Main']]
-                desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
+                if exdict[baserow['Main']] == self.upgradecap:
+                    desc_list.append(f"{user.name} base now changed to {base} (MAX).")
+                else:
+                    desc_list.append(f"{user.name} base now changed to {base} (+{exdict[baserow['Main']]}).")
                 if 'ex' not in userrow['Main']:
                     desc_list.append(f"Change into unique job with `=char main ex`.")
             else:
@@ -1462,7 +1466,7 @@ class Engel:
         for index, row in df.iterrows():
             raid_list.append(f"**{index}** - Level `{row['Level']}` | HP `{row['HP']}`")
             raid_count += 1
-            if raid_count % 10 == 0:
+            if raid_count % 8 == 0:
                 embed.add_field(name='-', value='\n'.join(raid_list))
                 raid_list = []
         if len(raid_list) > 0:
@@ -1495,29 +1499,19 @@ class Engel:
         embed.title = 'List of Skills'
         embed.description = '`=charhelp skill` for more info.'
         df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == '']
-        skill_list = []
-        skill_count = 0
+        buff_list = []
+        debuff_list = []
+        healing_list = []
         for _, row in df.iterrows():
-            desc_list = []
-            if row['Ally']:
-                target = 'ally'
-            else:
-                target = 'enemy'
             if row['Healing']:
-                desc_list.append('Healing')
-            elif row['Ally'] > 0:
-                desc_list.append('Buff')
-                desc_list.append(f"Increases {target} {row['Stat']} during battle.")
+                healing_list.append(f"**{row['Skill']}**\n - Recovers `{row['Sub']*100:.0f}%` or `{row['Main']*100:.0f}%` of Max HP.")
+            elif row['Ally'] == 1:
+                buff_list.append(f"**{row['Skill']}**\n - Target {row['Stat']} `x{row['Sub']}` or `x{row['Main']}` during battle.")
             else:
-                desc_list.append('Debuff')
-                desc_list.append(f"Partially ignores {target} {row['Stat']} during battle.")
-            skill_list.append(f"**{row['Skill']}**\n - {' | '.join(desc_list)}")
-            skill_count += 1
-            if skill_count % 6 == 0:
-                embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
-                skill_list = []
-        if len(skill_list) > 0:
-            embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
+                debuff_list.append(f"**{row['Skill']}**\n - Enemy {row['Stat']} `x{row['Sub']}` or `x{row['Main']}` during battle.")
+        embed.add_field(name='Buffs', value='\n'.join(buff_list), inline=False)
+        embed.add_field(name='Debuffs', value='\n'.join(debuff_list), inline=False)
+        embed.add_field(name='Healing', value='\n'.join(healing_list), inline=False)
         return embed
     def listrefine(self):
         # generate embed of list of available items
@@ -1562,12 +1556,16 @@ class Engel:
             embed.title = f"List of Espers ({user.name})"
         embed.description = '`=charhelp esper` for more info.'
         esper_list = []
-        esper_count = 0
         if user != None:
             esperdict = self.unlock_parse(self.dfdict['User'].loc[user.id, 'E_Unlock'])
         else:
             esperdict = dict()
+        cur_cost = self.unlockcost
         for index, row in self.dfdict['Esper'].iterrows():
+            if row['Cost'] != cur_cost:
+                embed.add_field(name=f"Cost: {cur_cost}", value='\n'.join(esper_list))
+                esper_list = []
+                cur_cost = row['Cost']
             esper_str = ''
             esper_str += f"**{row['Esper']}**"
             if index in esperdict.keys():
@@ -1580,14 +1578,9 @@ class Engel:
             if row['B2_Stat'] != '':
                 esper_str += f" and {row['B2_Stat']}"
             esper_list.append(esper_str)
-            esper_count += 1
-            if esper_count % 8 == 0:
-                embed.add_field(name='-', value='\n'.join(esper_list))
-                esper_list = []
-        if len(esper_list) > 0:
-            embed.add_field(name='-', value='\n'.join(esper_list))
+        embed.add_field(name=f"Cost: {cur_cost}", value='\n'.join(esper_list))
         return embed
-    def listtower(self, user):
+    def listtower(self, user, unfinished=0):
         # generate embed of list of available tower floors
         embed = discord.Embed()
         embed.title = f"Tower ({user.name})"
@@ -1602,21 +1595,28 @@ class Engel:
         for floor, tower_tup in self.tower_tuples.items():
             if floor > next:
                 continue
-            tower_count += 1
+            stars_count = 0
             field_name = f"{floor} - {tower_tup[2]}"
             if floor < next:
                 field_name += ' :star:'
+                stars_count += 1
                 if recorddict[floor][0] <= tower_tup[5][-1][0]:
                     field_name += ':star:'
+                    stars_count += 1
                 if recorddict[floor][1] <= tower_tup[6][-1][0]:
                     field_name += ':star:'
+                    stars_count += 1
             if floor == userrow['Tower']:
                 field_name = ':crossed_swords: ' + field_name
-            field_list = []
-            field_list.append(f"Level: {tower_tup[0]} | AP: {tower_tup[1]}")
-            embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
-            if tower_count == 10:
+            if unfinished == 1 and stars_count == 3:
+                continue
+            else:
+                tower_count += 1
+                embed.add_field(name=field_name, value=f"Level: {tower_tup[0]} | AP: {tower_tup[1]}", inline=False)
+            if unfinished == 0 and tower_count == 10:
                 break
+        if unfinished == 1 and tower_count == 0:
+            embed.add_field(name='Congratulations!', value='You have completed all available tower missions.')
         return embed
     def infotower(self, user, floor):
         # generate info embed of a tower floor
@@ -1681,6 +1681,7 @@ class Engel:
         embed = discord.Embed()
         userrow = self.dfdict['User'].loc[user.id]
         recorddict = self.tower_parse(userrow['T_Record'])
+        desc_list = []
         if len(recorddict) == 0:
             next = 1
         else:
@@ -1701,14 +1702,14 @@ class Engel:
                 embed.description = f"You cannot challenge this floor yet."
                 return embed
             elif userrow['AP'] < tower_tup[1]:
-                embed.description = f"You need {tower_tup[1]} AP to challenge this floor."
+                embed.description = f"You need {tower_tup[1]} AP to challenge this floor. Your current AP is {userrow['AP']}."
                 return embed
             self.dfdict['User'].loc[user.id, 'AP'] = userrow['AP'] - tower_tup[1]
             self.dfdict['User'].loc[user.id, 'Gil'] = userrow['Gil'] + tower_tup[1]
             self.dfdict['User'].loc[user.id, 'Tower'] = floor
+            desc_list.append(f"You spent {tower_tup[1]} AP to challenge this floor. Your current AP is {userrow['AP'] - tower_tup[1]}")
             self.syncpend = 1
         embed.title = f"{user.name} VS {tower_tup[2]}"
-        desc_list = []
         if floor in (5, 8, 10):
             if floor == 5:
                 d_skilltup = ('t01', 'Main')
@@ -1887,8 +1888,12 @@ class Engel:
                 if result_tup[0]:
                     desc_list = ['Success! Your jobs are now the following:']
                     if v == 'ex':
-                        jobid = self.dfdict['Base'].loc[self.dfdict['User'].loc[user.id, 'Base'], 'Main']
-                        desc_list.append(f"Main: {self.dfdict['Job'].loc[jobid, 'Job']}")
+                        userrow = self.dfdict['User'].loc[user.id]
+                        jobid = self.dfdict['Base'].loc[userrow['Base'], 'Main']
+                        if userrow['EX_Up'] == self.upgradecap:
+                            desc_list.append(f"Main: {self.dfdict['Job'].loc[jobid, 'Job']} (MAX)")
+                        else:
+                            desc_list.append(f"Main: {self.dfdict['Job'].loc[jobid, 'Job']} (+{userrow['EX_Up']})")
                     else:
                         desc_list.append(f"Main: {v}")
                     desc_list.append(f"Sub1: {result_tup[1]}")
@@ -2156,10 +2161,10 @@ class Engel:
                     if subskillrow['Healing']:
                         effect_list.append('heals')
                     elif subskillrow['Ally'] > 0:
-                        effect_list.append(f"increases self {subskillrow['Stat']}")
+                        effect_list.append(f"self {subskillrow['Stat']} `x{subskillrow[subpotency]}`")
                         during_battle = 1
                     else:
-                        effect_list.append(f"partially ignores enemy {subskillrow['Stat']}")
+                        effect_list.append(f"enemy {subskillrow['Stat']} `x{subskillrow[subpotency]}`")
                         during_battle = 1
             effect_str = ' and '.join(effect_list)
             if during_battle:
@@ -2168,9 +2173,9 @@ class Engel:
             if skillrow['Healing']:
                 effect_str = 'Heals.'
             elif skillrow['Ally'] > 0:
-                effect_str = f"greatly increases self {skillrow['Stat']} during battle"
+                effect_str = f"self {skillrow['Stat']} `x{skillrow['Main']}` during battle"
             else:
-                effect_str = f"ignores a large portion of enemy {skillrow['Stat']} during battle"
+                effect_str = f"enemy {skillrow['Stat']} `x{skillrow['Main']}` during battle"
         field_list.append(f"({effect_str})")
         # main skill
         field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[jobrow['Skill'], 'Skill']}")
@@ -3323,6 +3328,8 @@ class Engel:
                         # list of tower floors
                         return self.listtower(user)
                     else:
+                        if arg[argstart].lower() in ('mission', 'unfinished'):
+                            return self.listtower(user, unfinished=1)
                         if arg[argstart].lower() in ('giveup', 'give', 'surrender'):
                             return discord.Embed(description = self.towergiveup(user))
                         elif arg[argstart].lower() in ('start', 'challenge', 'fight', 'attack'):
