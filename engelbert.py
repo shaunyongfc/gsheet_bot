@@ -26,9 +26,9 @@ class Engel:
         self.levelcap = 99
         self.upgradecap = 10
         self.unlockcost = 5
-        self.raidcap = 159
-        self.raidcap2 = 99
-        self.raidcap3 = 49
+        self.raidcap = 179
+        self.raidcap2 = 119
+        self.raidcap3 = 79
         self.revivehours = 3
         self.cdjob = 1
         self.cdbase = 4
@@ -64,17 +64,6 @@ class Engel:
                 'i7': 1
             },
             80: {
-                'i2': 50,
-                'i3': 35,
-                'i4': 4,
-                'i5': 1,
-                'i6': 5,
-                'i7': 5
-            },
-            '80': {
-                'i1': 100
-            },
-            100: {
                 'i2': 40,
                 'i3': 25,
                 'i4': 12,
@@ -82,33 +71,32 @@ class Engel:
                 'i6': 10,
                 'i7': 10
             },
-            '100': {
+            '80': {
                 'i1': 80,
                 'i2': 20
             },
             120: {
-                'i2': 32,
+                'i2': 20,
                 'i3': 20,
-                'i4': 15,
+                'i4': 17,
                 'i5': 3,
-                'i6': 15,
-                'i7': 15
-            },
-            '120': {
-                'i1': 70,
-                'i2': 30
-            },
-            140: {
-                'i2': 25,
-                'i3': 15,
-                'i4': 16,
-                'i5': 4,
                 'i6': 20,
                 'i7': 20
             },
-            '140': {
+            '120': {
                 'i1': 65,
                 'i2': 35
+            },
+            150: {
+                'i3': 20,
+                'i4': 16,
+                'i5': 4,
+                'i6': 30,
+                'i7': 30
+            },
+            '150': {
+                'i1': 50,
+                'i2': 50
             },
         }
         self.refine_rate = {
@@ -121,6 +109,41 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
+            16: (150, 50, 'Aigaion', ('i8', 80), ('i8', 5),
+                ((15, 'i6', 4), (10, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Aigaion has no special gimmicks but mainly deals physical damage (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/MMEqzj4e.png'),
+            15: (150, 50, 'Glacial', ('i8', 80), ('i8', 5),
+                ((15, 'i6', 4), (10, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Glacial has no special gimmicks but mainly deals magical damage (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/gufdaaew.png'),
+            14: (150, 50, 'Carbuncle', ('i8', 70), ('i8', 4),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Carbuncle reflects magical damage.',
+                'https://caelum.s-ul.eu/esper/XWy0PpzJ.png'),
+            13: (150, 50, 'Golem', ('i8', 70), ('i8', 4),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Golem has very high DEF but low SPR.',
+                'https://caelum.s-ul.eu/esper/oQ7SdelP.png'),
+            12: (150, 50, 'Chocobo Eater', ('e16', 0), ('i8', 4),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Chocobo Eater dispels your buffs. Try debuffing it.',
+                'https://caelum.s-ul.eu/74v8pJU8.png'),
+            11: (150, 50, 'Typhon', ('e15', 0), ('i8', 4),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Typhon messes with your stats so that your DEX replaces your ATK/MAG.',
+                'https://caelum.s-ul.eu/esper/qALvt1Nq.png'),
+            10: (150, 50, 'Gilgamesh', ('i8', 50), ('i8', 4),
+                ((5, 'i6', 4), (5, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Gilgamesh reduces your DEF to 0 and you win if you survive phase 1.',
+                'https://caelum.s-ul.eu/iN6qLrjp.png'),
             9: (120, 50, 'Magic Pot', ('i6', 5), ('i8', 3),
                 ((5, 'i6', 5), (5, 'i6', 5), (5, 'i6', 5)),
                 ((5000, 'i6', 5), (3000, 'i6', 5), (500, 'i6', 10)),
@@ -168,6 +191,13 @@ class Engel:
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            16: (12000, (2500, 1000, 900, 900, 1200, 900)),
+            15: (12000, (1000, 2500, 800, 800, 1200, 1000)),
+            14: (15000, (1500, 1500, 500, 500, 1100, 850)),
+            13: (20000, (1500, 1500, 5000, 0, 1100, 750)),
+            12: (12000, (2200, 2200, 800, 800, 1000, 850)),
+            11: (9999, (2000, 2000, 400, 400, 1100, 850)),
+            10: (9999, (2550, 0, 1500, 1500, 1100, 700)),
             9: (1, (3000, 3000, 9999, 9999, 9999, 0)),
             8: (9999, (3000, 0, 1200, 1200, 200, 700)),
             7: (9000, (2000, 2000, 800, 800, 800, 700)),
@@ -191,7 +221,7 @@ class Engel:
         self.statlist2 = ('ATK', 'MAG', 'DEF', 'SPR', 'DEX', 'AGI')
         self.usernotfound = 'Choose a base first with `=char start (base name)`. Check `=char base` for available bases.'
         self.targeterror = 'User not found or did not start a character.'
-        self.defaultfooter = 'Beta v3(?). Check `=char changelog` for changes. Prone to adjustment/bugs...'
+        self.defaultfooter = 'Note that this is separated from usual WOTV functions. Check `=char changelog` for updates. Prone to adjustment/bugs.'
         self.manual = dict()
         self.manual['character'] = ((
             'Description', (
@@ -232,7 +262,9 @@ class Engel:
                 '- You can only evade attacks if your AGI is higher than the opponent.',
                 '- Critical rate is scaled by `(Attacker DEX - Defender AGI)`',
                 '- Evasion rate is scaled by `(Defender AGI - Attacker DEX)`.',
-                '- They use the same formula: 1% per 2 point.',
+                '- The scale has a diminishing effect as lower end of DEX or AGI gets higher.',
+                '- For example, you need 100 AGI to 100% dodge a 0 DEX opponent.',
+                '- But you need 1350 AGI to 100% dodge a 1000 DEX opponent.',
                 '- Critical damage is 2x regular damage.',
             )),(
             'PVP', (
@@ -264,6 +296,7 @@ class Engel:
                 'They come with unique jobs that have low starting stats',
                 'After upgrading the EX bases with Dark Matters, the unique jobs will have higher stats than other bases.',
                 'Unique jobs also come with powerful Limit Break that are special skills that can only consume LB gauge or Hero Drink.',
+                'Limit Break is usually a combination of two skills at main job potencies, or three skills at sub job potencies, or one effect with even higher potency.',
                 f"Max upgrade is {self.upgradecap}."
             )),(
             'EX Base Commands', (
@@ -381,7 +414,8 @@ class Engel:
                 f"- Spend {self.refinecost} Arcanas to convert a quantity of items into another item type.",
                 '- Note that Arcanas themselves cannot be refined.',
                 '- Type `=char refine` to find list of available options.',
-                '- Type `=char refine (item name)` (e.g. `=char refine potion`) to refine Potions into Phoenix Downs.'
+                '- Type `=char refine (item name)` (e.g. `=char refine potion`) to refine Potions into Phoenix Downs.',
+                '- Type `=char refine (number) (item name)` (e.g. `=char refine 10 potion`) to refine a number of items at once.',
             ))
         )
         self.manual['raid'] = ((
@@ -420,12 +454,11 @@ class Engel:
                 'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
             )),(
             'Battle', (
-                '- Your HP in tower is independent of your usual HP. You start from max HP for each fight.',
-                '- Your auto skill will apply for the entire fight. Your usual LB gauge and current status are not used.',
+                '- Your current conditions (HP, LB gauge, status) are ignored for your tower fight.',
+                '- i.e. you start from max HP for each fight and your auto skill will apply for the entire fight.',
                 '- Items cannot be used in tower.',
-                '- Floor bosses use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual) unless stated otherwise.',
-                '- You only spend AP once to spawn each tower floor.',
-                '- Unlike usual battles, you are attacked first in tower.',
+                '- Unless stated otherwise, floor bosses use ATK if your DEF is higher than SPR or MAG if your SPR is higher than DEF (opposite of usual).',
+                '- Unless stated otherwise, you are attacked first in tower (opposite of raids).',
                 '- You can battle up to 4 phases with 5 turns each, in a total of 20 turns.',
                 '- Your HP is fully recovered in the beginning of each phase.',
                 '- You fail if your HP reaches 0 or cannot kill the floor boss within 20 turns.',
@@ -441,21 +474,45 @@ class Engel:
         )
         manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
-            'Engelbert (v3) is an experimental project of Discord bot tamagotchi '
+            'Engelbert is an experimental project of Discord bot tamagotchi '
             '(digital pet / avatar / character). It is still under constant development so things '
-            'may be subject to change. Feel free to drop some feedback!\n'
+            'may be subject to change and adjustment. Feel free to drop some feedback!\n'
             '- Type `=char changelog` for recent changes.\n'
             '- Type `=char futureplan` for tentative future plans.\n'
+            '- Type `=charrep (number) (command)` (e.g. `=charrep 10 exbase up hyoh`) for repeated commands (up to 10).\n'
+            '- WARNING: Multiple replies will occur so please do not overuse to flood the channel...\n'
             '- For more in-depth info of the following, try:\n' +
             manual_commands
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- Use of excess EXP (your EXP is still being tracked so not to worry).',
+            '- Equipment: Make use of overflow EXP into flat stat boosts. Initial release will be modest and see how the balance goes...',
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
-            '- (if we survive this far...) EX Base passives'
         )
         self.changelog = (
+            ('5th March 2021', (
+                '- Now DEX and AGI have diminishing effect as the values become higher.',
+                '- DEX and AGI buffs nerfed to be the same as debuffs.',
+                '- New tower floors (up to 16) with 2 new espers.',
+                '- Note that missions may not be all feasible at this point...',
+                '- New EX Bases. Note that triple effects have lower potencies.',
+                '- Under-performing EX Base Physalis LB changed into triple debuffs.',
+                '- Under-performing EX Bases Mont has similar change but replaced with Daisy.',
+                '- Mont will be re-released in a future date.',
+                '- Base stats (including AP) are increased across the board, mostly to scale with the new DEX/AGI distribution.',
+                '- Old (cost 5) espers have their final boosts slightly increased.',
+                '- You can now refine several items at once.',
+                '- Type `=charrep (number) (command)` (e.g. `=charrep 10 exbase up hyoh`) for repeated commands (up to 10).',
+                '- WARNING: Multiple replies will occur so please do not overuse to flood the channel.'
+            )),
+            ('5th March 2021 (Raid Adjustments)', (
+                '- Some raids are abolished, with group 2 and group 3 only having the basic ones left.',
+                '- Abolished raids will reappear in tower if you miss them.',
+                '- Raid stats redistributed (major for Sylph and Ramuh, minor for others).',
+                '- Raid level separators are now 80 and 120, drop rates for 100+ now apply to 80+.',
+                '- Max raid level is now level 179, with drop rate separator adjusted from 140 to 150.',
+                '- Dark Matter / Auracite rates - 120+: 15/15; 140+: 20/20 -> 120+: 20/20, 150+: 30/30.'
+            )),
             ('1st March 2021', (
                 '- Base change cooldown changed to 4 hours. Main job change cooldown reduced to 1 hour.',
                 '- Raid level cap raised to 159. Level separators will be adjusted in a future date.',
@@ -756,24 +813,18 @@ class Engel:
         else:
             return self.levelcap
         return level
-    def calchitrate(self, accuracy):
+    def calchitrate(self, dex, agi):
         # calculate critical or hit rate from dex - agi
+        accuracy = dex - agi
+        divisor = 100 + min(dex, agi) // 4
         if accuracy == 0:
             return 1
-        elif accuracy >= 200:
+        elif accuracy >= divisor:
             return 2
-        elif accuracy <= -200:
+        elif accuracy <= -divisor:
             return 0
         else:
-            return 1 + round(accuracy / 200, 2)
-            if abs(accuracy) >= 25:
-                modifier = 0.5 - 0.25 + abs(accuracy) * 0.01
-            else:
-                modifier = abs(accuracy) * 0.02
-            if accuracy > 0:
-                return 1 + accuracy // 2
-            else:
-                return 1 - accuracy // 2
+            return 1 + round(accuracy / divisor, 2)
     def calcstats(self, userid, usertype='U', moddict=None, stat=None):
         # returns dict of stats
         if usertype == 'U':
@@ -886,7 +937,10 @@ class Engel:
             else:
                 d_moddict[skillrow['Stat']] = d_moddict[skillrow['Stat']] * skillrow[skillpotency]
         # get their status sheets
-        attackdict = self.calcstats(attacker, moddict=a_moddict)
+        if raid == 2 and defender == 12: # Tower Chocobo Eater
+            attackdict = self.calcstats(attacker, moddict=None)
+        else:
+            attackdict = self.calcstats(attacker, moddict=a_moddict)
         if raid == 1:
             defenddict = self.calcstats(defender, usertype='R', moddict=d_moddict)
         elif raid == 2:
@@ -895,7 +949,7 @@ class Engel:
                 defenddict = self.calcstats(defender, usertype='T')
             else:
                 defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
-            if defender not in (5, 8): # Diabolos and Tonberry
+            if defender not in (5, 8, 10, 15, 16): # Diabolos and Tonberry
                 if attackdict['DEF'] > attackdict['SPR']:
                     defenddict['MAG'] = 0
                 else:
@@ -903,11 +957,17 @@ class Engel:
         else:
             defenddict = self.calcstats(defender, moddict=d_moddict)
         # pick higher potential damage
-        damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
-        hitrate = self.calchitrate(attackdict['DEX'] - defenddict['AGI'])
+        if raid == 2 and defender == 11: # Tower Typhon
+            damage = max(attackdict['DEX'] - defenddict['DEF'], attackdict['DEX'] - defenddict['SPR'], 0)
+        else:
+            damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
+        hitrate = self.calchitrate(attackdict['DEX'], defenddict['AGI'])
+        if raid == 2 and defender == 14: # Tower Carbuncle
+            if attackdict['ATK'] - defenddict['DEF'] < attackdict['MAG'] - defenddict['SPR']:
+                hitrate = -1
         if counter:
             counter_damage = max(defenddict['ATK'] - attackdict['DEF'], defenddict['MAG'] - attackdict['SPR'], 0)
-            counter_hitrate = self.calchitrate(defenddict['DEX'] - attackdict['AGI'])
+            counter_hitrate = self.calchitrate(defenddict['DEX'], attackdict['AGI'])
             return damage, hitrate, counter_damage, counter_hitrate
         else:
             return damage, hitrate
@@ -1294,7 +1354,8 @@ class Engel:
         embed.description = 'Bracketed rates in raid drop rates are on separate slot. `=charhelp item` or `=charhelp raid` for other info.'
         df = self.dfdict['Skill'][self.dfdict['Skill']['Hidden'] == 'item']
         for index, row in df.iterrows():
-            field_list.append(f"**{row['Skill']}**: {self.gacha_rate[index]}%")
+            if index in self.gacha_rate.keys():
+                field_list.append(f"**{row['Skill']}**: {self.gacha_rate[index]}%")
         embed.add_field(name='Gacha', value = '\n'.join(field_list))
         # raid drop
         previous_level = -1
@@ -1384,7 +1445,7 @@ class Engel:
                     base_str += f":star: (+{exdict[row['Main']]}) "
             base_list.append(base_str)
             base_count += 1
-            if base_count % 10 == 0:
+            if base_count % 8 == 0:
                 embed.add_field(name='-', value='\n'.join(base_list))
                 base_list = []
         if len(base_list) > 0:
@@ -1452,7 +1513,7 @@ class Engel:
                 desc_list.append(f"Partially ignores {target} {row['Stat']} during battle.")
             skill_list.append(f"**{row['Skill']}**\n - {' | '.join(desc_list)}")
             skill_count += 1
-            if skill_count % 10 == 0:
+            if skill_count % 6 == 0:
                 embed.add_field(name='-', value='\n'.join(skill_list), inline=False)
                 skill_list = []
         if len(skill_list) > 0:
@@ -1520,7 +1581,7 @@ class Engel:
                 esper_str += f" and {row['B2_Stat']}"
             esper_list.append(esper_str)
             esper_count += 1
-            if esper_count % 10 == 0:
+            if esper_count % 8 == 0:
                 embed.add_field(name='-', value='\n'.join(esper_list))
                 esper_list = []
         if len(esper_list) > 0:
@@ -1530,16 +1591,18 @@ class Engel:
         # generate embed of list of available tower floors
         embed = discord.Embed()
         embed.title = f"Tower ({user.name})"
-        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}."
+        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}. Only displaying top 10 floors."
         userrow = self.dfdict['User'].loc[user.id]
         recorddict = self.tower_parse(userrow['T_Record'])
         if len(recorddict) == 0:
             next = 1
         else:
             next = max(recorddict.keys()) + 1
+        tower_count = 0
         for floor, tower_tup in self.tower_tuples.items():
             if floor > next:
                 continue
+            tower_count += 1
             field_name = f"{floor} - {tower_tup[2]}"
             if floor < next:
                 field_name += ' :star:'
@@ -1552,6 +1615,8 @@ class Engel:
             field_list = []
             field_list.append(f"Level: {tower_tup[0]} | AP: {tower_tup[1]}")
             embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
+            if tower_count == 10:
+                break
         return embed
     def infotower(self, user, floor):
         # generate info embed of a tower floor
@@ -1644,15 +1709,23 @@ class Engel:
             self.syncpend = 1
         embed.title = f"{user.name} VS {tower_tup[2]}"
         desc_list = []
-        if floor in (5, 8):
+        if floor in (5, 8, 10):
             if floor == 5:
                 d_skilltup = ('t01', 'Main')
             elif floor == 8:
                 d_skilltup = ('t04', 'Main')
+            elif floor == 10:
+                d_skilltup = ('t02', 'Main')
             desc_list.append(f"{tower_tup[2]} casted {self.dfdict['Skill'].loc[d_skilltup[0], 'Skill']}.")
         elif floor == 7:
             d_skilltup = None
             desc_list.append(f"{tower_tup[2]} casted Invincible Moon.")
+        elif floor == 11:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Disintegration.")
+        elif floor == 14:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Ruby Light.")
         else:
             d_skilltup = None
         # calculate damage and hit rate
@@ -1661,7 +1734,7 @@ class Engel:
                 skillrow = self.dfdict['Skill'].loc[userrow['Main']]
             else:
                 skillrow = self.dfdict['Skill'].loc[userrow['LB_Auto']]
-            if skillrow.name == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
+            if skillrow.name == self.dfdict['Job'].loc[userrow['Main'], 'Skill'] or 'ex' in skillrow.name:
                 potency = 'Main'
             else:
                 potency = 'Sub'
@@ -1669,10 +1742,12 @@ class Engel:
             a_skilltup = (skillrow.name, potency)
         else:
             a_skilltup = None
+        if floor == 12:
+            desc_list.append(f"{tower_tup[2]} casted Dispel.")
         damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(user.id, floor, a_skilltup=a_skilltup, d_skilltup=d_skilltup, raid=2, counter=1)
         desc_list.append(f"*{tower_tup[2]} has {min(counter_hitrate, 1) * 100:.0f}% of doing {counter_damage} damage.*")
         desc_list.append(f"*{tower_tup[2]} has {max(counter_hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
-        desc_list.append(f"*{user.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
+        desc_list.append(f"*{user.name} has {min(max(hitrate, 0), 1) * 100:.0f}% of doing {damage} damage.*")
         desc_list.append(f"*{user.name} has {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
         embed.description = '\n'.join(desc_list)
         # get their HP
@@ -1707,18 +1782,23 @@ class Engel:
                     if userhp_current == 0:
                         break
                 # user's turn
-                if hitrate > 1:
-                    hit = 1 + ((hitrate - 1) > random.random())
+                if floor == 14 and hitrate == -1:
+                    userhp_current = max(userhp_current - damage, 0)
+                    damage_taken += damage
+                    field_list.append(f"Your magic bounced off {tower_tup[2]}, hitting yourself with {damage} damage.")
                 else:
-                    hit = hitrate > random.random()
-                user_damage = damage * hit
-                if hit == 2:
-                    field_list.append(f"You landed a critical hit with {user_damage} damage.")
-                elif hit == 1:
-                    field_list.append(f"You successfully attacked with {user_damage} damage.")
-                else:
-                    field_list.append(f"You missed.")
-                towerhp = max(towerhp - user_damage, 0)
+                    if hitrate > 1:
+                        hit = 1 + ((hitrate - 1) > random.random())
+                    else:
+                        hit = hitrate > random.random()
+                    user_damage = damage * hit
+                    if hit == 2:
+                        field_list.append(f"You landed a critical hit with {user_damage} damage.")
+                    elif hit == 1:
+                        field_list.append(f"You successfully attacked with {user_damage} damage.")
+                    else:
+                        field_list.append(f"You missed.")
+                    towerhp = max(towerhp - user_damage, 0)
                 if towerhp == 0:
                     break
             if userhp_current == 0 or towerhp == 0:
@@ -1726,6 +1806,10 @@ class Engel:
             elif floor == 9:
                 towerhp = 0
                 field_list.append(f"{tower_tup[2]} fled.")
+                break
+            elif floor == 10:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]} stomped away in rage.")
                 break
             embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         if turn_taken < 20:
@@ -2077,9 +2161,16 @@ class Engel:
                     else:
                         effect_list.append(f"partially ignores enemy {subskillrow['Stat']}")
                         during_battle = 1
-        effect_str = ' and '.join(effect_list)
-        if during_battle:
-            effect_str += ' during battle'
+            effect_str = ' and '.join(effect_list)
+            if during_battle:
+                effect_str += ' during battle'
+        else:
+            if skillrow['Healing']:
+                effect_str = 'Heals.'
+            elif skillrow['Ally'] > 0:
+                effect_str = f"greatly increases self {skillrow['Stat']} during battle"
+            else:
+                effect_str = f"ignores a large portion of enemy {skillrow['Stat']} during battle"
         field_list.append(f"({effect_str})")
         # main skill
         field_list.append(f"Main Skill: {self.dfdict['Skill'].loc[jobrow['Skill'], 'Skill']}")
@@ -2399,7 +2490,7 @@ class Engel:
             return f"This is {user.name} current setting."
         else:
             return '\n'.join(replystr_list)
-    def inforefine(self, user, skill):
+    def inforefine(self, user, skill, num_times=1):
         # generate result embed of refining an item
         embed = discord.Embed()
         userrow = self.dfdict['User'].loc[user.id]
@@ -2420,17 +2511,25 @@ class Engel:
             return embed
         # perform the action
         desc_list = []
-        self.dfdict['User'].loc[user.id, skillid] = userrow[skillid] - refine_tup[0]
-        self.dfdict['User'].loc[user.id, 'i8'] = userrow['i8'] - self.refinecost
-        desc_list.append(f"You consumed {refine_tup[0]} {skill}s and {self.refinecost} Arcanas.")
-        self.dfdict['User'].loc[user.id, refine_tup[1]] = userrow[refine_tup[1]] + refine_tup[2]
-        desc_list.append(f"You gained {refine_tup[2]} {refinerow['Skill']}(s).")
+        material_cur = userrow[skillid]
+        arcana_cur = userrow['i8']
+        gained_cur = userrow[refine_tup[1]]
+        for _ in range(num_times):
+            if material_cur < refine_tup[0] or arcana_cur < self.refinecost:
+                break
+            material_cur = material_cur - refine_tup[0]
+            arcana_cur = arcana_cur - self.refinecost
+            gained_cur = gained_cur + refine_tup[2]
+        self.dfdict['User'].loc[user.id, skillid] = material_cur
+        self.dfdict['User'].loc[user.id, 'i8'] = arcana_cur
+        desc_list.append(f"You consumed {userrow[skillid] - material_cur} {skill}s and {userrow['i8'] - arcana_cur} Arcanas.")
+        self.dfdict['User'].loc[user.id, refine_tup[1]] = gained_cur
+        desc_list.append(f"You gained {gained_cur - userrow[refine_tup[1]]} {refinerow['Skill']}(s).")
         embed.description = '\n'.join(desc_list)
-        userrow = self.dfdict['User'].loc[user.id]
         field_list = (
-            f"{skill} - {userrow[skillid]}",
-            f"{refinerow['Skill']} - {userrow[refine_tup[1]]}",
-            f"Arcana - {userrow['i8']}"
+            f"{skill} - {material_cur}",
+            f"{refinerow['Skill']} - {gained_cur}",
+            f"Arcana - {arcana_cur}"
         )
         embed.add_field(name='Result', value='\n'.join(field_list))
         self.syncpend = 1
@@ -2550,6 +2649,7 @@ class Engel:
                 # check consumption type
                 if argop not in (2, 3):
                     argop = 2
+                target = user
             else:
                 skillid = self.dfdict['Skill'][self.dfdict['Skill']['Skill'] == skill].tail(1).index.tolist()[0]
             embed.title = f"{user.name} - {skill}"
@@ -2563,7 +2663,7 @@ class Engel:
             embed.description = f'Your LB gauge is not full yet.'
             return embed
         # check skill potency
-        if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill']:
+        if skillid == self.dfdict['Job'].loc[userrow['Main'], 'Skill'] or 'ex' in skillid:
             potency = 'Main'
         else:
             potency = 'Sub'
@@ -2850,7 +2950,12 @@ class Engel:
             self.raidsync = 1
         return embed
     # admin commands
+    def fredtest(self):
+        # command to remove job and base change cooldowns (irreversible until restarted)
+        self.cdjob = 0
+        self.cdbase = 0
     def fredgift(self, *arg):
+        # command to send gifts
         if arg[0] == 'all':
             sendall = 1
         elif arg[0].isnumeric():
@@ -3115,12 +3220,17 @@ class Engel:
                     # list of refine options
                     return self.listrefine()
                 elif userfound:
+                    # check number of times
+                    num_times = 1
+                    if arglen > 1 and arg[argstart].isnumeric():
+                        num_times = min(int(arg[argstart]), 20)
+                        argstart += 1
                     # find item
                     skill = self.find_index(' '.join(arg[argstart:]), 'Item')
                     if skill == 'NOTFOUND':
                         return discord.Embed(description = 'Item not found. Try checking `=char item`.')
                     # carry out operation
-                    return self.inforefine(user, skill)
+                    return self.inforefine(user, skill, num_times=num_times)
             elif argkw == 'esper':
                 if arglen == 0:
                     # list of espers
@@ -3365,10 +3475,13 @@ class Engelbert(commands.Cog):
         # check if sync is pending
         if engel.syncpend:
             return_val = engel.sheetsync()
+            channel = self.bot.get_channel(id_dict['Engel Synclogs'])
+            if channel == None:
+                print('Channel error. Trying again 10s later.')
             if return_val == 1:
-                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
+                await channel.send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
             else:
-                await self.bot.get_channel(id_dict['Engel Synclogs']).send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+                await channel.send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @commands.command(aliases=['engelmaint'])
     async def engelbertmaint(self, ctx, *arg):
@@ -3416,6 +3529,14 @@ class Engelbert(commands.Cog):
         if ctx.message.author.id == id_dict['Owner']:
             await ctx.send(engel.fredgift(*arg))
 
+    @commands.command(aliases=['fredtest'])
+    async def frederikatest(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Engel Logs']).send(embed = logs_embed(ctx.message))
+        # admin gift command
+        if ctx.message.author.id == id_dict['Owner']:
+            engel.fredtest()
+            await ctx.send('Cooldowns removed for testing.')
+
     @commands.command(aliases=['engelhelp', 'pethelp', 'tamagotchihelp', 'tamahelp', 'charhelp'])
     async def engelberthelp(self, ctx, *arg):
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = logs_embed(ctx.message))
@@ -3425,6 +3546,23 @@ class Engelbert(commands.Cog):
         embed.set_footer(text = engel.defaultfooter)
         await ctx.send(embed = embed)
         await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
+
+    @commands.command(aliases=['engelrep', 'petrep', 'tamagotchirep', 'tamarep', 'charrep'])
+    async def engelbertrepeat(self, ctx, *arg):
+        await self.bot.get_channel(id_dict['Engel Logs']).send(embed = logs_embed(ctx.message))
+        # repeat main command
+        user = ctx.author
+        if len(arg) > 1:
+            if arg[0].isnumeric():
+                num_times = max(int(arg[0]), 1)
+                num_times = min(num_times, 10)
+                for _ in range(num_times):
+                    embed = await engel.executecommand(user, ctx, *arg[1:])
+                    embed.set_footer(text = engel.defaultfooter)
+                    await ctx.send(embed = embed)
+                    await self.bot.get_channel(id_dict['Engel Logs']).send(embed = embed)
+                return
+        await ctx.send(f"The usage is `=charrep (number) (command)` (e.g. `=charrep 10 exbase up hyoh`).")
 
     @commands.command(aliases=['engel', 'pet', 'tamagotchi', 'tama', 'char'])
     async def engelbert(self, ctx, *arg):
