@@ -196,7 +196,7 @@ class Engel:
             14: (15000, (1500, 1500, 500, 500, 1100, 850)),
             13: (20000, (1500, 1500, 5000, 0, 1100, 750)),
             12: (12000, (2200, 2200, 800, 800, 1000, 850)),
-            11: (9999, (2000, 2000, 400, 400, 1100, 850)),
+            11: (9000, (2000, 2000, 400, 400, 1100, 850)),
             10: (9999, (2550, 0, 1500, 1500, 1100, 700)),
             9: (1, (3000, 3000, 9999, 9999, 9999, 0)),
             8: (9999, (3000, 0, 1200, 1200, 200, 700)),
@@ -1584,7 +1584,7 @@ class Engel:
         # generate embed of list of available tower floors
         embed = discord.Embed()
         embed.title = f"Tower ({user.name})"
-        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}. Only displaying top 10 floors."
+        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}."
         userrow = self.dfdict['User'].loc[user.id]
         recorddict = self.tower_parse(userrow['T_Record'])
         if len(recorddict) == 0:
