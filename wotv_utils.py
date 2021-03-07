@@ -82,6 +82,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('7th March 2021', (
+                    'VC Elements - now an extra section that includes universal VC effects that come with an elemental max effect.',
+                )),
                 ('20th February 2021', (
                     'Magicite Calculator - calculate EXP required from certain star and magicites you have (`=help esper`).',
                 )),

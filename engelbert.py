@@ -109,6 +109,26 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
+            20: (150, 50, 'Cactuar', ('i6', 10), ('i8', 5),
+                ((5, 'i6', 4), (5, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Cactuar will not attack you in phase 1 but only takes 1 damage.',
+                'https://caelum.s-ul.eu/esper/CtQEnlKj.png'),
+            19: (150, 50, 'Demon Wall', ('i6', 10), ('i8', 5),
+                ((5, 'i6', 4), (5, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Demon Wall attacks you while drawing closer. You lose if you cannot defeat it by phase 1.',
+                'https://caelum.s-ul.eu/esper/E6Nk0f9N.png'),
+            18: (150, 50, 'Leviathan', ('e18', 0), ('i8', 5),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Leviathan is immune to non-critical damage.',
+                'https://caelum.s-ul.eu/esper/pRPeCusl.png'),
+            17: (150, 50, 'Anima', ('e17', 0), ('i8', 5),
+                ((5, 'i7', 4), (5, 'i7', 5), (5, 'i7', 5), (5, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Anima shares her pain with you. If you can endure her pain in phase 1, you win.',
+                'https://caelum.s-ul.eu/DCsfqtff.png'),
             16: (150, 50, 'Aigaion', ('i8', 80), ('i8', 5),
                 ((15, 'i6', 4), (10, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
                 ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
@@ -191,6 +211,10 @@ class Engel:
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            20: (5, (9999, 9999, 9999, 9999, 9999, 1300)),
+            19: (9999, (2200, 2200, 2000, 2000, 1100, 400)),
+            18: (9999, (2200, 2200, 1800, 1800, 1100, 900)),
+            17: (9999, (3000, 3000, 2000, 2000, 1200, 0)),
             16: (12000, (2500, 1000, 900, 900, 1200, 900)),
             15: (12000, (1000, 2500, 800, 800, 1200, 1000)),
             14: (15000, (1500, 1500, 500, 500, 1100, 850)),
@@ -491,6 +515,10 @@ class Engel:
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
         )
         self.changelog = (
+            ('7th March 2021', (
+                '- New floors (up to 20) with 2 new espers.',
+                '- Chocobo and Typhon stats buffed.',
+            )),
             ('5th March 2021', (
                 '- Now DEX and AGI have diminishing effect as the values become higher.',
                 '- DEX and AGI buffs nerfed to be the same as debuffs.',
@@ -794,6 +822,8 @@ class Engel:
             return up
         elif unlockcost == 10:
             return 1 + int(up * 1.5)
+        elif unlockcost == 15:
+            return 2 + int(up * 2.45)
         elif unlockcost == 20:
             return 2 + up * 4
         else:
@@ -960,6 +990,8 @@ class Engel:
         # pick higher potential damage
         if raid == 2 and defender == 11: # Tower Typhon
             damage = max(attackdict['DEX'] - defenddict['DEF'], attackdict['DEX'] - defenddict['SPR'], 0)
+        elif raid == 2 and defender == 20: # Tower Cactuar
+            damage = 1
         else:
             damage = max(attackdict['ATK'] - defenddict['DEF'], attackdict['MAG'] - defenddict['SPR'], 0)
         hitrate = self.calchitrate(attackdict['DEX'], defenddict['AGI'])
@@ -1727,6 +1759,15 @@ class Engel:
         elif floor == 14:
             d_skilltup = None
             desc_list.append(f"{tower_tup[2]} casted Ruby Light.")
+        elif floor == 17:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Pain.")
+        elif floor == 18:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Tidal Wave.")
+        elif floor == 20:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted 9999 Needles.")
         else:
             d_skilltup = None
         # calculate damage and hit rate
@@ -1766,6 +1807,8 @@ class Engel:
                 # tower boss attacks first
                 if floor == 8 and phase == 1:
                     field_list.append(f"{tower_tup[2]} is moving closer...") # Tonberry phase 1
+                elif floor == 20 and phase == 1:
+                    field_list.append(f"{tower_tup[2]} is watching you intently...") # Cactuar phase 1
                 else:
                     if counter_hitrate > 1:
                         counter_hit = 1 + ((counter_hitrate - 1) > random.random())
@@ -1792,7 +1835,10 @@ class Engel:
                         hit = 1 + ((hitrate - 1) > random.random())
                     else:
                         hit = hitrate > random.random()
-                    user_damage = damage * hit
+                    if floor == 18 and hit == 1: # Leviathan
+                        user_damage = 0
+                    else:
+                        user_damage = damage * hit
                     if hit == 2:
                         field_list.append(f"You landed a critical hit with {user_damage} damage.")
                     elif hit == 1:
@@ -1802,6 +1848,14 @@ class Engel:
                     towerhp = max(towerhp - user_damage, 0)
                 if towerhp == 0:
                     break
+                if floor == 17: # Anima pain
+                    pain_damage = self.tower_stats[floor][0] - towerhp
+                    field_list.append(f"{tower_tup[2]} inflicted you with her pain, dealing {pain_damage} damage.")
+                    userhp_current = max(userhp_current - pain_damage, 0)
+                    if userhp_current == 0:
+                        break
+                elif floor == 19: # Demon Wall
+                    field_list.append(f"{tower_tup[2]} is drawing closer...")
             if userhp_current == 0 or towerhp == 0:
                 break
             elif floor == 9:
@@ -1811,6 +1865,14 @@ class Engel:
             elif floor == 10:
                 towerhp = 0
                 field_list.append(f"{tower_tup[2]} stomped away in rage.")
+                break
+            elif floor == 17:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]} seemed pleased and faded back into the abyss.")
+                break
+            elif floor == 19:
+                userhp_current = 0
+                field_list.append(f"{tower_tup[2]} crushed you! Game Over!")
                 break
             embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         if turn_taken < 20:

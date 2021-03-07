@@ -578,14 +578,23 @@ class WotvVc(commands.Cog):
             await ctx.send(embed = embed)
             return
         # Search each vc
+        party_all_list = []
         for index, row in df.iterrows():
+            vc_party_all = []
             for col in effects_dict.keys():
                 eff_list = row[col].split(' / ')
                 ele_found = 0
                 for eff in eff_list:
+                    eff_str = f"{wotv_utils.name_str(row)} {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}"
                     if ele_found or wotv_utils.dicts['brackets'][ele] in eff:
-                        ele_found = 1
-                        effects_dict[col].append(f"{wotv_utils.name_str(row)} {eff.replace(wotv_utils.dicts['brackets'][ele] + ' ', '')}")
+                        if ele_found == 0:
+                            party_all_list = party_all_list + vc_party_all
+                            ele_found = 1
+                        effects_dict[col].append(eff_str)
+                    else:
+                        vc_party_all.append(eff_str)
+        if len(party_all_list) > 0:
+            effects_dict['Party ALL'] = party_all_list
         # Print from each list if non-empty
         for k, v in effects_dict.items():
             if len(v) > 0:
