@@ -32,6 +32,7 @@ class Engel:
         self.revivehours = 3
         self.cdjob = 1
         self.cdbase = 4
+        self.cdduel = 5 # minutes
         self.skill_apcost = 5
         self.skill_hpcost = 0.2 # % HP cost
         self.skillduration = 5
@@ -109,6 +110,31 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
+            25: (180, 50, 'Tonberry Kai', ('i6', 10), ('i8', 6),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Enhanced Tonberry that is even stronger than the one in floor 8.',
+                'https://caelum.s-ul.eu/BnE0Q30D.png'),
+            24: (180, 50, 'Mindflayer', ('i6', 10), ('i8', 6),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Mindflayer will attempt to paralyse you. You can resist it if your total defenses are over 3000.',
+                'https://caelum.s-ul.eu/esper/ou4fUjQX.png'),
+            23: (180, 50, 'Ochu', ('i6', 10), ('i8', 6),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Ochu will inflict an ailment on you to halve your highest stat.',
+                'https://caelum.s-ul.eu/esper/h4BFr1Tq.png'),
+            22: (180, 50, 'Shinryu', ('e20', 0), ('i8', 6),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (5, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Endure magical attacks for 5 turns.',
+                'https://caelum.s-ul.eu/Uc5laJhf.png'),
+            21: (180, 50, 'Omega', ('e19', 0), ('i8', 6),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (5, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Endure physical attacks for 5 turns.',
+                'https://caelum.s-ul.eu/esper/BflBUAtn.png'),
             20: (150, 50, 'Cactuar', ('i6', 10), ('i8', 5),
                 ((5, 'i6', 4), (5, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
                 ((10000, 'i6', 4), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
@@ -211,6 +237,11 @@ class Engel:
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            25: (15000, (9999, 9999, 1600, 1600, 9999, 800)),
+            24: (9999, (2500, 2500, 1800, 1800, 1000, 700)),
+            23: (9999, (2200, 2200, 1500, 1500, 1000, 600)),
+            22: (99999, (0, 3500, 9999, 9999, 9999, 0)),
+            21: (99999, (3500, 0, 9999, 9999, 9999, 0)),
             20: (5, (9999, 9999, 9999, 9999, 9999, 1300)),
             19: (9999, (2200, 2200, 2000, 2000, 1100, 400)),
             18: (9999, (2200, 2200, 1800, 1800, 1100, 900)),
@@ -298,8 +329,12 @@ class Engel:
                 '- Type `=char attack (user ping)` (e.g. `=char attack @Caelum`) to another player.',
                 f"- Type `=char attack (number) (user ping)` (e.g. `=char attack 6 @Caelum`) to attack multiple times  (up to {self.attackcap}).",
                 '- Duels are basically battle simulation just for fun.',
-                '- Duels do not cost AP nor result in any gain or loss.',
-                '- Skill effects and auto settings do not take effect in duels.',
+                '- Duels do not cost AP nor result in any item/gil gain or loss.',
+                '- Winner will take some trophies from loser, scaled with trophy count difference.',
+                f"- There is a cooldown of {self.cdduel} minutes to duel for trophies.",
+                f'- If trophy count difference is over 50, there is no trophy change.',
+                '- Trophy is also passively gained by 1 every hour.',
+                '- If both auto skills are turned on, they are casted in duel and both HP become doubled.',
                 '- Type `=char duel (user ping)` to duel with character of another user.',
             )),
         )
@@ -515,6 +550,13 @@ class Engel:
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
         )
         self.changelog = (
+            ('12th March 2021', (
+                '- New floors (up to 25) with 2 new espers.',
+                '- Anima and Leviathan stats buffed.',
+                '- Noctis, Bartz, Montblanc, Golbez limit breaks now come with small secondary effects',
+                '- Duel now uses skills if both self and opponent autoskills are turned on and both HP doubled.',
+                '- Trophy system (beta) for duel, check `=charhelp battle`.',
+            )),
             ('7th March 2021', (
                 '- New floors (up to 20) with 2 new espers.',
                 '- Chocobo and Typhon stats buffed.',
@@ -967,6 +1009,12 @@ class Engel:
                 a_moddict[skillrow['Stat']] = a_moddict[skillrow['Stat']] * skillrow[skillpotency]
             else:
                 d_moddict[skillrow['Stat']] = d_moddict[skillrow['Stat']] * skillrow[skillpotency]
+        # Tower that reads sheet stats
+        if raid == 2 and defender in (23,):
+            attackdict = self.calcstats(attacker, moddict=None)
+            if defender == 23: # Ochu
+                maxstat = max([(v, k) for k, v in attackdict.items()])[1]
+                a_moddict[maxstat] = a_moddict[maxstat] * 0.5
         # get their status sheets
         if raid == 2 and defender == 12: # Tower Chocobo Eater
             attackdict = self.calcstats(attacker, moddict=None)
@@ -980,7 +1028,7 @@ class Engel:
                 defenddict = self.calcstats(defender, usertype='T')
             else:
                 defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
-            if defender not in (5, 8, 10, 15, 16): # Diabolos and Tonberry
+            if defender not in (5, 8, 10, 15, 16, 21, 22):
                 if attackdict['DEF'] > attackdict['SPR']:
                     defenddict['MAG'] = 0
                 else:
@@ -1110,7 +1158,9 @@ class Engel:
                 new_hp = min(row['HP'] + hp_recovery, u_hp)
                 self.dfdict['User'].loc[index, 'HP'] = new_hp
             # gains EXP passively too
-            self.dfdict['User'].loc[index, 'EXP'] = self.dfdict['User'].loc[index, 'EXP'] + 20 + u_level
+            self.dfdict['User'].loc[index, 'EXP'] = row['EXP'] + 20 + u_level
+            # gains trophy passively
+            self.dfdict['User'].loc[index, 'Trophy'] = row['Trophy'] + 1
         self.syncpend = 1
     def userrevive(self, userid):
         # revive dead user and log it
@@ -1209,6 +1259,7 @@ class Engel:
             'HP': baserow['HP'],
             'AP': baserow['AP'],
             'EXP': 0,
+            'Trophy': 100,
             'Main': baserow['Main'],
             'Sub1': self.dfdict['Job'].loc[baserow['Main'], 'Sub1'],
             'Sub2': self.dfdict['Job'].loc[baserow['Main'], 'Sub2'],
@@ -1745,7 +1796,7 @@ class Engel:
         if floor in (5, 8, 10):
             if floor == 5:
                 d_skilltup = ('t01', 'Main')
-            elif floor == 8:
+            elif floor in (8, 25):
                 d_skilltup = ('t04', 'Main')
             elif floor == 10:
                 d_skilltup = ('t02', 'Main')
@@ -1768,6 +1819,17 @@ class Engel:
         elif floor == 20:
             d_skilltup = None
             desc_list.append(f"{tower_tup[2]} casted 9999 Needles.")
+        elif floor == 23:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Ochu Dance.")
+        elif floor == 24:
+            desc_list.append(f"{tower_tup[2]} casted Mindblast.")
+            userdict = self.calcstats(user.id)
+            if userdict['DEF'] + userdict['SPR'] < 3000:
+                d_skilltup = ('t05', 'Main')
+            else:
+                desc_list.append(f"But it failed.")
+                d_skilltup = None
         else:
             d_skilltup = None
         # calculate damage and hit rate
@@ -1805,7 +1867,7 @@ class Engel:
             for _ in range(5):
                 turn_taken += 1
                 # tower boss attacks first
-                if floor == 8 and phase == 1:
+                if floor in (8, 25) and phase == 1:
                     field_list.append(f"{tower_tup[2]} is moving closer...") # Tonberry phase 1
                 elif floor == 20 and phase == 1:
                     field_list.append(f"{tower_tup[2]} is watching you intently...") # Cactuar phase 1
@@ -1873,6 +1935,14 @@ class Engel:
             elif floor == 19:
                 userhp_current = 0
                 field_list.append(f"{tower_tup[2]} crushed you! Game Over!")
+                break
+            elif floor == 21:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]} recognised you as a friend and became dormant.")
+                break
+            elif floor == 22:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]} was pleased at your endurance and declared you winner.")
                 break
             embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         if turn_taken < 20:
@@ -1966,7 +2036,7 @@ class Engel:
                 elif result_tup[1] == 2:
                     desc_list.append('Your current base does not have unique job.')
                 else:
-                    desc_list.append(f"{result_tup[2] // 3600} hours {result_tup[2] % 3600 // 60} minutes left before you can change your main job.")
+                    desc_list.append(f"{result_tup[2] // 60} minutes left before you can change your main job.")
             else:
                 result_tup = self.userjobchange(user, v, k)
                 if result_tup[0]:
@@ -2273,6 +2343,7 @@ class Engel:
             desc_list.append(f"LB: {userrow['LB']}%")
         if userrow['A_Skill'] != '':
             desc_list.append(f"Status: {self.dfdict['Skill'].loc[userrow['A_Skill'], 'Skill']} ({userrow['A_Duration']})")
+        desc_list.append(f"Trophy: {userrow['Trophy']}")
         embed.description = '\n'.join(desc_list)
         # field of stats
         field_list = []
@@ -2380,12 +2451,39 @@ class Engel:
         embed.title = f"{attacker.name} VS {defender.name}"
         # get their status sheets
         attackhp = self.calcstats(attacker.id, stat='HP')['HP']
-        attackhp_init = attackhp
+        attackrow = self.dfdict['User'].loc[attacker.id]
         defendhp = self.calcstats(defender.id, stat='HP')['HP']
-        defendhp_init = defendhp
+        defendrow = self.dfdict['User'].loc[defender.id]
         # calculate damage and hit rate
-        damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(attacker.id, defender.id, counter=1)
         desc_list = []
+        if attackrow['LB_Auto'] != 'off' and defendrow['LB_Auto'] != 'off':
+            if attackrow['LB_Auto'] == 'ex':
+                skillrow = self.dfdict['Skill'].loc[attackrow['Main']]
+            else:
+                skillrow = self.dfdict['Skill'].loc[attackrow['LB_Auto']]
+            if skillrow.name == self.dfdict['Job'].loc[attackrow['Main'], 'Skill'] or 'ex' in skillrow.name:
+                potency = 'Main'
+            else:
+                potency = 'Sub'
+            desc_list.append(f"{attacker.name} casted {skillrow['Skill']}.")
+            a_skilltup = (skillrow.name, potency)
+            if defendrow['LB_Auto'] == 'ex':
+                skillrow = self.dfdict['Skill'].loc[defendrow['Main']]
+            else:
+                skillrow = self.dfdict['Skill'].loc[defendrow['LB_Auto']]
+            if skillrow.name == self.dfdict['Job'].loc[defendrow['Main'], 'Skill'] or 'ex' in skillrow.name:
+                potency = 'Main'
+            else:
+                potency = 'Sub'
+            desc_list.append(f"{defender.name} casted {skillrow['Skill']}.")
+            d_skilltup = (skillrow.name, potency)
+            attackhp = attackhp * 2
+            defendhp = defendhp * 2
+            damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(attacker.id, defender.id, a_skilltup=a_skilltup, d_skilltup=d_skilltup, counter=1)
+        else:
+            damage, hitrate, counter_damage, counter_hitrate = self.calcdamage(attacker.id, defender.id, counter=1)
+        attackhp_init = attackhp
+        defendhp_init = defendhp
         desc_list.append(f"*{attacker.name} has {min(hitrate, 1) * 100:.0f}% of doing {damage} damage.*")
         desc_list.append(f"*{attacker.name} has {max(hitrate - 1, 0) * 100:.0f}% of landing a critical hit.*")
         desc_list.append(f"*{defender.name} has {min(counter_hitrate, 1) * 100:.0f}% of doing {counter_damage} damage.*")
@@ -2422,23 +2520,59 @@ class Engel:
         field_name = 'Result'
         field_list = [f"{attacker.name} HP `{attackhp}` | {defender.name} HP `{defendhp}`"]
         if attackhp == 0 and defendhp > 0:
-            field_list.append(f"{defender.name} won!")
+            attacker_win = -1
         elif defendhp == 0 and attackhp > 0:
-            field_list.append(f"{attacker.name} won!")
+            attacker_win = 1
         elif attackhp == defendhp == 0:
-            field_list.append('It is a draw!')
+            attacker_win = 0
         else:
             attackdmg = defendhp_init - defendhp
             defenddmg = attackhp_init - attackhp
             if attackdmg > defenddmg:
-                field_list.append(f"{attacker.name} won!")
+                attacker_win = 1
             elif defenddmg > attackdmg:
-                field_list.append(f"{defender.name} won!")
+                attacker_win = -1
             else:
-                field_list.append('It is a draw!')
+                attacker_win = 0
+        if attacker_win == 0:
+            field_list.append('It is a draw!')
+        elif attacker_win == 1:
+            field_list.append(f"{attacker.name} won!")
+            # cooldown
+            if attackrow['TS_Duel'] != '':
+                thres = datetime.strptime(attackrow['TS_Duel'], mydtformat) + timedelta(minutes=self.cdduel)
+                now = datetime.now()
+                if now < thres:
+                    remaining = thres - now
+                    field_list.append(f"{remaining.seconds} seconds before you can duel for trophies.")
+            elif attackrow['Trophy'] - defendrow['Trophy'] <= 50:
+                trophy_xfer = max((defendrow['Trophy'] - attackrow['Trophy']) // 3, 5)
+                self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] + trophy_xfer
+                self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] - trophy_xfer
+                field_list.append(f"{attacker.name} won {trophy_xfer} trophies from {defender.name}!")
+                self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
+                self.syncpend = 1
+            else:
+                field_list.append(f"There is no trophy to be won!")
+        elif attacker_win == -1:
+            field_list.append(f"{defender.name} won!")
+            if attackrow['TS_Duel'] != '':
+                thres = datetime.strptime(attackrow['TS_Duel'], mydtformat) + timedelta(minutes=self.cdduel)
+                now = datetime.now()
+                if now < thres:
+                    remaining = thres - now
+                    field_list.append(f"{remaining.seconds} seconds before you can duel for trophies.")
+            elif defendrow['Trophy'] - attackrow['Trophy'] <= 50:
+                trophy_xfer = max((attackrow['Trophy'] - defendrow['Trophy']) // 3, 5)
+                self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] - trophy_xfer
+                self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] + trophy_xfer
+                field_list.append(f"{defender.name} won {trophy_xfer} trophies from {attacker.name}!")
+                self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
+                self.syncpend = 1
+            else:
+                field_list.append(f"There is no trophy to be won!")
         embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
-        defender_base = self.dfdict['User'].loc[defender.id, 'Base']
-        embed.colour = self.colours[self.dfdict['Base'].loc[defender_base, 'Element'].lower()]
+        embed.colour = self.colours[self.dfdict['Base'].loc[defendrow['Base'], 'Element'].lower()]
         return embed
     def infogacha(self, user, num_times=10, free=0):
         # generate result embed of a gacha session
@@ -3444,7 +3578,7 @@ class Engel:
                                 skill = self.find_index(' '.join(arg[argstart:]), 'Item')
                                 if skill == 'NOTFOUND':
                                     return discord.Embed(description = 'Item not found. Try checking `=char item`.')
-                            return discord.Embed(description = self.infoautoitem(user, skill, thres))
+                        return discord.Embed(description = self.infoautoitem(user, skill, thres))
                 elif argkw in ('inventory', 'inv'):
                     return self.infoinventory(user)
                 elif argkw == 'daily':
@@ -3544,13 +3678,16 @@ class Engelbert(commands.Cog):
         # check if sync is pending
         if engel.syncpend:
             return_val = engel.sheetsync()
-            channel = self.bot.get_channel(id_dict['Engel Synclogs'])
-            if channel == None:
-                print('Channel error. Trying again 10s later.')
-            if return_val == 1:
-                await channel.send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
-            else:
-                await channel.send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+            try:
+                channel = self.bot.get_channel(id_dict['Engel Synclogs'])
+                if channel == None:
+                    print('Channel error. Trying again 10s later.')
+                if return_val == 1:
+                    await channel.send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
+                else:
+                    await channel.send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+            except AttributeError:
+                print(f"Channel Error. Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @commands.command(aliases=['engelmaint'])
     async def engelbertmaint(self, ctx, *arg):

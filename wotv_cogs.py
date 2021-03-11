@@ -916,16 +916,10 @@ class WotvEsper(commands.Cog):
                         extra_stats.append(extra_arg)
                 else:
                     # find esper
-                    row_df = df[df.index.str.lower() == argstr]
-                    if len(row_df) == 0:
-                        row_df = df[df.index.str.lower().str.contains(argstr)]
-                    if len(row_df) == 0:
-                        row_df = df[argstr in df['Aliases'].str.split(' / ')]
-                    if len(row_df) == 0:
-                        row_df = df[df['Aliases'].str.contains(argstr)]
-                    if len(row_df) == 1:
-                        row_list.append(row_df.iloc[0])
-                        list_espers.append(wotv_utils.name_str(row_df.iloc[0], alias=0))
+                    rowfound, row = wotv_utils.find_row(df, argstr)
+                    if rowfound == 1:
+                        row_list.append(row)
+                        list_espers.append(wotv_utils.name_str(row, alias=0))
             if len(list_espers) > 2:
                 # Force into mobile mode otherwise can't fit
                 mobile_bool = 1

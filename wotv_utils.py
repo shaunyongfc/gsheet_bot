@@ -529,7 +529,7 @@ class WotvUtils:
             return 1, row
         except KeyError:
             if 'Aliases' in df.columns:
-                df_aliases = df[df['Aliases'].str.lower().str.contains(' '.join(arg).lower())]
+                df_aliases = df[df['Aliases'].str.lower().str.contains(argstr)]
                 if len(df_aliases) > 0:
                     for _, row in df_aliases.iterrows():
                         if argstr in [a.lower() for a in row['Aliases'].split(' / ')]:
@@ -537,14 +537,14 @@ class WotvUtils:
             else:
                 df_aliases = pd.DataFrame()
             if 'English' in df.columns: # VC only
-                df_english = df[df['English'].str.lower().str.contains(' '.join(arg).lower())]
+                df_english = df[df['English'].str.lower().str.contains(argstr)]
                 if len(df_english) > 0:
                     for _, row in df_english.iterrows():
                         if argstr == row['English'].lower():
                             return 1, row
             else:
                 df_english = pd.DataFrame()
-            df_name = df[df.index.str.lower().str.contains(argstr.lower())]
+            df_name = df[df.index.str.lower().str.contains(argstr)]
             if len(df_name) == 1:
                 return 1, df_name.iloc[0]
             elif len(df_english) == 1:
