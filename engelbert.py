@@ -31,7 +31,7 @@ class Engel:
         self.raidcap3 = 79
         self.revivehours = 3
         self.cdjob = 1
-        self.cdbase = 4
+        self.cdbase = 2
         self.cdduel = 5 # minutes
         self.skill_apcost = 5
         self.skill_hpcost = 0.2 # % HP cost
@@ -556,6 +556,7 @@ class Engel:
                 '- Noctis, Bartz, Montblanc, Golbez limit breaks now come with small secondary effects',
                 '- Duel now uses skills if both self and opponent autoskills are turned on and both HP doubled.',
                 '- Trophy system (beta) for duel, check `=charhelp battle`.',
+                '- Base change cooldown shortened to 2 hours.',
             )),
             ('7th March 2021', (
                 '- New floors (up to 20) with 2 new espers.',
@@ -2534,43 +2535,41 @@ class Engel:
                 attacker_win = -1
             else:
                 attacker_win = 0
+        # cooldown
+        on_cooldown = 0
+        if attackrow['TS_Duel'] != '':
+            thres = datetime.strptime(attackrow['TS_Duel'], mydtformat) + timedelta(minutes=self.cdduel)
+            now = datetime.now()
+            if now < thres:
+                on_cooldown = 1
+                remaining = thres - now
+                field_list.append(f"{remaining.seconds} seconds before you can duel for trophies.")
         if attacker_win == 0:
             field_list.append('It is a draw!')
         elif attacker_win == 1:
             field_list.append(f"{attacker.name} won!")
-            # cooldown
-            if attackrow['TS_Duel'] != '':
-                thres = datetime.strptime(attackrow['TS_Duel'], mydtformat) + timedelta(minutes=self.cdduel)
-                now = datetime.now()
-                if now < thres:
-                    remaining = thres - now
-                    field_list.append(f"{remaining.seconds} seconds before you can duel for trophies.")
-            elif attackrow['Trophy'] - defendrow['Trophy'] <= 50:
-                trophy_xfer = max((defendrow['Trophy'] - attackrow['Trophy']) // 3, 5)
-                self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] + trophy_xfer
-                self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] - trophy_xfer
-                field_list.append(f"{attacker.name} won {trophy_xfer} trophies from {defender.name}!")
-                self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
-                self.syncpend = 1
-            else:
-                field_list.append(f"There is no trophy to be won!")
+            if on_cooldown == 0:
+                if attackrow['Trophy'] - defendrow['Trophy'] <= 50:
+                    trophy_xfer = max((defendrow['Trophy'] - attackrow['Trophy']) // 3, 5)
+                    self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] + trophy_xfer
+                    self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] - trophy_xfer
+                    field_list.append(f"{attacker.name} won {trophy_xfer} trophies from {defender.name}!")
+                    self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
+                    self.syncpend = 1
+                else:
+                    field_list.append(f"There is no trophy to be won!")
         elif attacker_win == -1:
             field_list.append(f"{defender.name} won!")
-            if attackrow['TS_Duel'] != '':
-                thres = datetime.strptime(attackrow['TS_Duel'], mydtformat) + timedelta(minutes=self.cdduel)
-                now = datetime.now()
-                if now < thres:
-                    remaining = thres - now
-                    field_list.append(f"{remaining.seconds} seconds before you can duel for trophies.")
-            elif defendrow['Trophy'] - attackrow['Trophy'] <= 50:
-                trophy_xfer = max((attackrow['Trophy'] - defendrow['Trophy']) // 3, 5)
-                self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] - trophy_xfer
-                self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] + trophy_xfer
-                field_list.append(f"{defender.name} won {trophy_xfer} trophies from {attacker.name}!")
-                self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
-                self.syncpend = 1
-            else:
-                field_list.append(f"There is no trophy to be won!")
+            if on_cooldown == 0:
+                if defendrow['Trophy'] - attackrow['Trophy'] <= 50:
+                    trophy_xfer = max((attackrow['Trophy'] - defendrow['Trophy']) // 3, 5)
+                    self.dfdict['User'].loc[attacker.id, 'Trophy'] = attackrow['Trophy'] - trophy_xfer
+                    self.dfdict['User'].loc[defender.id, 'Trophy'] = defendrow['Trophy'] + trophy_xfer
+                    field_list.append(f"{defender.name} won {trophy_xfer} trophies from {attacker.name}!")
+                    self.dfdict['User'].loc[attacker.id, 'TS_Duel'] = datetime.strftime(datetime.now(), mydtformat)
+                    self.syncpend = 1
+                else:
+                    field_list.append(f"There is no trophy to be won!")
         embed.add_field(name=field_name, value='\n'.join(field_list), inline=False)
         embed.colour = self.colours[self.dfdict['Base'].loc[defendrow['Base'], 'Element'].lower()]
         return embed
@@ -3680,14 +3679,12 @@ class Engelbert(commands.Cog):
             return_val = engel.sheetsync()
             try:
                 channel = self.bot.get_channel(id_dict['Engel Synclogs'])
-                if channel == None:
-                    print('Channel error. Trying again 10s later.')
                 if return_val == 1:
                     await channel.send(f"Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
                 else:
-                    await channel.send(f"Sync Error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
+                    await channel.send(f"Sync error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)}).")
             except AttributeError:
-                print(f"Channel Error. Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
+                print(f"Channel error. Synced success ({datetime.strftime(datetime.now(), mydtformat)}).")
 
     @commands.command(aliases=['engelmaint'])
     async def engelbertmaint(self, ctx, *arg):
