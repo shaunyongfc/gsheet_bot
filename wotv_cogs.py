@@ -808,7 +808,7 @@ class WotvEsper(commands.Cog):
                     row_df = df.nlargest(20, col)
                 else:
                     row_df = df[df[col].str.lower().str.contains(first_arg)]
-                if first_arg == 'y':
+                if first_arg in ('y', 'n'):
                     arg = arg[1:]
                 if len(arg) > 2:
                     # Force into mobile mode otherwise can't fit
@@ -839,7 +839,7 @@ class WotvEsper(commands.Cog):
                             row_list.append('-')
                     list_lists.append(row_list)
                 # Sort list
-                if first_arg != 'y':
+                if first_arg not in ('y', 'n'):
                     list_lists.sort(key=lambda a: int(a[1]), reverse=True)
                 # Print based on display mode
                 if mobile_bool:

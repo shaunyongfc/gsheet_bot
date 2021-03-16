@@ -82,6 +82,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('16th March 2021', (
+                    'Esper Filter - bug fix and able to search espers without 3-star awakening.',
+                )),
                 ('7th March 2021', (
                     'VC Elements - now an extra section that includes universal VC effects that come with an elemental max effect.',
                 )),
@@ -289,6 +292,7 @@ class WotvUtils:
                 'Arguments separated by `|` for each stat / effect.',
                 'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
                 'Filter 3-star espers by `=esper r awaken` (/ `3-star`) but will not be sorted.',
+                'Filter espers without 3-star by `=esper r 2` but will not be sorted.',
                 'Filter limited espers by `=esper r limited` (/ `collab`) but will not be sorted.',
                 '3 or more arguments will force it into mobile display mode.',
                 'e.g. `=esper r magic | human`, `=esper r m magic | mag% | agi`'
@@ -454,6 +458,8 @@ class WotvUtils:
             return argstr[4:], 'ALL'
         if argstr.rstrip('s') in ['awakened', 'awaken', '3-star', '3star', '3']:
             return 'Awaken', 'y'
+        if argstr.rstrip('s') in ['2-star', '2star', '2']:
+            return 'Awaken', 'n'
         if argstr in ['collab', 'limited']:
             return 'Limited', 'y'
         if argstr.upper() in self.dicts['esper_stats']:
@@ -492,7 +498,7 @@ class WotvUtils:
             if row['Limited'] != '':
                 namestr += self.dicts['emotes']['limited']
         if 'Awaken' in row.index and awaken:
-            if row['Awaken'] != '':
+            if row['Awaken'] == 'y':
                 namestr += self.dicts['emotes']['esper']
         if name == 'NAME':
             namestr += f" {row.name}"
@@ -528,6 +534,11 @@ class WotvUtils:
             row = df.loc[argstr]
             return 1, row
         except KeyError:
+            df_name = df[df.index.str.lower().str.contains(argstr)]
+            if len(df_name) > 0:
+                for index, row in df_name.iterrows():
+                    if argstr == index.lower():
+                        return 1, row
             if 'Aliases' in df.columns:
                 df_aliases = df[df['Aliases'].str.lower().str.contains(argstr)]
                 if len(df_aliases) > 0:
@@ -544,7 +555,6 @@ class WotvUtils:
                             return 1, row
             else:
                 df_english = pd.DataFrame()
-            df_name = df[df.index.str.lower().str.contains(argstr)]
             if len(df_name) == 1:
                 return 1, df_name.iloc[0]
             elif len(df_english) == 1:
