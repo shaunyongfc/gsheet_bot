@@ -110,6 +110,31 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
+            30: (150, 50, 'Odin', ('e21', 0), ('i8', 5),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Odin attacks are deadly but frail.',
+                'https://caelum.s-ul.eu/esper/doXrguBs.png'),
+            29: (150, 50, 'Magic Pot Kai', ('i7', 10), ('i8', 5),
+                ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Enhanced Magic Pot that is even stronger than the one in floor 9.',
+                'https://caelum.s-ul.eu/mACkoufr.png'),
+            28: (150, 50, 'Phoenix', ('e22', 0), ('i8', 5),
+                ((15, 'i7', 4), (10, 'i7', 5), (8, 'i7', 5), (6, 'i7', 6)),
+                ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'Phoenix cannot die in phase 1.',
+                'https://caelum.s-ul.eu/esper/QRbK1tEG.png'),
+            27: (180, 50, 'Jumbo Flan', ('i6', 10), ('i8', 6),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Jumbo Flan reverses the effects of your debuffs.',
+                'https://caelum.s-ul.eu/4tX9ROUp.png'),
+            26: (180, 50, 'Adamantoise', ('i6', 10), ('i8', 6),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Adamantoise reverses the effects of your buffs.',
+                'https://caelum.s-ul.eu/PQpke9eV.png'),
             25: (180, 50, 'Tonberry Kai', ('i6', 10), ('i8', 6),
                 ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
                 ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
@@ -237,6 +262,11 @@ class Engel:
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            30: (8000, (9999, 9999, 500, 500, 1300, 800)),
+            29: (1, (4000, 4000, 9999, 9999, 9999, 0)),
+            28: (9999, (2700, 2700, 500, 500, 1200, 1000)),
+            27: (15000, (2700, 2700, 500, 500, 1100, 900)),
+            26: (12000, (2700, 2700, 2000, 2000, 1100, 900)),
             25: (15000, (9999, 9999, 1600, 1600, 9999, 800)),
             24: (9999, (2500, 2500, 1800, 1800, 1000, 700)),
             23: (9999, (2200, 2200, 1500, 1500, 1000, 600)),
@@ -546,12 +576,20 @@ class Engel:
         )
         self.futureplan = (
             'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
+            '- (Everything on hold because been busy lately...)',
             '- Equipment: Make use of overflow EXP into flat stat boosts. Initial release will be modest and see how the balance goes...',
             '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
         )
         self.changelog = (
+            ('19th March 2021', (
+                '- New floors (up to 30) with 2 new espers.',
+                '- New EX Bases.',
+                '- Buffs and debuffs stacking are now additive instead of multiplicative.',
+                '- DEF/SPR buffs nerfed and DEF/SPR debuffs buffed to match each other.',
+            )),
             ('12th March 2021', (
                 '- New floors (up to 25) with 2 new espers.',
+                '- New EX Bases.',
                 '- Anima and Leviathan stats buffed.',
                 '- Noctis, Bartz, Montblanc, Golbez limit breaks now come with small secondary effects',
                 '- Duel now uses skills if both self and opponent autoskills are turned on and both HP doubled.',
@@ -945,7 +983,7 @@ class Engel:
                         userdict[statname] += int(scaledstat * statmod)
             if moddict != None:
                 for k, v in moddict.items():
-                    userdict[k] = int(round(userdict[k] * v))
+                    userdict[k] = int(round(userdict[k] * max(v, 0)))
             return userdict
         elif usertype == 'R':
             # calculate raid stats given raid name
@@ -963,14 +1001,14 @@ class Engel:
                     raiddict['HP'] += jobrow['HP'] * (raidrow['Level'] - 79)
             if moddict != None:
                 for k, v in moddict.items():
-                    raiddict[k] = int(round(raiddict[k] * v))
+                    raiddict[k] = int(round(raiddict[k] * max(v, 0)))
             return raiddict
         elif usertype == 'T':
             # calculate tower stats given tower floor
             towerdict = {k: v for k, v in zip(self.statlist2, self.tower_stats[userid][1])}
             if moddict != None:
                 for k, v in moddict.items():
-                    towerdict[k] = int(round(towerdict[k] * v))
+                    towerdict[k] = int(round(towerdict[k] * max(v, 0)))
             return towerdict
     def calcdamage(self, attacker, defender, a_skilltup=None, d_skilltup=None, counter=0, raid=0):
         # calculate damage given attacker and defender
@@ -1007,9 +1045,9 @@ class Engel:
         for skillid, skillpotency, skillside in skilltuplist:
             skillrow = self.dfdict['Skill'].loc[skillid]
             if skillside + skillrow['Ally'] == 1:
-                a_moddict[skillrow['Stat']] = a_moddict[skillrow['Stat']] * skillrow[skillpotency]
+                a_moddict[skillrow['Stat']] = a_moddict[skillrow['Stat']] + skillrow[skillpotency]
             else:
-                d_moddict[skillrow['Stat']] = d_moddict[skillrow['Stat']] * skillrow[skillpotency]
+                d_moddict[skillrow['Stat']] = d_moddict[skillrow['Stat']] + skillrow[skillpotency]
         # Tower that reads sheet stats
         if raid == 2 and defender in (23,):
             attackdict = self.calcstats(attacker, moddict=None)
@@ -1019,6 +1057,10 @@ class Engel:
         # get their status sheets
         if raid == 2 and defender == 12: # Tower Chocobo Eater
             attackdict = self.calcstats(attacker, moddict=None)
+        elif raid == 2 and defender == 26:
+            for k, v in a_moddict.items():
+                a_moddict[k] = 2 - v
+            attackdict = self.calcstats(attacker, moddict=a_moddict)
         else:
             attackdict = self.calcstats(attacker, moddict=a_moddict)
         if raid == 1:
@@ -1027,6 +1069,10 @@ class Engel:
             # tower
             if defender == 7: # Fenrir
                 defenddict = self.calcstats(defender, usertype='T')
+            elif defender == 27:
+                for k, v in d_moddict.items():
+                    d_moddict[k] = 2 - v
+                defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
             else:
                 defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
             if defender not in (5, 8, 10, 15, 16, 21, 22):
@@ -1590,9 +1636,15 @@ class Engel:
             if row['Healing']:
                 healing_list.append(f"**{row['Skill']}**\n - Recovers `{row['Sub']*100:.0f}%` or `{row['Main']*100:.0f}%` of Max HP.")
             elif row['Ally'] == 1:
-                buff_list.append(f"**{row['Skill']}**\n - Target {row['Stat']} `x{row['Sub']}` or `x{row['Main']}` during battle.")
+                if row['Main'] > 0:
+                    buff_list.append(f"**{row['Skill']}**\n - Target {row['Stat']} `+{row['Sub']*100:.0f}%` or `+{row['Main']*100:.0f}%` during battle.")
+                else:
+                    buff_list.append(f"**{row['Skill']}**\n - Target {row['Stat']} `{row['Sub']*100:.0f}%` or `{row['Main']*100:.0f}%` during battle.")
             else:
-                debuff_list.append(f"**{row['Skill']}**\n - Enemy {row['Stat']} `x{row['Sub']}` or `x{row['Main']}` during battle.")
+                if row['Main'] > 0:
+                    debuff_list.append(f"**{row['Skill']}**\n - Enemy {row['Stat']} `+{row['Sub']*100:.0f}%` or `+{row['Main']*100:.0f}%`during battle.")
+                else:
+                    debuff_list.append(f"**{row['Skill']}**\n - Enemy {row['Stat']} `{row['Sub']*100:.0f}%` or `{row['Main']*100:.0f}%` during battle.")
         embed.add_field(name='Buffs', value='\n'.join(buff_list), inline=False)
         embed.add_field(name='Debuffs', value='\n'.join(debuff_list), inline=False)
         embed.add_field(name='Healing', value='\n'.join(healing_list), inline=False)
@@ -1831,6 +1883,15 @@ class Engel:
             else:
                 desc_list.append(f"But it failed.")
                 d_skilltup = None
+        elif floor == 26:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Matra Magic.")
+        elif floor == 27:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted White Wind.")
+        elif floor == 28:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Flame of Rebirth.")
         else:
             d_skilltup = None
         # calculate damage and hit rate
@@ -1910,7 +1971,11 @@ class Engel:
                         field_list.append(f"You missed.")
                     towerhp = max(towerhp - user_damage, 0)
                 if towerhp == 0:
-                    break
+                    if floor == 28 and phase == 1:
+                        towerhp = self.tower_stats[floor][0] * 2
+                        field_list.append(f"{tower_tup[2]} returned to life.")
+                    else:
+                        break
                 if floor == 17: # Anima pain
                     pain_damage = self.tower_stats[floor][0] - towerhp
                     field_list.append(f"{tower_tup[2]} inflicted you with her pain, dealing {pain_damage} damage.")
@@ -1921,7 +1986,7 @@ class Engel:
                     field_list.append(f"{tower_tup[2]} is drawing closer...")
             if userhp_current == 0 or towerhp == 0:
                 break
-            elif floor == 9:
+            elif floor in (9, 29):
                 towerhp = 0
                 field_list.append(f"{tower_tup[2]} fled.")
                 break
@@ -2294,10 +2359,16 @@ class Engel:
                     if subskillrow['Healing']:
                         effect_list.append('heals')
                     elif subskillrow['Ally'] > 0:
-                        effect_list.append(f"self {subskillrow['Stat']} `x{subskillrow[subpotency]}`")
+                        if subskillrow[subpotency] > 0:
+                            effect_list.append(f"self {subskillrow['Stat']} `+{subskillrow[subpotency]*100:.0f}%`")
+                        else:
+                            effect_list.append(f"self {subskillrow['Stat']} `{subskillrow[subpotency]*100:.0f}%`")
                         during_battle = 1
                     else:
-                        effect_list.append(f"enemy {subskillrow['Stat']} `x{subskillrow[subpotency]}`")
+                        if subskillrow[subpotency] > 0:
+                            effect_list.append(f"enemy {subskillrow['Stat']} `+{subskillrow[subpotency]*100:.0f}%`")
+                        else:
+                            effect_list.append(f"enemy {subskillrow['Stat']} `{subskillrow[subpotency]*100:.0f}%`")
                         during_battle = 1
             effect_str = ' and '.join(effect_list)
             if during_battle:
