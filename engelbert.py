@@ -110,17 +110,67 @@ class Engel:
             'i7': (2, 'i6', 1)
         }
         self.tower_tuples = {
-            30: (150, 50, 'Odin', ('e21', 0), ('i8', 5),
+            40: (250, 100, 'Ultima Weapon', ('i6', 15), ('i6', 1),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'The ultimate monster. Its attacks all come with an additional hit that never misses.',
+                'https://caelum.s-ul.eu/c917tJ53.png'),
+            39: (250, 100, 'Bahamut', ('e24', 0), ('i7', 1),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'The Hallowed Father, one of the ultimate espers, debuffs all your stats. He will recognise your strength as long as you are not KO-ed (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/uPTlocuD.png'),
+            38: (250, 100, 'Asura', ('e23', 0), ('i7', 1),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'The Lady of Six Realms, one of the ultimate espers, buffs all her stats. She will recognise your strength as long as you are not KO-ed (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/Msyobumc.png'),
+            37: (200, 50, 'Sylph', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Sylph that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/kAd7dXND.png'),
+            36: (200, 50, 'Ramuh', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Ramuh that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/shwyXVlR.png'),
+            35: (200, 50, 'Mime', ('i6', 15), ('i8', 7),
+                ((15, 'i6', 4), (11, 'i6', 5), (8, 'i6', 5), (5, 'i6', 5), (3, 'i6', 6)),
+                ((15000, 'i6', 4), (10000, 'i6', 5), (5000, 'i6', 5), (2000, 'i6', 5), (100, 'i6', 6)),
+                'Mime copies your stats. He gets bored easily... (same damage calculation as raid)',
+                'https://caelum.s-ul.eu/Doo9WCyV.png'),
+            34: (200, 50, 'Shiva', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Shiva that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/mHbKSzQP.png'),
+            33: (200, 50, 'Titan', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Titan that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/roHF6Ceu.png'),
+            32: (200, 50, 'Siren', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Siren that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/ZyWEhO5B.png'),
+            31: (200, 50, 'Ifrit', ('i7', 15), ('i8', 7),
+                ((15, 'i7', 4), (11, 'i7', 5), (8, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
+                ((15000, 'i7', 4), (10000, 'i7', 5), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
+                'True Ifrit that has stats far surpassing the raid version (same damage calculation as raid).',
+                'https://caelum.s-ul.eu/esper/XTJiWFs7.png'),
+            30: (150, 50, 'Odin', ('e21', 0), ('i8', 6),
                 ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
                 ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
                 'Odin attacks are deadly but frail.',
                 'https://caelum.s-ul.eu/esper/doXrguBs.png'),
-            29: (150, 50, 'Magic Pot Kai', ('i7', 10), ('i8', 5),
+            29: (150, 50, 'Magic Pot Kai', ('i7', 10), ('i8', 6),
                 ((15, 'i7', 4), (10, 'i7', 5), (5, 'i7', 5), (3, 'i7', 6)),
                 ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
                 'Enhanced Magic Pot that is even stronger than the one in floor 9.',
                 'https://caelum.s-ul.eu/mACkoufr.png'),
-            28: (150, 50, 'Phoenix', ('e22', 0), ('i8', 5),
+            28: (150, 50, 'Phoenix', ('e22', 0), ('i8', 6),
                 ((15, 'i7', 4), (10, 'i7', 5), (8, 'i7', 5), (6, 'i7', 6)),
                 ((10000, 'i7', 4), (5000, 'i7', 5), (2000, 'i7', 5), (100, 'i7', 6)),
                 'Phoenix cannot die in phase 1.',
@@ -262,6 +312,16 @@ class Engel:
                 'https://caelum.s-ul.eu/esper/39QkFDA8.png'),
         }
         self.tower_stats = {
+            40: (9999, (3000, 3000, 2000, 2000, 1300, 1000)),
+            39: (9999, (1000, 2700, 1000, 1000, 1200, 900)),
+            38: (9999, (2700, 1000, 1000, 1000, 1200, 900)),
+            37: (5000, (2000, 2000, 400, 400, 1300, 1800)),
+            36: (9999, (4000, 4000, 1000, 1000, 1300, 900)),
+            35: (9999, (1, 1, 1, 1, 1, 1)),
+            34: (9999, (1200, 2500, 1000, 2500, 1300, 1100)),
+            33: (9999, (2500, 1200, 2500, 1000, 1300, 1100)),
+            32: (9999, (1200, 2500, 2500, 1000, 1300, 1100)),
+            31: (9999, (2500, 1200, 1000, 2500, 1300, 1100)),
             30: (8000, (9999, 9999, 500, 500, 1300, 800)),
             29: (1, (4000, 4000, 9999, 9999, 9999, 0)),
             28: (9999, (2700, 2700, 500, 500, 1200, 1000)),
@@ -363,7 +423,7 @@ class Engel:
                 '- Winner will take some trophies from loser, scaled with trophy count difference.',
                 f"- There is a cooldown of {self.cdduel} minutes to duel for trophies.",
                 f'- If trophy count difference is over 50, there is no trophy change.',
-                '- Trophy is also passively gained by 1 every hour.',
+                '- Trophy is also passively gained by 1 every hour until it hits 1000.',
                 '- If both auto skills are turned on, they are casted in duel and both HP become doubled.',
                 '- Type `=char duel (user ping)` to duel with character of another user.',
             )),
@@ -538,7 +598,7 @@ class Engel:
             'Description', (
                 'Tower is a series of floors that you can challenge for rewards.',
                 'You need to clear in sequence, i.e. cannot challenge 3 if you have not cleared 2 yet.'
-                f"Currently up to floor {max(self.tower_tuples.keys())}.",
+                f"Up to floor {max(self.tower_tuples.keys())}.",
                 'Rewards are separated into first clear, repeat clear and achievement missions.',
                 'There are two types of achievement missions - clear within a number of turns and clear taking less than a number of damage.',
             )),(
@@ -565,22 +625,24 @@ class Engel:
         manual_commands = '\n'.join([f"`=charhelp {k}`" for k in self.manual.keys()])
         self.helpintro = (
             'Engelbert is an experimental project of Discord bot tamagotchi '
-            '(digital pet / avatar / character). It is still under constant development so things '
-            'may be subject to change and adjustment. Feel free to drop some feedback!\n'
+            '(digital pet / avatar / character). Further development is currently on indefinite hiatus.\n'
             '- Type `=char changelog` for recent changes.\n'
-            '- Type `=char futureplan` for tentative future plans.\n'
             '- Type `=charrep (number) (command)` (e.g. `=charrep 10 exbase up hyoh`) for repeated commands (up to 10).\n'
             '- WARNING: Multiple replies will occur so please do not overuse to flood the channel...\n'
             '- For more in-depth info of the following, try:\n' +
             manual_commands
         )
         self.futureplan = (
-            'Subject to change and feasibility. Cannot say when they will be done... In order of priority:',
-            '- (Everything on hold because been busy lately...)',
-            '- Equipment: Make use of overflow EXP into flat stat boosts. Initial release will be modest and see how the balance goes...',
-            '- (if people are still playing) Esper Expansion: esper gauge and in-battle-buffs',
+            'Due to heavy time commitment and losing interest, all future developments will be on indefinite hiatus until I somehow pickup again...',
+            '- Trials, Equipment and Esper expansion...',
         )
         self.changelog = (
+            ('25th March 2021', (
+                '- Final update until I somehow pick up again. Thank you for playing.',
+                '- New floors (up to 40) with 2 new espers.',
+                '- New EX Bases.',
+                '- Trophy stops regenerating after 1000.',
+            )),
             ('19th March 2021', (
                 '- New floors (up to 30) with 2 new espers.',
                 '- New EX Bases.',
@@ -1073,9 +1135,11 @@ class Engel:
                 for k, v in d_moddict.items():
                     d_moddict[k] = 2 - v
                 defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
+            elif defender == 35:
+                defenddict = self.calcstats(attacker, usertype='U', moddict=d_moddict)
             else:
                 defenddict = self.calcstats(defender, usertype='T', moddict=d_moddict)
-            if defender not in (5, 8, 10, 15, 16, 21, 22):
+            if defender not in (5, 8, 10, 15, 16, 21, 22, 31, 32, 33, 34, 35, 36, 37, 38, 39):
                 if attackdict['DEF'] > attackdict['SPR']:
                     defenddict['MAG'] = 0
                 else:
@@ -1207,7 +1271,8 @@ class Engel:
             # gains EXP passively too
             self.dfdict['User'].loc[index, 'EXP'] = row['EXP'] + 20 + u_level
             # gains trophy passively
-            self.dfdict['User'].loc[index, 'Trophy'] = row['Trophy'] + 1
+            if row['Trophy'] < 1000:
+                self.dfdict['User'].loc[index, 'Trophy'] = row['Trophy'] + 1
         self.syncpend = 1
     def userrevive(self, userid):
         # revive dead user and log it
@@ -1720,7 +1785,7 @@ class Engel:
         # generate embed of list of available tower floors
         embed = discord.Embed()
         embed.title = f"Tower ({user.name})"
-        embed.description = f"`=charhelp tower` for more info. Current up to floor {max(self.tower_tuples.keys())}."
+        embed.description = f"`=charhelp tower` for more info. Up to floor {max(self.tower_tuples.keys())}."
         userrow = self.dfdict['User'].loc[user.id]
         recorddict = self.tower_parse(userrow['T_Record'])
         if len(recorddict) == 0:
@@ -1846,13 +1911,17 @@ class Engel:
             desc_list.append(f"You spent {tower_tup[1]} AP to challenge this floor. Your current AP is {userrow['AP'] - tower_tup[1]}")
             self.syncpend = 1
         embed.title = f"{user.name} VS {tower_tup[2]}"
-        if floor in (5, 8, 10):
+        if floor in (5, 8, 10, 38, 39):
             if floor == 5:
                 d_skilltup = ('t01', 'Main')
             elif floor in (8, 25):
                 d_skilltup = ('t04', 'Main')
             elif floor == 10:
                 d_skilltup = ('t02', 'Main')
+            elif floor == 38:
+                d_skilltup = ('t06', 'Main')
+            elif floor == 39:
+                d_skilltup = ('t07', 'Main')
             desc_list.append(f"{tower_tup[2]} casted {self.dfdict['Skill'].loc[d_skilltup[0], 'Skill']}.")
         elif floor == 7:
             d_skilltup = None
@@ -1892,6 +1961,12 @@ class Engel:
         elif floor == 28:
             d_skilltup = None
             desc_list.append(f"{tower_tup[2]} casted Flame of Rebirth.")
+        elif floor == 35:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Mimic.")
+        elif floor == 40:
+            d_skilltup = None
+            desc_list.append(f"{tower_tup[2]} casted Ultima.")
         else:
             d_skilltup = None
         # calculate damage and hit rate
@@ -1949,6 +2024,12 @@ class Engel:
                     damage_taken += tower_damage
                     if userhp_current == 0:
                         break
+                    if floor == 40:
+                        field_list.append(f"{tower_tup[2]} landed an additional hit with {counter_damage} damage.")
+                        userhp_current = max(userhp_current - counter_damage, 0)
+                        damage_taken += counter_damage
+                        if userhp_current == 0:
+                            break
                 # user's turn
                 if floor == 14 and hitrate == -1:
                     userhp_current = max(userhp_current - damage, 0)
@@ -1986,6 +2067,10 @@ class Engel:
                     field_list.append(f"{tower_tup[2]} is drawing closer...")
             if userhp_current == 0 or towerhp == 0:
                 break
+            elif floor == 35 and towerhp == self.tower_stats[floor][0]:
+                towerhp = 0
+                field_list.append(f"{tower_tup[2]}: Man, you are boring... I quit.")
+                break
             elif floor in (9, 29):
                 towerhp = 0
                 field_list.append(f"{tower_tup[2]} fled.")
@@ -2016,6 +2101,9 @@ class Engel:
         field_name = 'Result'
         field_list = []
         # Check results
+        if towerhp > 0 and userhp_current > 0 and floor in (38, 39):
+            towerhp = 0
+            field_list.append(f"{tower_tup[2]} recognised your strength.")
         if towerhp > 0:
             field_list.append(f"You failed.")
             if userhp_current == 0:
