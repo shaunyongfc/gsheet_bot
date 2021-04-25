@@ -6,7 +6,8 @@ SHARDS_REQ = {
     'UR': [40, 80, 120, 160, 200, 80, 120, 200],
     'SSR': [20, 40, 80, 160, 200, 80, 120, 200]
     }
-SHARDS_DAILY = {'UR+': 1, 'UR': 2, 'SSR': 3}
+SHARDS_DAILY = {'UR+': 2, 'UR': 2, 'SSR': 3}
+HQ_DAILY = {'UR+': 2, 'UR': 2, 'SSR': 3}
 STAGE_NAME = ['LB +0', 'LB +1', 'LB +2', 'LB +3', 'LB +4', 'LB +5', 'J 19', 'J 22', 'J 25']
 LB_SUPPRESS = 3
 
@@ -46,7 +47,7 @@ class Roster:
         hqcount = 0
         for index, row in self.unithq.iterrows():
             if self.unitlb.loc[row['Unit'], 'Stage'] < row['Target']:
-                hq_gain = min(SHARDS_DAILY[self.unitlb.loc[row['Unit'], 'Rarity']], 10 - hqcount)
+                hq_gain = min(HQ_DAILY[self.unitlb.loc[row['Unit'], 'Rarity']], 10 - hqcount)
                 hqcount += hq_gain
                 if index > self.hqqueue:
                     self.hqqueue = index

@@ -57,7 +57,7 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_eq
             elif arg[0].lower() == 'param':
                 help_tuples = wotv_utils.help_param
-            elif arg[0].lower() in ('stars', 'ramada'):
+            elif arg[0].lower() in ('stars', 'ramada', 'moore'):
                 help_tuples = wotv_utils.help_ramada
             elif arg[0].lower() == 'events':
                 help_tuples = wotv_utils.help_events
@@ -207,15 +207,16 @@ class WotvGeneral(commands.Cog):
             embed.description = npctup[4]
         await ctx.send(embed = embed)
 
-    @commands.command(aliases=['fortune', 'stars', 'ramada'])
+    @commands.command(aliases=['fortune', 'stars', 'ramada', 'moore'])
     async def wotvramada(self, ctx, *arg):
         await self.bot.get_channel(id_dict['Logs']).send(embed = logs_embed(ctx.message))
         # Fluff command to read fortune
+        reader = ctx.message.content.lstrip('=+').split()[0]
         embed = discord.Embed(
             colour = wotv_utils.dicts['embed']['default_colour']
         )
-        fortunestr, fortunedeco, fortuneurl = wotv_utils.ramada()
-        embed.title = f"Ramada Star Reading {fortunedeco}"
+        fortunestr, fortunetitle, fortuneurl = wotv_utils.ramada(reader)
+        embed.title = fortunetitle
         embed.description = fortunestr
         embed.set_thumbnail(url=fortuneurl)
         await ctx.send(embed = embed)

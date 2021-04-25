@@ -19,7 +19,7 @@ bot.add_cog(WotvEquipment(bot))
 bot.add_cog(WotvVc(bot))
 bot.add_cog(WotvEsper(bot))
 #bot.add_cog(CotcGeneral(bot))
-bot.add_cog(Engelbert(bot))
+#bot.add_cog(Engelbert(bot))
 
 with open(f"token.txt") as fp:
     token = fp.read().rstrip('\n')

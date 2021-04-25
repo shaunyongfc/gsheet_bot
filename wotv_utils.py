@@ -82,6 +82,9 @@ class WotvUtils:
                 (' ', '-')
             ),
             'changelog': (
+                ('25th April 2021', (
+                    'Ramada Star Reading - added Moore (`=help stars`).',
+                )),
                 ('16th March 2021', (
                     'Esper Filter - bug fix and able to search espers without 3-star awakening.',
                 )),
@@ -132,8 +135,8 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'event_tuples': (
-                (('gacha', 'banner', 'stepup', 'step up', 'summon', 'pull'), 'visiore'),
-                (('recipe', 'weapon', 'armor', 'aromour', 'accessory', 'farm'), 'recipe'),
+                (('gacha', 'banner', 'step', 'summon', 'pull', 'sale'), 'visiore'),
+                (('recipe', 'weapon', 'armor', 'armour', 'accessory', 'farm'), 'recipe'),
                 (('pvp', 'arena', 'class', 'guild'), 'party'),
                 (('event', 'raid', 'tower', 'box'), 'event'),
                 (('shop', 'whimsy'), 'shop'),
@@ -163,7 +166,7 @@ class WotvUtils:
             ('Simple Calculation', ('Enter `=math/calc` with a mathematical expression to calculate. e.g. `=calc 1+1`',)),
             ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
             ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
-            ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune. Enter `=help stars` for current rate.',
+            ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` or `=moore` to have Ramada or Moore read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.')),
             ('Engelbert Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
             'Note that it is a group of functions entirely separated from the rest of the bot so all related commands start with `=char`, `=tamagotchi` or `=engel`.',
@@ -597,12 +600,24 @@ class WotvUtils:
         df_index = df[df['Incorrect'] == incorrect].sample().index[0]
         df_row = df.loc[df_index]
         return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'], df_row['String'].replace('CHOICE', randstr))
-    def ramada(self):
+    def ramada(self, reader):
         # random fortune generator for star reading
         choice = random.choices(self.dfwotv.stars.index.tolist(), weights=self.dfwotv.stars['Weight'].tolist())[0]
         row = self.dfwotv.stars.iloc[choice]
-        row_deco = self.dicts['emotes'][row['Rarity'].lower()] + self.dicts['emotes'][row['Emote']]
-        return row['Fortune'], row_deco, row['Url']
+        if reader not in ('moore', 'ramada'):
+            if row['Emote'] == 'neutral':
+                reader = 'ramada'
+            elif row['Rarity'] == 'SSR':
+                reader = 'moore'
+            else:
+                reader = random.choice(('ramada', 'moore'))
+        if reader == 'moore':
+            row_url = row['MUrl']
+            row_title = f"Moore Star Reading {self.dicts['emotes'][row['Rarity'].lower()]}{self.dicts['emotes'][row['Emote']]}"
+        elif reader == 'ramada':
+            row_url = row['Url']
+            row_title = f"Ramada Star Reading {self.dicts['emotes'][row['Rarity'].lower()]}{self.dicts['emotes'][row['Emote']]}"
+        return row['Fortune'], row_title, row_url,
     def update_ramada(self):
         # Generate current rate dynamically directly from data
         rate_lists = []
@@ -618,7 +633,9 @@ class WotvUtils:
             rate_lists.append(rarity_str)
         self.help_ramada = (
             ('Ramada Star Reading Help',
-                ('A fluff command. Enter `=stars` or `=ramada` to have Ramada read your fortune.',
+                ('A fluff command. Enter `=ramada` to have Ramada read your fortune.',
+                'Enter `=moore` to have Moore read your fortune.',
+                'Enter `=stars` to have either of them read your fortune.',
                 'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.',
                 'Note that the rate may change from time to time. Any feedback is welcome.'
             )),
