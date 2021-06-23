@@ -518,7 +518,7 @@ class WotvUtils:
     def calc_url(self, category, namestr):
         # generate urls for Bismark's WOTC-CALC
         calc_url = f"https://wotv-calc.com/JP/{category}/"
-        urlstr = namestr.lower()
+        urlstr = namestr.lower().replace('-', ' ')
         urlstr = self.resymbols.sub('', urlstr)
         for a, b in self.dicts['calcurl']:
             urlstr = urlstr.replace(a, b)

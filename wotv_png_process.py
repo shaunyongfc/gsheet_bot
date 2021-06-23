@@ -4,6 +4,7 @@ import os
 from glob import glob
 from wotv_png_paths import *
 IMAGE_FOLDER = 'bot_images'
+IMAGE_FOLDER_UNITS = 'unit_images'
 PROCESSING_FOLDER = 'process_pending'
 
 # a separate executional file to crop png files
@@ -49,15 +50,19 @@ def image_crawl(folderpath):
     return [f for f in os.listdir(folderpath) if os.path.isfile(os.path.join(folderpath, f)) and '.png' in f]
 
 def bot_folder_main():
+    # scrapped function
     filelist = image_crawl(os.path.join(IMAGE_FOLDER, PROCESSING_FOLDER))
     for filename in filelist:
         image_convert(os.path.join(IMAGE_FOLDER, PROCESSING_FOLDER, filename), filename)
 
 def all_units_main():
+    # find all images to process
     filelist = glob(COLLABO_PATTERN) + glob(LAPIS_PATTERN)
     for filepath in filelist:
         filename = os.path.split(filepath)[1]
-        image_convert(filepath, filename, 'unit_images')
+        # check if file already exists
+        if not os.path.isfile(os.path.join(IMAGE_FOLDER_UNITS, filename)):
+            image_convert(filepath, filename, IMAGE_FOLDER_UNITS)
 
 if __name__ == '__main__':
     all_units_main()
