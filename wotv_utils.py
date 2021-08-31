@@ -1,13 +1,22 @@
-import re, random
+import re
+import random
 import pandas as pd
 
+
 class WotvUtils:
+    """An object that contains multiple utility functions for WOTV."""
     def __init__(self, dfwotv, id_dict):
+        """Object initialisation with a special dataframe handler object
+        and a dictionary of ids as inputs.
+        """
         self.dfwotv = dfwotv
-        self.reconditions = re.compile(r'\[[\w\/]+\]') # regex for bracketed conditions
-        self.revalues = re.compile(r'-?\d+$') # regex for numbers
-        self.resymbols = re.compile(r'[^\w ]') # regex for symbols to be omitted for url
-        self.dicts = {
+        # Regex for bracketed conditions.
+        self.reconditions = re.compile(r'\[[\w\/]+\]')
+        # Regex for numbers including negative.
+        self.revalues = re.compile(r'-?\d+$')
+        # Regex for symbols to be omitted for url generation.
+        self.resymbols = re.compile(r'[^\w ]')
+        self.dicts = { # Dictionary to store various constants.
             'mat_sets': self.mat_sets(self.dfwotv.eq),
             'eq_lists': {
                 'Type': ('t',),
@@ -51,7 +60,7 @@ class WotvUtils:
             },
             'brackets': self.bracket_init(),
             'emotes': self.emotes_init(),
-            'colours': {
+            'colours': { # Embed colour hex codes.
                 'fire': 0xE47051,
                 'ice': 0xA4B3F0,
                 'wind': 0xA3E053,
@@ -62,26 +71,45 @@ class WotvUtils:
                 'dark': 0xE083F4,
                 'neutral': 0x7F8486
             },
-            'embed': { # default embed settings
+            'embed': { # Default embed settings.
                 'default_colour': 0x999999,
                 'author_name': 'FFBE幻影戦争',
                 'gl_author_name': 'FFBE: War of the Visions',
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png'
             },
-            'paramcalc': {
+            'paramcalc': { # Default parameter values and aliases.
                 'agi': (70, ('agi', 'speed', 'spd', 'agility')),
                 'dex': (250, ('dex', 'dexterity')),
                 'luck': (250, ('luck', 'luc', 'luk')),
                 'acc': (0, ('acc', 'accuracy', 'hit')),
                 'eva': (0, ('eva', 'evasion', 'evade', 'avoid')),
-                'crit': (0, ('crit', 'critical', 'crit rate', 'critical rate')),
-                'c.avo': (0, ('crit avoid', 'crit avo', 'critical avoidance', 'ca', 'cavo', 'c. avo', 'c.avo'))
+                'crit': (0, ('crit', 'critical', 'crit rate',
+                             'critical rate')),
+                'c.avo': (0, ('crit avoid', 'crit avo', 'critical avoidance',
+                              'ca', 'cavo', 'c. avo', 'c.avo'))
             },
             'calcurl': (
                 ('é', 'e'),
                 (' ', '-')
             ),
+            'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
+            'ramada_implication': ('up', 'neutral', 'down'),
+            'event_tuples': (
+                (('gacha', 'banner', 'step', 'summon', 'pull', 'sale'),
+                 'visiore'),
+                (('recipe', 'weapon', 'armor', 'armour', 'accessory', 'farm'),
+                 'recipe'),
+                (('pvp', 'arena', 'class', 'guild'), 'party'),
+                (('event', 'raid', 'tower', 'box'), 'event'),
+                (('shop', 'whimsy'), 'shop'),
+                (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
+            ),
             'changelog': (
+                ('31st August 2021', (
+                    'VC Elements - no longer separated into 3 sections, separated by icons instead. (`=help vc`)',
+                    'Esper Compare - +all by default, add any argument to revert.',
+                    'Tamagotchi - completely discontinued since it is no longer being used. Let me know if anyone is suddenly interested though...',
+                )),
                 ('25th April 2021', (
                     'Ramada Star Reading - added Moore (`=help stars`).',
                 )),
@@ -132,16 +160,6 @@ class WotvUtils:
                     'News link - get link to news with `=news` or `=news gl`.'
                 ))
             ),
-            'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
-            'ramada_implication': ('up', 'neutral', 'down'),
-            'event_tuples': (
-                (('gacha', 'banner', 'step', 'summon', 'pull', 'sale'), 'visiore'),
-                (('recipe', 'weapon', 'armor', 'armour', 'accessory', 'farm'), 'recipe'),
-                (('pvp', 'arena', 'class', 'guild'), 'party'),
-                (('event', 'raid', 'tower', 'box'), 'event'),
-                (('shop', 'whimsy'), 'shop'),
-                (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
-            )
         }
         self.help_general = (
             ('General Info', (
@@ -168,9 +186,8 @@ class WotvUtils:
             ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
             ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` or `=moore` to have Ramada or Moore read your fortune. Enter `=help stars` for current rate.',
             'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.')),
-            ('Engelbert Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
-            'Note that it is a group of functions entirely separated from the rest of the bot so all related commands start with `=char`, `=tamagotchi` or `=engel`.',
-            'Enter `=char help` or `=tamagotchi help` or `=engel help` for more info.'))
+            ('Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
+            'Currently completely discontinued.'))
         )
         self.help_events = (
             ('Events', (
@@ -213,7 +230,7 @@ class WotvUtils:
             ('Equipment Help', (
                 'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
                 'Note that only craftable/star-able SSR/UR equipment is listed (i.e. no TM).',
-                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
+                self.dicts['emotes']['limited'] + ' nameless pink orb indicates time limited.'
             )),
             ('Equipment by name', ('**= eq**',
                 'Argument is by equipment name (subject to name availability).',
@@ -252,7 +269,8 @@ class WotvUtils:
             ('Vision Card Help', (
                 self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
                 self.dicts['emotes']['allele'] + ' ALL icon indicates unconditional effects.',
-                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.'
+                self.dicts['emotes']['vcmax'] + ' yellow ball indicates max level effects.',
+                self.dicts['emotes']['limited'] + ' nameless pink orb indicates time limited.'
             )),
             ('VC Info', ('**= vc / wvc / wotvvc**',
                 'Argument either in Japanese name, English name or short nicknames (aliases) bracketed in other commands.',
@@ -263,6 +281,7 @@ class WotvUtils:
                 '- slash/pierce/strike/missile/magic atk/res/pen',
                 '- fire/ice/(etc) atk/res'
                 '- def/spr up/pen',
+                '- def/spr/agi+ (notable raw stats on VC)',
                 '- atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
                 '- single/area res',
                 '- crit rate/evade/damage',
@@ -302,8 +321,9 @@ class WotvUtils:
             )),
             ('Esper Compare', ('**= esper c / esper compare**',
                 'Arguments separated by `|` for each esper / effect.',
-                'Will only compare all flat stats by default, add effect comparisons by `+ effect` as arguments.',
-                'Alternatively, `+all` to add all effects; `+atk` `+killer` `+stat` `+res` for their respective categories.',
+                'Will compare all effects by default. Add any argument to revert to flat stats only.'
+                'To compare specific effects only, add effect comparisons by `+ effect` as arguments.',
+                'Alternatively, `+atk` `+killer` `+stat` `+res` for their respective categories.',
                 '3 or more espers will force it into mobile display mode.',
                 'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
             )),
@@ -311,7 +331,8 @@ class WotvUtils:
                 '- hp/tp/ap/atk/mag/agi/dex/luck (base)',
                 '- slash/pierce/strike/missile/magic atk/res',
                 '- fire/ice/(etc) atk/res',
-                '- def/spr/hp%/tp%/ap%/atk%/mag% (node)',
+                '- def/spr/hp%/tp%/ap%/atk%/mag%/luck% (node)',
+                '- initial ap',
                 '- accuracy/evasion',
                 '- crit rate/evade/damage',
                 '- poison/stop/(etc) res'
@@ -330,10 +351,18 @@ class WotvUtils:
                 'Some recent releases are taken directly from in-game info and news.'
             ))
         )
+        self.help_ramada_str = ('Ramada Star Reading Help',
+            ('A fluff command. Enter `=ramada` to have Ramada read your fortune.',
+            'Enter `=moore` to have Moore read your fortune.',
+            'Enter `=stars` to have either of them read your fortune.',
+            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.',
+            'Note that the rate may change from time to time. Any feedback is welcome.'
+        ))
         self.update_ramada()
         self.weekly_init()
+
     def weekly_init(self):
-        # only runs once to generate the end string
+        """Only runs once to generate the weekly command string."""
         msg_list = []
         weekly_tuples = [
             ('`Sunday   `', ('gil',)),
@@ -350,8 +379,9 @@ class WotvUtils:
                 msg_line += self.dicts['emotes'][ele]
             msg_list.append(msg_line)
         self.weekly = '\n'.join(msg_list)
+
     def mat_sets(self, df):
-        # only runs once to generate the dictonary entry
+        """Only runs once to generate the dictonary entry."""
         dict_sets = {
             'Type': set(),
             'Acquisition': set(),
@@ -368,8 +398,9 @@ class WotvUtils:
                     else:
                         v.add(row[k])
         return dict_sets
+
     def esper_sets(self, df):
-        # only runs once to generate the dictonary entry
+        """Only runs once to generate the dictonary entry."""
         dict_sets = {
             'ATK Up': set(),
             'Killer': set(),
@@ -383,9 +414,10 @@ class WotvUtils:
                         re_match = self.revalues.search(eff)
                         v.add(eff[:re_match.start()].strip().lower())
         return dict_sets
+
     def emotes_init(self):
-        # only runs once to generate the dictonary entry
-        # raw code of emotes uploaded into Discord
+        """Only runs once to generate the dictonary entry."""
+        # Raw numbers of emotes uploaded into Discord copied manually.
         wotv_emotes_raw = (
             ('weapon', '799182037348909077'),
             ('armor', '799182037696905276'),
@@ -406,7 +438,7 @@ class WotvUtils:
             ('dark', '791969566246436884'),
             ('neutral', '791969566233853952'),
             ('allele', '799186663229227038'),
-            ('limited', '799155023249408001'),
+            ('limited', '881743510125043753'),
             ('esper', '799155023086878740'),
             ('kame', '799186663041531907'),
             ('pink', '799230682470678559'),
@@ -419,7 +451,8 @@ class WotvUtils:
             ('event', '805305947722743830'),
             ('recipe', '805305947898642473'),
             ('shop', '805305948003368970'),
-            ('party', '809924634903838810')
+            ('party', '809924634903838810'),
+            ('vcmax', '881743510145998848'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
@@ -430,23 +463,27 @@ class WotvUtils:
         for k, v in wotv_aemotes_raw:
             wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
         return wotv_emotes
+
     def bracket_init(self):
-        # only runs once to generate the dictonary entry
+        """Only runs once to generate the dictonary entry."""
         bracket_dict = dict()
-        for ele in ['fire', 'ice', 'wind', 'earth', 'thunder', 'water', 'light', 'dark']:
+        for ele in ['fire', 'ice', 'wind', 'earth',
+                    'thunder', 'water', 'light', 'dark']:
             bracket_dict[f"[{ele.capitalize()}]"] = ele
             bracket_dict[ele] = f"[{ele.capitalize()}]"
         return bracket_dict
+
     def eqt_convert(self, type_str):
-        # only used so correct type emote is generated when printed
+        """Used to convert equipment type string into type emote shortcut."""
         if type_str == 'Accessory':
             return 'accessory'
         elif 'Armor' in type_str:
             return 'armor'
         else:
             return 'weapon'
+
     def shortcut_convert(self, argstr, col='VC'):
-        # convert shortcut if in the sheet
+        """Convert shortcuts into corresponding contents."""
         try:
             args = self.dfwotv.shortcut.loc[argstr.lower()][col]
             if args != '':
@@ -455,11 +492,15 @@ class WotvUtils:
                 return argstr
         except KeyError:
             return argstr
+
     def esper_findcol(self, argstr):
-        # find the correct column to search for an effect from an argument string
+        """Find the correct column to search for an effect from an argument
+        string.
+        """
         if argstr[:3] == 'ALL':
             return argstr[4:], 'ALL'
-        if argstr.rstrip('s') in ['awakened', 'awaken', '3-star', '3star', '3']:
+        if argstr.rstrip('s') in ['awakened', 'awaken',
+                                  '3-star', '3star', '3']:
             return 'Awaken', 'y'
         if argstr.rstrip('s') in ['2-star', '2star', '2']:
             return 'Awaken', 'n'
@@ -486,8 +527,12 @@ class WotvUtils:
                 if len(col_list) == 1:
                     col = col_list[0]
         return col, argstr
-    def name_str(self, row, name='NAME', element=1, rarity=1, type=1, limited=1, awaken=1, alias=1, elestr=''):
-        # process an entry to print the name string decorated with emotes
+
+    def name_str(self, row, name='NAME', element=1, rarity=1, type=1,
+                 limited=1, awaken=1, alias=1, elestr=''):
+        """Process an entry to return the name string decorated with
+        emotes.
+        """
         namestr = ''
         if elestr != '':
             namestr += self.dicts['emotes'][elestr]
@@ -515,16 +560,20 @@ class WotvUtils:
                 else:
                     namestr += f" ({engstr})"
         return namestr
+
     def calc_url(self, category, namestr):
-        # generate urls for Bismark's WOTC-CALC
+        """Generate urls for Bismark's WOTC-CALC given raw name string."""
         calc_url = f"https://wotv-calc.com/JP/{category}/"
         urlstr = namestr.lower().replace('-', ' ')
         urlstr = self.resymbols.sub('', urlstr)
         for a, b in self.dicts['calcurl']:
             urlstr = urlstr.replace(a, b)
         return f"[{namestr}]({calc_url + urlstr})"
+
     def find_row(self, df, arg):
-        # tolerance processing for query to find the correct entry
+        """Tolerance processing for query to find the correct entry.
+        Return a tuple with a boolean indicating the correct entry is found.
+        If false, return a list of suggestions."""
         if isinstance(arg, str):
             argstr = arg.lower()
         else:
@@ -546,7 +595,8 @@ class WotvUtils:
                 df_aliases = df[df['Aliases'].str.lower().str.contains(argstr)]
                 if len(df_aliases) > 0:
                     for _, row in df_aliases.iterrows():
-                        if argstr in [a.lower() for a in row['Aliases'].split(' / ')]:
+                        if argstr in [a.lower() for a in
+                                      row['Aliases'].split(' / ')]:
                             return 1, row
             else:
                 df_aliases = pd.DataFrame()
@@ -567,42 +617,52 @@ class WotvUtils:
             else:
                 suggestion_list = df_name.index.tolist()
                 if len(df_english) > 0:
-                    suggestion_list = suggestion_list + df_english['English'].tolist()
+                    suggestion_list = suggestion_list\
+                                      + df_english['English'].tolist()
                 for alias_list in df_aliases['Aliases'].tolist():
                     for suggestion in alias_list.split(' / '):
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
+
     def rand(self, ffbe, *arg):
+        """Random command to return a random value depending on given inputs.
+        FFBE indicates whether only non-WOTV avatars are used.
+        Return a tuple of multiple message components.
+        """
         randstr = ''
         incorrect = 0
-        # check if 1 or 2 numbers are input
+        # Check if 1 or 2 numbers are input.
         if len(arg) == 1:
             if arg[0].isnumeric():
                 randstr = str(random.randint(0, int(arg[0])))
         elif len(arg) == 2:
             if arg[0].isnumeric() and arg[1].isnumeric():
                 randstr = str(random.randint(int(arg[0]), int(arg[1])))
-        # if not numbers
+        # If not numbers.
         if randstr == '':
             if len(arg) > 1:
                 if '|' in arg:
                     arg = [a.strip() for a in ' '.join(arg).split('|')]
-                # random choice of strings
+                # Random choice of strings.
                 randstr = random.choice(arg)
             else:
-                # insufficient input
+                # Insufficient input.
                 incorrect = 1
-        if ffbe: # return only non-WOTV characters if server is FFBE
+        if ffbe: # Return only non-WOTV characters if server is FFBE.
             df = self.dfwotv.rand[self.dfwotv.rand['FFBE'] == 1]
         else:
             df = self.dfwotv.rand
         df_index = df[df['Incorrect'] == incorrect].sample().index[0]
         df_row = df.loc[df_index]
-        return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'], df_row['String'].replace('CHOICE', randstr))
+        return (incorrect, df_row['Name'], df_row['Element'], df_row['Url'],
+                df_row['String'].replace('CHOICE', randstr))
+
     def ramada(self, reader):
-        # random fortune generator for star reading
-        choice = random.choices(self.dfwotv.stars.index.tolist(), weights=self.dfwotv.stars['Weight'].tolist())[0]
+        """Random fortune generator for star reading.
+        Return a tuple of multiple message components."""
+        choice = random.choices(self.dfwotv.stars.index.tolist(),
+                            weights=self.dfwotv.stars['Weight'].tolist())[0]
         row = self.dfwotv.stars.iloc[choice]
         if reader not in ('moore', 'ramada'):
             if row['Emote'] == 'neutral':
@@ -613,31 +673,32 @@ class WotvUtils:
                 reader = random.choice(('ramada', 'moore'))
         if reader == 'moore':
             row_url = row['MUrl']
-            row_title = f"Moore Star Reading {self.dicts['emotes'][row['Rarity'].lower()]}{self.dicts['emotes'][row['Emote']]}"
+            row_title = ''.join((f"Moore Star Reading ",
+                                 self.dicts['emotes'][row['Rarity'].lower()],
+                                 self.dicts['emotes'][row['Emote']]))
         elif reader == 'ramada':
             row_url = row['Url']
-            row_title = f"Ramada Star Reading {self.dicts['emotes'][row['Rarity'].lower()]}{self.dicts['emotes'][row['Emote']]}"
-        return row['Fortune'], row_title, row_url,
+            row_title = ''.join((f"Ramada Star Reading ",
+                                 self.dicts['emotes'][row['Rarity'].lower()],
+                                 self.dicts['emotes'][row['Emote']]))
+        return row['Fortune'], row_title, row_url
+
     def update_ramada(self):
-        # Generate current rate dynamically directly from data
+        """Generate current star reading rate directly from data."""
         rate_lists = []
         for rarity in self.dicts['ramada_rarity']:
             df_row1 = self.dfwotv.stars[self.dfwotv.stars['Rarity'] == rarity]
-            rarity_str = f"{self.dicts['emotes'][rarity.lower()]}: {df_row1['Weight'].sum()}%"
+            rarity_str = ''.join((f"{self.dicts['emotes'][rarity.lower()]}: ",
+                                  f"{df_row1['Weight'].sum()}%"))
             implication_lists = []
             for implication in self.dicts['ramada_implication']:
                 df_row2 = df_row1[df_row1['Emote'] == implication]
                 if len(df_row2) > 0:
-                    implication_lists.append(f"{self.dicts['emotes'][implication]} {df_row2['Weight'].sum()}%")
+                    implication_str = ''.join((
+                        f"{self.dicts['emotes'][implication]} ",
+                        f"{df_row2['Weight'].sum()}%"))
+                    implication_lists.append(implication_str)
             rarity_str += f" ({' '.join(implication_lists)})"
             rate_lists.append(rarity_str)
-        self.help_ramada = (
-            ('Ramada Star Reading Help',
-                ('A fluff command. Enter `=ramada` to have Ramada read your fortune.',
-                'Enter `=moore` to have Moore read your fortune.',
-                'Enter `=stars` to have either of them read your fortune.',
-                'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.',
-                'Note that the rate may change from time to time. Any feedback is welcome.'
-            )),
-            ('Current rate:', rate_lists)
-        )
+        self.help_ramada = (self.help_ramada_str,
+                            ('Current rate:', rate_lists))

@@ -1,60 +1,90 @@
-import gspread, re
+import gspread
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json',
+                                                         scope)
 client = gspread.authorize(creds)
-myspreadsheet = client.open("My WOTV")
-ramadaspreadsheet = client.open("Ramada Bot")
+wotvspreadsheet = client.open('My WOTV')
+ramadaspreadsheet = client.open('Ramada Bot')
+
 
 class DfHandlerWotv():
-    # Object handling WOTV sheets related operations
+    """Object to handle WOTV sheets related operations."""
     def __init__(self):
+        """Object initialisation."""
+        # Dictionary to save various IDs.
         self.ids = {
             'WOTV Events': [],
-            'FFBE Server': []
+            'FFBE Server': [],
         }
+        # Initial synchronisations.
         self.sync()
         self.sync_events()
+
     def sync(self):
-        df = pd.DataFrame(myspreadsheet.worksheet('WOTV_eq').get_all_records())
+        """"To construct or refresh tables from Google sheets."""
+        # Equipment data.
+        df = pd.DataFrame(
+            wotvspreadsheet.worksheet('WOTV_eq').get_all_records())
         self.eq = df.set_index('EQ Name')
-
-        df = pd.DataFrame(myspreadsheet.worksheet('WOTV_vc').get_all_records())
+        # Vision card data.
+        df = pd.DataFrame(
+            wotvspreadsheet.worksheet('WOTV_vc').get_all_records())
         self.vc = df.set_index('VC Name')
-
-        df = pd.DataFrame(myspreadsheet.worksheet('WOTV_esper').get_all_records())
+        # Esper data.
+        df = pd.DataFrame(
+            wotvspreadsheet.worksheet('WOTV_esper').get_all_records())
         self.esper = df.set_index('Esper')
-
-        #df = pd.DataFrame(myspreadsheet.worksheet('WOTVGL_esper').get_all_records())
-        #self.glesper = df.set_index('Esper')
-
-        df = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_matname').get_all_records())
+        # Material name table.
+        df = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_matname').get_all_records())
         self.mat = df.set_index('Material')
-
-        df = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_shortcut').get_all_records())
+        # Shortcut table.
+        df = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_shortcut').get_all_records())
         self.shortcut = df.set_index('Shortcut')
-
-        self.stars = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
-        self.rand = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
-
-        df_ids = pd.DataFrame(ramadaspreadsheet.worksheet('my_ids').get_all_records())
+        # Fluff tables.
+        self.stars = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
+        self.rand = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
+        # Import ids from separate file.
+        df_ids = pd.DataFrame(
+            ramadaspreadsheet.worksheet('my_ids').get_all_records())
         for k in self.ids.keys():
             self.ids[k] = df_ids[df_ids['Type'] == k]['ID'].tolist()
+
     def sync_events(self):
-        self.events = pd.DataFrame(ramadaspreadsheet.worksheet('WOTV_events').get_all_records())
+        """Event data.
+        Separated because it is updated more frequently.
+        """
+        # Event data.
+        self.events = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_events').get_all_records())
+
     def add_event(self, event):
+        """Used for when adding events via discord command."""
         ramadaspreadsheet.worksheet('WOTV_events').append_row(event)
         self.sync_events()
 
+
 class DfHandlerGen():
-    # Object handling general sheets related operations
+    """Object handling general sheets related operations."""
     def __init__(self):
+        """Object initialisation."""
+        # Initial synchronisation.
         self.sync()
+
     def sync(self):
-        self.shortcuts = pd.DataFrame(ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
+        """"To construct or refresh tables from Google sheets."""
+        # Sheet for personal shortcuts.
+        self.shortcuts = pd.DataFrame(
+            ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
+
     def add_shortcut(self, *arg):
+        """Used for when adding shortcuts via discord command."""
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
         self.sync()

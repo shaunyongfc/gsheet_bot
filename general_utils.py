@@ -1,31 +1,30 @@
-import discord, re
-from datetime import datetime
+import discord
+import re
 
-def logs_embed(msg):
-    # Generate embed for command logging
-    if msg.guild == None:
-        embed = discord.Embed(title= f"{msg.channel}")
-    else:
-        embed = discord.Embed(title= f"{msg.guild} | {msg.channel}")
-    embed.add_field(name='Content', value=msg.content)
-    embed.add_field(name='Author', value=msg.author)
-    embed.add_field(name='Time', value=datetime.strftime(datetime.now(), '%Y/%m/%d %H:%M'))
-    return embed
 
 class GeneralUtils():
+    """An object that contains utility functions for general use."""
     def __init__(self, dfgen, id_dict):
+        """Object initialisation with a special dataframe handler object
+        and a dictionary of ids as inputs.
+        """
         self.dfgen = dfgen
-        self.res = re.compile(r'&\w+') # regex for shortcuts
-        self.opdicts = {
+        self.res = re.compile(r'&\w+') # Regex for shortcuts.
+        self.opdicts = { # For mathematical calculations.
             '+': (lambda a, b: a + b),
             '-': (lambda a, b: a - b),
             '*': (lambda a, b: a * b),
             '/': (lambda a, b: a / b),
             '%': (lambda a, b: a % b),
-            '^': (lambda a, b: a ** b)
+            '^': (lambda a, b: a ** b),
         }
-        self.math_errors = ('Zero Division Error', 'Overflow Error', '... Excuse me?')
+        self.math_errors = ('Zero Division Error', 'Overflow Error',
+                            '... Excuse me?')
+
     def add_shortcut(self, *arg):
+        """Parse command inputs to add message shortcuts and
+        return result message.
+        """
         if len(arg) == 3:
             try:
                 int(arg[2])
@@ -35,8 +34,11 @@ class GeneralUtils():
                 return 'Non-integer id.'
         else:
             return 'Incorrect arguments.'
+
     def get_shortcut(self, name):
-        row_index = self.dfgen.shortcuts[self.dfgen.shortcuts['Name'] == name].index.tolist()[0]
+        """Get message shortcut contents from shortcut name."""
+        row_index = self.dfgen.shortcuts[self.dfgen.shortcuts['Name']
+                                         == name].index.tolist()[0]
         row = self.dfgen.shortcuts.iloc[row_index]
         if row['Type'] == 'channel':
             return row['id']
@@ -48,16 +50,22 @@ class GeneralUtils():
             return f"<a:{row['Name']}:{row['id']}>"
         elif row['Type'] == 'role':
             return f"<@&{row['id']}>"
-    def msg_process(self, argstr):
+
+    def message_process(self, argstr):
+        """Process a message to replace all shortcut names with their
+        respective contents.
+        """
         re_matches = self.res.findall(argstr)
         for re_match in re_matches:
             try:
-                argstr = argstr.replace(re_match, self.get_shortcut(re_match[1:]))
+                argstr = argstr.replace(re_match,
+                                        self.get_shortcut(re_match[1:]))
             except IndexError:
                 pass
         return argstr
+
     def math(self, mathstr):
-        # Custom math command (recursive)
+        """Custom recursive math command."""
         while True:
             # Handle brackets
             lbrackets = []
@@ -73,18 +81,23 @@ class GeneralUtils():
                         lbrackets.pop()
             else:
                 break
-            # recursion for outer brackets
-            mathstr = mathstr[0:bstart] + self.math(mathstr[bstart+1:bend]) + mathstr[bend+1:]
+            # Call recursion for outermost bracket.
+            mathstr = (mathstr[0:bstart]
+                       + self.math(mathstr[bstart+1:bend])
+                       + mathstr[bend+1:])
         for opstr, opfunc in self.opdicts.items():
-            # check which operation
+            # Check which operation to execute. Lowest priority first.
             op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
             if len(op_index_list) > 0:
                 op_index = op_index_list[-1]
                 try:
+                    # Call recursion for left and right side of the operator.
                     leftstr = self.math(mathstr[:op_index]).strip()
-                    rightstr = self.math(mathstr[op_index+1:]).strip()
+                    rightstr = self.math(mathstr[op_index+1 :]).strip()
+                    # Update mathstr with left and right results.
                     mathstr = str(opfunc(float(leftstr), float(rightstr)))
                 except ValueError:
+                    # Check if left or right already returned errors.
                     if self.math_errors[0] in [leftstr, rightstr]:
                         mathstr = self.math_errors[0]
                     elif self.math_errors[1] in [leftstr, rightstr]:

@@ -43,7 +43,8 @@ def image_crop(input_image):
             break
     else:
         dim_1_end = image_data.shape[1]
-    return Image.fromarray(image_data[dim_0_start:dim_0_end, dim_1_start:dim_1_end, :])
+    return Image.fromarray(image_data[dim_0_start:dim_0_end,
+                           dim_1_start:dim_1_end, :])
 
 
 def image_convert(file_path: 'Full file path to input image.',
