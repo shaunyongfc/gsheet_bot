@@ -1,3 +1,6 @@
+# Experimental project on Discord bot tamagotchi, codenamed Engelbert.
+# Not complied with PEP8.
+
 import re, random, discord, math
 import pandas as pd
 import numpy as np
@@ -8,7 +11,6 @@ from general_utils import logs_embed
 from id_dict import id_dict
 from datetime import datetime, timedelta
 
-# experimental project on Discord bot tamagotchi, codenamed Engelbert
 mydtformat = '%Y/%m/%d %H:%M'
 
 class Engel:
