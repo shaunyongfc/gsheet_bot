@@ -303,7 +303,7 @@ class WotvGeneral(commands.Cog):
                 news_str = '\n'.join(('https://site.wotvffbe.com//whatsnew',
                                       '<https://players.wotvffbe.com/>'))
         else:
-            news_str = ''.join(('https://site.wotvffbe.com//whatsnew',
+            news_str = '\n'.join(('https://site.wotvffbe.com//whatsnew',
                                 '<https://players.wotvffbe.com/>'))
         await self.log.send(ctx, news_str)
 

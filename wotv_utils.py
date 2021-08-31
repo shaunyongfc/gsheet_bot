@@ -108,6 +108,7 @@ class WotvUtils:
                 ('31st August 2021', (
                     'VC Elements - no longer separated into 3 sections, separated by icons instead. (`=help vc`)',
                     'Esper Compare - +all by default, add any argument to revert.',
+                    'Limited icon - changed from Ramza event coin to pink nameless job orb.',
                     'Tamagotchi - completely discontinued since it is no longer being used. Let me know if anyone is suddenly interested though...',
                 )),
                 ('25th April 2021', (
