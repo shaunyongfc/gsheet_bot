@@ -770,8 +770,8 @@ class WotvVc(commands.Cog):
                     'No match found. Or did you mean to use `=vs` or `=ve`?'
             else:
                 embed.title = ' '.join(arg)
-                embed.description = '\n'.join(
-                    'Too many results. Please try the following:', row)
+                embed.description = '\n'.join((
+                    'Too many results. Please try the following:', row))
         else:
             embed.title = wotv_utils.name_str(row, alias=0)
             embed_colour = ''
