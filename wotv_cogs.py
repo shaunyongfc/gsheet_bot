@@ -1102,6 +1102,8 @@ class WotvEsper(commands.Cog):
                     for eff in eff_list:
                         if tuparg == 'ALL' or tuparg in eff.lower():
                             re_match = wotv_utils.revalues.search(eff)
+                            if re_match == None:
+                                continue
                             effstr = ''.join((eff[:re_match.start()],
                                 wotv_utils.dicts['esper_colsuffix'][tupcol]))
                             if effstr in list_effects[tupcol].keys():
