@@ -62,8 +62,8 @@ class Roster:
                     # Report that new stage is reached.
                     if self.unitlb.loc[row['Unit'], 'Stage'] >= LB_SUPPRESS:
                         print(''.join((f"Day {self.day_count}: {row['Unit']}",
-                        f" -> {STAGE_NAME[self.unitlb.loc[row['Unit'],
-                        'Stage']]}")))
+                        ' -> ', STAGE_NAME[self.unitlb.loc[row['Unit'], \
+                        'Stage']])))
                 if brcount == 5:
                     # Barracks are full.
                     break
@@ -73,8 +73,8 @@ class Roster:
             # Check if unit already fulfills target.
             if self.unitlb.loc[row['Unit'], 'Stage'] < row['Target']:
                 # Check the number of remaining entries.
-                hq_gain = min(HQ_DAILY[self.unitlb.loc[row['Unit'], 'Rarity']],
-                              10 - hqcount)
+                hq_gain = min(SHARDS_DAILY[self.unitlb.loc[row['Unit'],
+                              'Rarity']], 10 - hqcount)
                 hqcount += hq_gain # HQ counts by number of shards.
                 if index > self.hqqueue:
                     # HQ lineup change.
@@ -84,8 +84,8 @@ class Roster:
                     # Report that new stage is reached.
                     if self.unitlb['Stage'][row['Unit']] >= LB_SUPPRESS:
                         print(''.join((f"Day {self.day_count}: {row['Unit']}",
-                        f" -> {STAGE_NAME[self.unitlb.loc[row['Unit'],
-                        'Stage']]}")))
+                        ' -> ', STAGE_NAME[self.unitlb.loc[row['Unit'], \
+                        'Stage']])))
                 if hqcount == 10:
                     # HQ entries are finished.
                     break
