@@ -1,6 +1,8 @@
 import re
 import random
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup as bs
 
 
 class WotvUtils:
@@ -361,6 +363,7 @@ class WotvUtils:
         ))
         self.update_ramada()
         self.weekly_init()
+        self.news_init()
 
     def weekly_init(self):
         """Only runs once to generate the weekly command string."""
@@ -473,6 +476,18 @@ class WotvUtils:
             bracket_dict[f"[{ele.capitalize()}]"] = ele
             bracket_dict[ele] = f"[{ele.capitalize()}]"
         return bracket_dict
+
+    def news_init(self):
+        """Only runs once to initialise existing news entries."""
+        r = requests.get("https://players.wotvffbe.com/")
+        soup = bs(r.content, features="lxml")
+        articles = soup.find_all("article")
+        self.news_entries = [article['data-id'] for article in articles]
+
+    def get_news(self):
+        """Called periodically to fetch news site."""
+        r = requests.get("https://players.wotvffbe.com/")
+        return bs(r.content, features="lxml")
 
     def eqt_convert(self, type_str):
         """Used to convert equipment type string into type emote shortcut."""

@@ -1,6 +1,6 @@
 import discord
 import pandas as pd
-from discord.ext import commands
+from discord.ext import commands, tasks
 from datetime import datetime
 
 from gsheet_handler import DfHandlerWotv
@@ -20,6 +20,27 @@ class WotvGeneral(commands.Cog):
         self.bot = bot
         self.log = bot_log
         self.bot.remove_command('help')
+
+    @tasks.loop(minutes=1.0)
+    async def newscheck(self):
+        """Checks for news."""
+        soup = wotv_utils.get_news()
+        articles = soup.find_all("article")
+        news_list = []
+        for article in articles:
+            if article['data-id'] not in wotv_utils.news_entries:
+                news_list.append((
+                    article['data-id'],
+                    article.find('time').text.strip(' \n\t'),
+                    article.find('h2').text
+                ))
+        if len(news_list) > 0:
+            wotv_utils.news_entries = [
+                article['data-id'] for article in articles]
+            for channel_id in id_dict['News']:
+                await self.bot.get_channel(channel_id).send('\n'.join([
+                    f"{news[0]} - {news[1]} - <{news[2]}>" for news in news_list
+                ]))
 
     @commands.command()
     async def wotvsync(self, ctx, *arg):
