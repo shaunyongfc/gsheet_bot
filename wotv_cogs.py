@@ -20,6 +20,7 @@ class WotvGeneral(commands.Cog):
         self.bot = bot
         self.log = bot_log
         self.bot.remove_command('help')
+        self.newscheck.start()
 
     @tasks.loop(minutes=1.0)
     async def newscheck(self):
