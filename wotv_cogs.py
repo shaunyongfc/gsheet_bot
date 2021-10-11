@@ -25,6 +25,7 @@ class WotvGeneral(commands.Cog):
     @tasks.loop(minutes=1.0)
     async def newscheck(self):
         """Checks for news."""
+        print('Test success.')
         soup = wotv_utils.get_news()
         articles = soup.find_all("article")
         news_list = []
@@ -40,7 +41,7 @@ class WotvGeneral(commands.Cog):
                 article['data-id'] for article in articles]
             for channel_id in id_dict['News']:
                 await self.bot.get_channel(channel_id).send('\n'.join([
-                    f"{news[0]} - {news[1]} - <{news[2]}>" for news in news_list
+                    f"{news[1]} - {news[2]} - <https://players.wotvffbe.com/{news[0]}/>" for news in news_list
                 ]))
 
     @commands.command()
