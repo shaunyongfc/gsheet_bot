@@ -42,7 +42,8 @@ class WotvUtils:
                 'killer': 'Killer',
                 'res': 'RES Up'
             },
-            'esper_stats': ['HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'],
+            'esper_stats': [
+                'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'],
             'esper_colsuffix': {
                 'ATK Up': 'ATK',
                 'Killer': 'Killer',
@@ -510,7 +511,8 @@ class WotvUtils:
             return argstr
 
     def esper_findcol(self, argstr):
-        """Find the correct column to search for an effect from an argument
+        """
+        Find the correct column to search for an effect from an argument
         string.
         """
         if argstr[:3] == 'ALL':

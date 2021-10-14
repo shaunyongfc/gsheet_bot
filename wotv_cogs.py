@@ -24,7 +24,7 @@ class WotvGeneral(commands.Cog):
 
     @tasks.loop(minutes=1.0)
     async def newscheck(self):
-        """Checks for news."""
+        """Checks for news every minute and post to designated channels."""
         soup = wotv_utils.get_news()
         articles = soup.find_all("article")
         id_list = []
@@ -41,7 +41,7 @@ class WotvGeneral(commands.Cog):
         if len(news_list) > 0:
             wotv_utils.news_entries = [
                 article['data-id'] for article in articles]
-            for channel_id in id_dict['News']:
+            for channel_id in dfwotv.ids['Newsfeed']:
                 await self.bot.get_channel(channel_id).send('\n'.join([
                     f":newspaper: {news[1]} - {news[2]} - <https://players.wotvffbe.com/{news[0]}/>" for news in news_list
                 ]))
@@ -577,7 +577,8 @@ class WotvEquipment(commands.Cog):
             args = ' '.join(arg)
         embed.title = args.title()
         args = args.lower()
-        args = args.replace('lightning', 'thunder')
+        for index, row in dfwotv.replace.iterrows():
+            args = args.replace(index, row['VC'])
         for k, v in wotv_utils.dicts['colours'].items():
             if k in args:
                 embed.colour = v
@@ -632,9 +633,8 @@ class WotvVc(commands.Cog):
             args = ' '.join(arg)
         embed.title = args.title()
         args = args.lower()
-        args = args.replace('lightning', 'thunder')
-        args = args.replace('st res', 'single res')
-        args = args.replace('aoe res', 'area res')
+        for index, row in dfwotv.replace.iterrows():
+            args = args.replace(index, row['VC'])
         # Search each VC.
         for _, row in df.iterrows():
             for col in effects_dict.keys():

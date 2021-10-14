@@ -19,6 +19,7 @@ class DfHandlerWotv():
         self.ids = {
             'WOTV Events': [],
             'FFBE Server': [],
+            'Newsfeed': [],
         }
         # Initial synchronisations.
         self.sync()
@@ -45,7 +46,10 @@ class DfHandlerWotv():
         # Shortcut table.
         df = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_shortcut').get_all_records())
-        self.shortcut = df.set_index('Shortcut')
+        self.shortcut = df[df['Type'] == 'shortcut']\
+                            .drop('Type', axis=1).set_index('Shortcut')
+        self.replace = df[df['Type'] == 'replace']\
+                            .drop('Type', axis=1).set_index('Shortcut')
         # Fluff tables.
         self.stars = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
