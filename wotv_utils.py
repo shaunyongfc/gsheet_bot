@@ -19,7 +19,7 @@ class WotvUtils:
         # Regex for symbols to be omitted for url generation.
         self.resymbols = re.compile(r'[^\w ]')
         self.dicts = { # Dictionary to store various constants.
-            'mat_sets': self.mat_sets(self.dfwotv.eq),
+            'mat_sets': self.mat_sets_init(self.dfwotv.eq),
             'eq_lists': {
                 'Type': ('t',),
                 'Acquisition': ('a',),
@@ -36,7 +36,7 @@ class WotvUtils:
                 ('ninjablade', 'ninja blade'),
                 ('armour', 'armor')
             ),
-            'esper_sets': self.esper_sets(self.dfwotv.esper),
+            'esper_sets': self.esper_sets_init(self.dfwotv.esper),
             'esper_suffix': {
                 'atk': 'ATK Up',
                 'killer': 'Killer',
@@ -107,268 +107,10 @@ class WotvUtils:
                 (('shop', 'whimsy'), 'shop'),
                 (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
             ),
-            'changelog': (
-                ('31st August 2021', (
-                    'VC Elements - no longer separated into 3 sections, separated by icons instead. (`=help vc`)',
-                    'Esper Compare - +all by default, add any argument to revert.',
-                    'Limited icon - changed from Ramza event coin to pink nameless job orb.',
-                    'Tamagotchi - completely discontinued since it is no longer being used. Let me know if anyone is suddenly interested though...',
-                )),
-                ('25th April 2021', (
-                    'Ramada Star Reading - added Moore (`=help stars`).',
-                )),
-                ('16th March 2021', (
-                    'Esper Filter - bug fix and able to search espers without 3-star awakening.',
-                )),
-                ('7th March 2021', (
-                    'VC Elements - now an extra section that includes universal VC effects that come with an elemental max effect.',
-                )),
-                ('20th February 2021', (
-                    'Magicite Calculator - calculate EXP required from certain star and magicites you have (`=help esper`).',
-                )),
-                ('6th February 2021', (
-                    '(beta) Engelbert Tamagotchi - fluff tamagotchi function `=char help` or `=tamagotchi help` or `=engel help`',
-                )),
-                ('31st January 2021', (
-                    'Events - `=events` to check on-going or up-coming events. (`=help events` for more info)',
-                )),
-                ('27th January 2021', (
-                    'Parameter calculation - `=param` to input screen parameters to calculate accuracy, evasion, critical rate and critical avoidance. (`=help param` for more info)',
-                )),
-                ('21st January 2021', (
-                    'Random function - `=rand` or `=choice` to have bot pick a random number within given range or a random choice.',
-                )),
-                ('19th January 2021', (
-                    'Warning: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.',
-                    'Math function - `=math` or `=calc` for simple math calculations.',
-                )),
-                ('16th January 2021', (
-                    'Changed display picture because of clash with another bot.',
-                    'Equipment search function - search equipment by effect. (`=help eq` for more info)'
-                )),
-                ('14th January 2021', (
-                    'Updated icons into in-game-assets.',
-                    'Ramada Star Reading - `=stars` or `=ramada` (fluff command).'
-                )),
-                ('13th January 2021', (
-                    'Equipment function - mainly to check recipes and please refer to WOTV-CALC for in-depth info. (`=help eq` for more info)',
-                    'Return list of suggestions when result not found for some commands.'
-                )),
-                ('8th January 2021', (
-                    'Changelog implemented (this function).',
-                    'Esper filter - able to filter 3-star or limited espers. (`=help esper` for more info)',
-                    'Slight changes in general info.'
-                )),
-                ('7th January 2021', (
-                    'Esper compare - able to compare all or a group of effects at once. (`=help esper` for more info)',
-                    'News link - get link to news with `=news` or `=news gl`.'
-                ))
-            ),
         }
-        self.help_general = (
-            ('General Info', (
-                'Bot prefix is `=`. Only JP data is available at the moment.',
-                'Bot commands are case sensitive. Please do NOT capitalize the commands.',
-                'For programming reason, element name lightning is replaced by thunder because the text contains another element light.',
-                'WARNING: Bot command calls will be logged for improvement purpose. Please do not include sensitive info while using the bot.'
-            )),
-            ('About', (
-                f"Made by <@{id_dict['Owner']}>, please contact me for any bug report / data correction / adding aliases / suggestion (depends on viability).",
-                'I only play JP and do not wish to maintain GL data. To implement GL data, I would need collaborator(s). Please contact me if interested.'
-            )),
-            ('Standard Commands', ('`=ping`, `=help`, `=changelog/version`, `=rand/choice`',)),
-            ('WOTV Commands', (
-                'Enter their respective specific help commands for more info.',
-                '- **Events** `=help events`',
-                '- **Parameter Calculation** `=help param`',
-                '- **Equipment** `=help eq`',
-                '- **Vision Card** `=help vc`',
-                '- **Esper** `=help esper`'
-            )),
-            ('Simple Calculation', ('Enter `=math/calc` with a mathematical expression to calculate. e.g. `=calc 1+1`',)),
-            ('Weekly', ('Enter `=weekly` for dungeon bonus of days of the week.',)),
-            ('News', ('Enter `=news` for link to JP news or `=news gl` for link to GL news.',)),
-            ('Ramada Star Reading', ('Fluff command. Enter `=stars` or `=ramada` or `=moore` to have Ramada or Moore read your fortune. Enter `=help stars` for current rate.',
-            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.')),
-            ('Tamagotchi', ('Fluff command. A tamagotchi (digital pet / avatar / character) raising function.',
-            'Currently completely discontinued.'))
-        )
-        self.help_events = (
-            ('Events', (
-                '** =events**',
-                'Returns list of up-coming / on-going events (subject to having been keyed...).'
-            )),
-            ('Countdown', (
-                '`=events` (the default)',
-                'Returns a list of on-going events with their remaining time and a list of up-coming events counting down to their starting times.'
-            )),
-            ('Date and Time', (
-                '`=events date` or `=events time`',
-                'Same as above but instead of countdowns, returns the starting and ending times (in JST) of on-going events and up-coming events.'
-            )),
-            ('Date and Time Embedded', (
-                '`=events embed` or `=events format`',
-                'Returns the same result as `=events date` but in embedded format. May not format correctly if there are lengthy events.',
-                'Not intended to use while in mobile (you can try).'
-            ))
-        )
-        self.help_param = (
-            ('Parameter Calculation', (
-                '**= param / acc / eva / crit** (will return the same result regardless of which you use)',
-                'Input AGI, DEX, LUCK and/or flat sources of ACC, EVA, CRIT, CRIT AVOID to calculate actual accuracy, evasion, crit, crit avoid in battle.',
-                'Arguments separated by `|` for each stat followed by their values.',
-                'e.g. `=param dex 300 | luck 400 | eva 80`',
-                'Note: Not to be confused with `=calc` which is simple math calculation command.'
-            )),
-            ('Default Values',
-                ('Parameters not input (or negative agi/dex/luck) will have their default values used.',
-                f"Current default values: {', '.join([k + ' ' + str(v[0]) for k, v in self.dicts['paramcalc'].items()])}."
-            )),
-            ('Disclaimer and Sources',
-                ('Formulae used: Meow and Shalzuth.',
-                '[Article regarding Accuracy and Evasion](https://wotv.info/accuracy-and-evasion-debunked-datamine-diary-2/)',
-                '[Article regarding Crit and Crit Avoidance](https://wotv.info/crit-crit-avoidance-formula/)'
-            ))
-        )
-        self.help_eq = (
-            ('Equipment Help', (
-                'The function is mainly for recipes checking, for in-depth equipment info please refer to WOTV-CALC.',
-                'Note that only craftable/star-able SSR/UR equipment is listed (i.e. no TM).',
-                self.dicts['emotes']['limited'] + ' nameless pink orb indicates time limited.'
-            )),
-            ('Equipment by name', ('**= eq**',
-                'Argument is by equipment name (subject to name availability).',
-                'e.g. `=eq ribbon`',
-                'Note that the link to WOTV-CALC may not necessarily work...'
-            )),
-            ('Equipment by effect', ('**= es / eqs**',
-                'Argument is specific effect names.',
-                'e.g. `=es slash res`'
-            )),
-            ('List of keywords', ('**= eq l**',
-                'Argument is one of `type, acquisition, regular, rare, cryst, ore` to check their respective keywords.',
-                'Put no argument to return the above list.'
-                'e.g. `=eq l rare`'
-            )),
-            ('Equipment by type', ('**= eq t**',
-                'Argument is one of the equipment types that can be checked by command above.',
-                'e.g. `=eq t accessory`, `=eq t sword`'
-            )),
-            ('Equipment by acquisition method', ('**= eq a**',
-                'Argument is one of the acquisition methods that can be checked by command above.',
-                'e.g. `=eq a key`, `=eq a raid`'
-            )),
-            ('Equipment by material', ('**= eq**',
-                'Argument is one of the materials that can be checked by the first command.',
-                'It shares the same command as equipment by name, so needs to be exact match (among the aliases).',
-                'e.g. `=eq heart`, `=eq fire`'
-            )),
-            ('Disclaimer and Sources',
-                ('SQEX and Gumi (obviously).',
-                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/equipments) (Bismark). Special thanks to Shalzuth for assets etc.',
-                'Some recent releases are taken directly from in-game info and news.'
-            ))
-        )
-        self.help_vc = (
-            ('Vision Card Help', (
-                self.dicts['emotes']['elements'] + ' elemental icons indicate unit-element-locked effects.',
-                self.dicts['emotes']['allele'] + ' ALL icon indicates unconditional effects.',
-                self.dicts['emotes']['vcmax'] + ' yellow ball indicates max level effects.',
-                self.dicts['emotes']['limited'] + ' nameless pink orb indicates time limited.'
-            )),
-            ('VC Info', ('**= vc / wvc / wotvvc**',
-                'Argument either in Japanese name, English name or short nicknames (aliases) bracketed in other commands.',
-                'e.g. `=vc omega`'
-            )),
-            ('VC Search', ('**= vs / vcs / wvs /wotvvcsearch**',
-                'Argument in specific effect names with following conventions:',
-                '- slash/pierce/strike/missile/magic atk/res/pen',
-                '- fire/ice/(etc) atk/res'
-                '- def/spr up/pen',
-                '- def/spr/agi+ (notable raw stats on VC)',
-                '- atk%/mag%/agi%/dex%/luck%/hp%/accuracy/evasion',
-                '- single/area res',
-                '- crit rate/evade/damage',
-                '- ap gain, max damage, etc',
-                'e.g. `=vs pierce atk`'
-            )),
-            ('VC Element', ('**= ve / vce / wve / wotvvcelement**',
-                'Argument in element (e.g. fire).',
-                'e.g. `=ve light`'
-            )),
-            ('Disclaimer and Sources',
-                ('SQEX and Gumi (obviously).',
-                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/vc) (Bismark). Special thanks to Shalzuth for assets etc.',
-                'Some recent releases are taken directly from in-game info and news.'
-            ))
-        )
-        self.help_esper = (
-            ('Esper Help', (
-                self.dicts['emotes']['limited'] + ' Ramza coin indicates time limited.',
-                self.dicts['emotes']['esper'] + ' icon indicates 3-star awakened data.',
-                'Adding `m` right after `=esper` or modifiers mentioned below will make them more readable in mobile.'
-            )),
-            ('Esper Info', ('**= esper**',
-                'Argument in standard English name or Japanese name.',
-                'e.g. `=esper omega`',
-                'Note that the link to WOTV-CALC may not necessarily work...'
-            )),
-            ('Esper Rank', ('**= esper r / esper rank**',
-                'Actually search/filter and sort functions in one. Also callable with `=esper f` or `=esper s`',
-                'Arguments separated by `|` for each stat / effect.',
-                'Will filter and rank by the first argument, while also display values of other arguments for comparison.',
-                'Filter 3-star espers by `=esper r awaken` (/ `3-star`) but will not be sorted.',
-                'Filter espers without 3-star by `=esper r 2` but will not be sorted.',
-                'Filter limited espers by `=esper r limited` (/ `collab`) but will not be sorted.',
-                '3 or more arguments will force it into mobile display mode.',
-                'e.g. `=esper r magic | human`, `=esper r m magic | mag% | agi`'
-            )),
-            ('Esper Compare', ('**= esper c / esper compare**',
-                'Arguments separated by `|` for each esper / effect.',
-                'Will compare all effects by default. Add any argument to revert to flat stats only.'
-                'To compare specific effects only, add effect comparisons by `+ effect` as arguments.',
-                'Alternatively, `+atk` `+killer` `+stat` `+res` for their respective categories.',
-                '3 or more espers will force it into mobile display mode.',
-                'e.g. `=esper c baha | odin | +human`, `=esper c m baha | cact | mindflayer | +magic | +mag% | +human`'
-            )),
-            ('Note on effect convention', ('Arguments of effects in rank or compare have the following conventions:',
-                '- hp/tp/ap/atk/mag/agi/dex/luck (base)',
-                '- slash/pierce/strike/missile/magic atk/res',
-                '- fire/ice/(etc) atk/res',
-                '- def/spr/hp%/tp%/ap%/atk%/mag%/luck% (node)',
-                '- initial ap',
-                '- accuracy/evasion',
-                '- crit rate/evade/damage',
-                '- poison/stop/(etc) res'
-            )),
-            ('Magicite Calculator', ('**= magicite / esperexp**',
-                'Input the number of S, M, L, XL magicites, star of esper you are raising from and bonus to calculate if you have enough magicites.',
-                'Starting from 1-star esper, 100% bonus, non-neutral by default.',
-                'Arguments separated by `|` for each value followed by their values.',
-                'e.g. `=magicite s 300 | m 400 | xl 80 | star 3 | bonus 90`',
-                'e.g. `=magicite xl 100 | star 2 | bonus 100 | neutral` for neutral espers like Odin or Bahamut.'
-                'Note: Not to be confused with `=calc` which is simple math calculation command.'
-            )),
-            ('Disclaimer and Sources',
-                ('SQEX and Gumi (obviously).',
-                'Data source: [WOTV-CALC](https://wotv-calc.com/JP/espers) (Bismark). Special thanks to Shalzuth for assets etc.',
-                'Some recent releases are taken directly from in-game info and news.'
-            ))
-        )
-        self.help_ramada_str = ('Ramada Star Reading Help',
-            ('A fluff command. Enter `=ramada` to have Ramada read your fortune.',
-            'Enter `=moore` to have Moore read your fortune.',
-            'Enter `=stars` to have either of them read your fortune.',
-            'Disclaimer: This has nothing to do with in-game mechanics or lore, just pre-written lines and RNG.',
-            'Note that the rate may change from time to time. Any feedback is welcome.'
-        ))
-        self.update_ramada()
-        self.weekly_init()
-        self.news_init()
-
-    def weekly_init(self):
-        """Only runs once to generate the weekly command string."""
+        self.update_text()
         msg_list = []
+        # Generate the weekly command string.
         weekly_tuples = [
             ('`Sunday   `', ('gil',)),
             ('`Monday   `', ('kame', 'pot')),
@@ -384,8 +126,85 @@ class WotvUtils:
                 msg_line += self.dicts['emotes'][ele]
             msg_list.append(msg_line)
         self.weekly = '\n'.join(msg_list)
+        # Initialise existing news entries.
+        r = requests.get("https://players.wotvffbe.com/")
+        soup = bs(r.content, features="lxml")
+        articles = soup.find_all("article")
+        self.news_entries = [article['data-id'] for article in articles]
 
-    def mat_sets(self, df):
+    def update_text(self):
+        """
+        Initialise or update various help text from sheet data.
+        """
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_general']
+        self.help_general = [
+            (row['Title'], row['Body']) for _, row in df.iterrows()]
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_events']
+        self.help_events = [
+            (row['Title'], row['Body']) for _, row in df.iterrows()]
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_param']
+        self.help_param = []
+        for _, row in df.iterrows():
+            if row['Title'] == 'Default Value':
+                body = row['Body'].replace('[PLACEHOLDER]',
+                    ', '.join([k + ' ' + str(v[0]) for k, v in \
+                    self.dicts['paramcalc'].items()]))
+            else:
+                body = row['Body']
+            self.help_param.append((row['Title'], body))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_eq']
+        self.help_eq = []
+        for _, row in df.iterrows():
+            if row['Title'] == 'Equipment Help':
+                body = row['Body'].replace('[PLACEHOLDER]',
+                    self.dicts['emotes']['limited'])
+            else:
+                body = row['Body']
+            self.help_eq.append((row['Title'], body))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_vc']
+        self.help_vc = []
+        for _, row in df.iterrows():
+            if row['Title'] == 'Vision Card Help':
+                body = row['Body'].replace('[PLACEHOLDER1]',
+                    self.dicts['emotes']['elements'])
+                body = body.replace('[PLACEHOLDER2]',
+                    self.dicts['emotes']['allele'])
+                body = body.replace('[PLACEHOLDER3]',
+                    self.dicts['emotes']['vcmax'])
+                body = body.replace('[PLACEHOLDER4]',
+                    self.dicts['emotes']['limited'])
+            else:
+                body = row['Body']
+            self.help_vc.append((row['Title'], body))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_esper']
+        self.help_esper = []
+        for _, row in df.iterrows():
+            if row['Title'] == 'Esper Help':
+                body = row['Body'].replace('[PLACEHOLDER]',
+                    self.dicts['emotes']['limited'])
+            else:
+                body = row['Body']
+            self.help_esper.append((row['Title'], body))
+        row = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_ramada'].iloc[0]
+        rate_lists = []
+        for rarity in self.dicts['ramada_rarity']:
+            df_row1 = self.dfwotv.stars[self.dfwotv.stars['Rarity'] == rarity]
+            rarity_str = ''.join((f"{self.dicts['emotes'][rarity.lower()]}: ",
+                                  f"{df_row1['Weight'].sum()}%"))
+            implication_lists = []
+            for implication in self.dicts['ramada_implication']:
+                df_row2 = df_row1[df_row1['Emote'] == implication]
+                if len(df_row2) > 0:
+                    implication_str = ''.join((
+                        f"{self.dicts['emotes'][implication]} ",
+                        f"{df_row2['Weight'].sum()}%"))
+                    implication_lists.append(implication_str)
+            rarity_str += f" ({' '.join(implication_lists)})"
+            rate_lists.append(rarity_str)
+        self.help_ramada = ((row['Title'], row['Body']),
+                            ('Current rate:', '\n'.join(rate_lists)))
+
+    def mat_sets_init(self, df):
         """Only runs once to generate the dictonary entry."""
         dict_sets = {
             'Type': set(),
@@ -404,7 +223,7 @@ class WotvUtils:
                         v.add(row[k])
         return dict_sets
 
-    def esper_sets(self, df):
+    def esper_sets_init(self, df):
         """Only runs once to generate the dictonary entry."""
         dict_sets = {
             'ATK Up': set(),
@@ -444,7 +263,7 @@ class WotvUtils:
             ('neutral', '791969566233853952'),
             ('allele', '799186663229227038'),
             ('limited', '881743510125043753'),
-            ('esper', '799155023086878740'),
+            # ('esper', '799155023086878740'),
             ('kame', '799186663041531907'),
             ('pink', '799230682470678559'),
             ('pot', '799231267651584010'),
@@ -478,13 +297,6 @@ class WotvUtils:
             bracket_dict[ele] = f"[{ele.capitalize()}]"
         return bracket_dict
 
-    def news_init(self):
-        """Only runs once to initialise existing news entries."""
-        r = requests.get("https://players.wotvffbe.com/")
-        soup = bs(r.content, features="lxml")
-        articles = soup.find_all("article")
-        self.news_entries = [article['data-id'] for article in articles]
-
     def get_news(self):
         """Called periodically to fetch news site."""
         r = requests.get("https://players.wotvffbe.com/")
@@ -517,11 +329,11 @@ class WotvUtils:
         """
         if argstr[:3] == 'ALL':
             return argstr[4:], 'ALL'
-        if argstr.rstrip('s') in ['awakened', 'awaken',
-                                  '3-star', '3star', '3']:
-            return 'Awaken', 'y'
-        if argstr.rstrip('s') in ['2-star', '2star', '2']:
-            return 'Awaken', 'n'
+        # if argstr.rstrip('s') in ['awakened', 'awaken',
+        #                           '3-star', '3star', '3']:
+        #     return 'Awaken', 'y'
+        # if argstr.rstrip('s') in ['2-star', '2star', '2']:
+        #     return 'Awaken', 'n'
         if argstr in ['collab', 'limited']:
             return 'Limited', 'y'
         if argstr.upper() in self.dicts['esper_stats']:
@@ -563,9 +375,9 @@ class WotvUtils:
         if 'Limited' in row.index and limited:
             if row['Limited'] != '':
                 namestr += self.dicts['emotes']['limited']
-        if 'Awaken' in row.index and awaken:
-            if row['Awaken'] == 'y':
-                namestr += self.dicts['emotes']['esper']
+        # if 'Awaken' in row.index and awaken:
+        #     if row['Awaken'] == 'y':
+        #         namestr += self.dicts['emotes']['esper']
         if name == 'NAME':
             namestr += f" {row.name}"
         else:
@@ -700,23 +512,3 @@ class WotvUtils:
                                  self.dicts['emotes'][row['Rarity'].lower()],
                                  self.dicts['emotes'][row['Emote']]))
         return row['Fortune'], row_title, row_url
-
-    def update_ramada(self):
-        """Generate current star reading rate directly from data."""
-        rate_lists = []
-        for rarity in self.dicts['ramada_rarity']:
-            df_row1 = self.dfwotv.stars[self.dfwotv.stars['Rarity'] == rarity]
-            rarity_str = ''.join((f"{self.dicts['emotes'][rarity.lower()]}: ",
-                                  f"{df_row1['Weight'].sum()}%"))
-            implication_lists = []
-            for implication in self.dicts['ramada_implication']:
-                df_row2 = df_row1[df_row1['Emote'] == implication]
-                if len(df_row2) > 0:
-                    implication_str = ''.join((
-                        f"{self.dicts['emotes'][implication]} ",
-                        f"{df_row2['Weight'].sum()}%"))
-                    implication_lists.append(implication_str)
-            rarity_str += f" ({' '.join(implication_lists)})"
-            rate_lists.append(rarity_str)
-        self.help_ramada = (self.help_ramada_str,
-                            ('Current rate:', rate_lists))

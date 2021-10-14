@@ -50,6 +50,9 @@ class DfHandlerWotv():
                             .drop('Type', axis=1).set_index('Shortcut')
         self.replace = df[df['Type'] == 'replace']\
                             .drop('Type', axis=1).set_index('Shortcut')
+        # Text table.
+        self.text = pd.DataFrame(
+            ramadaspreadsheet.worksheet('WOTV_text').get_all_records())
         # Fluff tables.
         self.stars = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())

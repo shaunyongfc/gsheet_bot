@@ -54,9 +54,9 @@ class WotvGeneral(commands.Cog):
                 # Synchronise WOTV sheets
                 dfwotv.sync()
                 await ctx.send('Google sheet synced for WOTV data.')
-            elif arg[0] == 'ramada':
-                wotv_utils.update_ramada()
-                await ctx.send('Ramada rate updated.')
+            elif arg[0] == 'text':
+                wotv_utils.update_text()
+                await ctx.send('Text updated.')
             elif arg[0] == 'esper':
                 # Update the set of effects per column in Esper
                 wotv_utils.dicts['esper_sets'] = \
@@ -96,7 +96,7 @@ class WotvGeneral(commands.Cog):
                 await self.log.send(ctx, 'The function is discontinued.')
                 return
         for a, b in help_tuples:
-            embed.add_field(name=a, value='\n'.join(b), inline=False)
+            embed.add_field(name=a, value=b, inline=False)
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['addevent'])
@@ -305,10 +305,12 @@ class WotvGeneral(commands.Cog):
             entry_num = int(arg[0])
         except IndexError:
             entry_num = 3
-        for i, tup in enumerate(wotv_utils.dicts['changelog']):
-            if i == entry_num:
+        num = 0
+        for _, row in dfwotv.text[dfwotv.text['Key'] == 'changelog'].iterrows():
+            if num == entry_num:
                 break
-            embed.add_field(name=tup[0], value='\n'.join(tup[1]), inline=False)
+            embed.add_field(name=row['Title'], value=row['Body'], inline=False)
+            num += 1
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['weekly', 'week', 'day', 'weekday', 'daily'])
