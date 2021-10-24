@@ -359,7 +359,7 @@ class WotvUtils:
         return col, argstr
 
     def name_str(self, row, name='NAME', element=1, rarity=1, type=1,
-                 limited=1, awaken=1, alias=1, elestr=''):
+                 limited=1, alias=1, elestr=''):
         """Process an entry to return the name string decorated with
         emotes.
         """

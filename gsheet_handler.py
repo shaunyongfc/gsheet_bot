@@ -58,7 +58,7 @@ class DfHandlerWotv():
             ramadaspreadsheet.worksheet('WOTV_stars').get_all_records())
         self.rand = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_rand').get_all_records())
-        # Import ids from separate file.
+        # Import various ids.
         df_ids = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_ids').get_all_records())
         for k in self.ids.keys():
@@ -90,8 +90,21 @@ class DfHandlerGen():
         # Sheet for personal shortcuts.
         self.shortcuts = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_shortcuts').get_all_records())
+        # Sheet for tags.
+        self.tags = pd.DataFrame(
+            ramadaspreadsheet.worksheet('my_tags').get_all_records()
+        )
+        # Sheet for ids.
+        self.ids = pd.DataFrame(
+            ramadaspreadsheet.worksheet('my_ids').get_all_records())
 
     def add_shortcut(self, *arg):
         """Used for when adding shortcuts via discord command."""
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
+        self.sync()
+
+    def add_tag(self, keyword, content, user):
+        """Used for when adding contents to tag via discord command."""
+        ramadaspreadsheet.worksheet('my_tags').append_row([
+                                                        keyword, content, user])
         self.sync()

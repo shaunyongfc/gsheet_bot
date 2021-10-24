@@ -115,6 +115,32 @@ class GeneralCommands(commands.Cog):
         await self.log.send(ctx, f"`{argstr} = {mathstr}`")
 
     @commands.command()
+    async def tag(self, ctx, *arg):
+        """Tag command to record tags with contents freely added by users."""
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            if len(arg) == 0:
+                await self.log.send(ctx, '\n'.join((
+                    '`=tag keyword` to call contents of a tag, or',
+                    '`=tag keyword contents` to add contents to a tag.'
+                )))
+                return
+            elif len(arg) == 1:
+                df = dfgen.tags[dfgen.tags['Tag'] == arg[0]]
+                if len(df) == 0:
+                    await self.log.send(ctx,
+                        '`=tag keyword contents` to add contents first')
+                else:
+                    await self.log.send(ctx, '\n'.join(df['Content']))
+            else:
+                dfgen.add_tag(
+                    arg[0],
+                    ' '.join(arg[1:]),
+                    str(ctx.message.author.id)
+                )
+                await self.log.send(ctx, f"Content added to tag {arg[0]}.")
+
+    @commands.command()
     async def checkservers(self, ctx, *arg):
         """(Owner only) Check what servers bot is in."""
         if ctx.message.author.id == id_dict['Owner']:

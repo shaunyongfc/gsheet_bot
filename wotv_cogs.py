@@ -41,7 +41,7 @@ class WotvGeneral(commands.Cog):
         if len(news_list) > 0:
             wotv_utils.news_entries = [
                 article['data-id'] for article in articles]
-            for channel_id in dfwotv.ids['Newsfeed']:
+            for channel_id in dfwotv.ids['WOTV Newsfeed']:
                 await self.bot.get_channel(channel_id).send('\n'.join([
                     f":newspaper: {news[1]} - {news[2]} - <https://players.wotvffbe.com/{news[0]}/>" for news in news_list
                 ]))
