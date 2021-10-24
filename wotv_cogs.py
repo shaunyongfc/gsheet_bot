@@ -334,7 +334,7 @@ class WotvGeneral(commands.Cog):
                                 '<https://players.wotvffbe.com/>'))
         await self.log.send(ctx, news_str)
 
-    @commands.command(aliases=['param', 'acc', 'eva', 'crit'])
+    @commands.command(aliases=['param', 'acc', 'eva', 'crit', 'params'])
     async def wotvparam(self, ctx, *arg):
         """Calculate acc, eva, crit and crit avoid from
         dex, agi, luck and equipment stats.
@@ -402,7 +402,7 @@ class WotvEquipment(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['we', 'eq'])
+    @commands.command(aliases=['we', 'eq', 'equipment', 'Eq', 'Equipment'])
     async def wotveq(self, ctx, *arg):
         """General equipment search command, has multiple modes
         depending on inputs.
@@ -558,7 +558,7 @@ class WotvEquipment(commands.Cog):
                                     inline=False)
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['wes', 'eqs', 'es'])
+    @commands.command(aliases=['wes', 'eqs', 'es', 'Es'])
     async def wotveqsearch(self, ctx, *arg):
         """Search equipment by effect."""
         await self.log.log(ctx.message)
@@ -606,7 +606,7 @@ class WotvVc(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['wvs', 'vcs', 'vs'])
+    @commands.command(aliases=['wvs', 'vcs', 'vs', 'VCS', 'Vcs'])
     async def wotvvcsearch(self, ctx, *arg):
         """Search vision cards by effect."""
         await self.log.log(ctx.message)
@@ -703,7 +703,7 @@ class WotvVc(commands.Cog):
             await self.log.send(ctx,
                 'Too many results. Please refine the search.')
 
-    @commands.command(aliases=['wve', 'vce', 've'])
+    @commands.command(aliases=['wve', 'vce', 've', 'VCE', 'Vce'])
     async def wotvvcelement(self, ctx, *arg):
         """Search vision cards by element."""
         await self.log.log(ctx.message)
@@ -773,7 +773,7 @@ class WotvVc(commands.Cog):
             embed.add_field(name='\u200b', value=field_value, inline=False)
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['wv', 'vc'])
+    @commands.command(aliases=['wv', 'vc', 'VC', 'Vc'])
     async def wotvvc(self, ctx, *arg):
         """Search vision card by name."""
         await self.log.log(ctx.message)
@@ -922,7 +922,7 @@ class WotvEsper(commands.Cog):
                         inline=True)
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['esper'])
+    @commands.command(aliases=['esper', 'Esper', 'espers', 'Espers'])
     async def wotvesper(self, ctx, *arg):
         """General esper search command, has multiple modes
         depending on inputs.
@@ -957,10 +957,12 @@ class WotvEsper(commands.Cog):
             embed.title = args
             # convert arg list to split with | instead
             arg = [a.lower().strip() for a in args.split('|')]
-            # Check for shortcuts
+            # Check for shortcuts or replacements
             for i, argstr in enumerate(arg):
                 if len(argstr.split()) == 1:
                     arg[i] = wotv_utils.shortcut_convert(argstr, 'Esper')
+                for index, row in dfwotv.replace.iterrows():
+                    arg[i] = arg[i].replace(index, row['VC'])
             # Function to find which column the said effect should be
             while len(arg) > 0:
                 col, first_arg = wotv_utils.esper_findcol(arg[0])
@@ -1023,7 +1025,7 @@ class WotvEsper(commands.Cog):
                         embed.add_field(name=field_name,
                                         value='\n'.join(field_list),
                                         inline=False)
-                else:
+                elif len(list_lists) > 0:
                     transpose_list = list(map(list, zip(*list_lists)))
                     esper_list = [wotv_utils.name_str(row_df.loc[a], alias=0) \
                         for a in transpose_list[0]]
@@ -1061,6 +1063,11 @@ class WotvEsper(commands.Cog):
                                     [checkpoint:checkpoint_list[i]])
                             embed.add_field(name=field_name.capitalize(),
                                             value=field_value, inline=True)
+                else:
+                    embed.description = ' '.join((
+                        'Esper effect not found or ambiguous.',
+                        'Try `=help esper`.'
+                    ))
         elif arg[0] in ['compare', 'c'] and len(arg) > 1:
             # Comparison mode.
             if mobile_bool == 0 and arg[1] in ['m', 'mobile']:

@@ -87,6 +87,14 @@ class GeneralCommands(commands.Cog):
         await self.log.log(ctx.message)
         await self.log.send(ctx, f"Pong! {round(self.bot.latency * 1000)} ms")
 
+    @commands.command()
+    async def invite(self, ctx):
+        await self.log.log(ctx.message)
+        await self.log.send(ctx, ''.join((
+            'Not sure what your purpose is but if you want to invite the bot ',
+            'to your server. Contact the owner (read `=help`).'
+        )))
+
     @commands.command(aliases=['calc', 'eval'])
     async def math(self, ctx, *arg):
         """Standard math command."""
