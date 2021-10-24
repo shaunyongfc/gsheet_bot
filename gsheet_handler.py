@@ -1,6 +1,7 @@
 import gspread
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
+from gspread_dataframe import set_with_dataframe
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -108,3 +109,14 @@ class DfHandlerGen():
         ramadaspreadsheet.worksheet('my_tags').append_row([
                                                         keyword, content, user])
         self.sync()
+
+    def reset_tag(self, df_boolean):
+        """Used for when resetting contents to tag via discord command."""
+        self.tags.drop(df_boolean[df_boolean==True].index, inplace=True)
+        df = self.tags.copy()
+        df['User'] = df['User'].apply(str)
+        set_with_dataframe(
+            ramadaspreadsheet.worksheet('my_tags'),
+            df,
+            include_index=False
+        )

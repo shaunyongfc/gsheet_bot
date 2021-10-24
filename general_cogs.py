@@ -121,24 +121,57 @@ class GeneralCommands(commands.Cog):
             await self.log.log(ctx.message)
             if len(arg) == 0:
                 await self.log.send(ctx, '\n'.join((
-                    '`=tag keyword` to call contents of a tag, or',
-                    '`=tag keyword contents` to add contents to a tag.'
+                    '`=tag keyword` to call contents of a tag',
+                    '`=tag keyword contents` to add contents to a tag.',
+                    '`=tagreset keyword` to remove all contents to a tag you created.'
                 )))
                 return
             elif len(arg) == 1:
-                df = dfgen.tags[dfgen.tags['Tag'] == arg[0]]
+                keyword = arg[0]
+                df = dfgen.tags[dfgen.tags['Tag'] == keyword]
                 if len(df) == 0:
                     await self.log.send(ctx,
                         '`=tag keyword contents` to add contents first')
                 else:
-                    await self.log.send(ctx, '\n'.join(df['Content']))
+                    await self.log.send(ctx, '\n'.join(
+                        [f"**Tag {keyword}**: "] + df['Content']
+                    ))
             else:
+                keyword = arg[0]
                 dfgen.add_tag(
-                    arg[0],
+                    keyword,
                     ' '.join(arg[1:]),
                     str(ctx.message.author.id)
                 )
-                await self.log.send(ctx, f"Content added to tag {arg[0]}.")
+                await self.log.send(ctx, f"Content added to tag {keyword}.")
+
+    @commands.command(aliases=['resettag'])
+    async def tagreset(self, ctx, *arg):
+        """
+        Tag command to remove contents from a tag associated by the said user.
+        """
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            if len(arg) == 0:
+                await self.log.send(ctx, '\n'.join((
+                    '`=tag keyword` to call contents of a tag',
+                    '`=tag keyword contents` to add contents to a tag.',
+                    '`=tagreset keyword` to remove all contents to a tag you created.'
+                )))
+                return
+            else:
+                keyword = ' '.join(arg)
+                df_boolean = pd.DataFrame([
+                    dfgen.tags['Tag'] == keyword,
+                    dfgen.tags['User'] == ctx.message.author.id
+                ]).all()
+                if sum(df_boolean) == 0:
+                    await self.log.send(ctx,
+                        f"You did not create any content to tag {keyword}.")
+                else:
+                    dfgen.reset_tag(df_boolean)
+                    await self.log.send(ctx,
+                                        f"Contents removed from tag {keyword}.")
 
     @commands.command()
     async def checkservers(self, ctx, *arg):
