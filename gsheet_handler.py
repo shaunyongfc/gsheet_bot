@@ -112,9 +112,11 @@ class DfHandlerGen():
 
     def reset_tag(self, df_boolean):
         """Used for when resetting contents to tag via discord command."""
+        last_row = len(self.tags) + 1
         self.tags.drop(df_boolean[df_boolean==True].index, inplace=True)
         df = self.tags.copy()
         df['User'] = df['User'].apply(str)
+        ramadaspreadsheet.values_clear(f"my_tags!A2:C{last_row}")
         set_with_dataframe(
             ramadaspreadsheet.worksheet('my_tags'),
             df,
