@@ -20,7 +20,7 @@ class DfHandlerWotv():
         self.ids = {
             'WOTV Events': [],
             'FFBE Server': [],
-            'Newsfeed': [],
+            'WOTV Newsfeed': [],
         }
         # Initial synchronisations.
         self.sync()
