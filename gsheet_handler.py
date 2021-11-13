@@ -51,6 +51,8 @@ class DfHandlerWotv():
                             .drop('Type', axis=1).set_index('Shortcut')
         self.replace = df[df['Type'] == 'replace']\
                             .drop('Type', axis=1).set_index('Shortcut')
+        self.eq_type = df[df['Type'] == 'eq_type']\
+                            .drop('Type', axis=1).set_index('Shortcut')
         # Text table.
         self.text = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_text').get_all_records())

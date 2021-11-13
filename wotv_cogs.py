@@ -1,4 +1,5 @@
 import discord
+import random
 import pandas as pd
 from discord.ext import commands, tasks
 from datetime import datetime
@@ -449,8 +450,8 @@ class WotvEquipment(commands.Cog):
             argstr = ' '.join(arg[1:])
             embed.title = argstr
             argstr = argstr.lower()
-            for a, b in wotv_utils.dicts['eq_replace']:
-                argstr = argstr.replace(a, b)
+            for index, row in dfwotv.eq_type.iterrows():
+                argstr = argstr.replace(index, row['VC'])
             # Find eq that match and add to the embed
             for index, row in dfwotv.eq.iterrows():
                 if argstr in row[colstr].lower():
@@ -642,25 +643,32 @@ class WotvVc(commands.Cog):
             for col in effects_dict.keys():
                 eff_list = row[col].split(' / ')
                 # Default icon unless condition found.
-                eff_prefix = wotv_utils.dicts['emotes']['allele']
+                eff_prefix = [wotv_utils.dicts['emotes']['allele']]
                 for eff in eff_list:
                     # Have to process the brackets first, because
                     # might match 2nd conditional effect.
+                    new_effect = 1
                     match_brackets = wotv_utils.reconditions.findall(eff)
                     if len(match_brackets) == 1:
-                        if match_brackets[0] in wotv_utils.dicts['brackets'] \
-                                .keys():
-                            eff_prefix = \
-                                wotv_utils.dicts['emotes'][wotv_utils.dicts \
-                                ['brackets'][match_brackets[0]]]
-                        else:
-                            eff_prefix = match_brackets[0]
+                        conditions = match_brackets[0] \
+                                     .strip('[]').lower().split('/')
+                        for condition in conditions:
+                             # Remove previous conditions if new effect with conditions
+                            if new_effect == 1:
+                                eff_prefix = []
+                                new_effect = 0
+                            if condition in wotv_utils.dicts['colours'].keys():
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][condition]
+                                )
+                            if len(eff_prefix) == 0:
+                                eff_prefix = [match_brackets[0]]
                     if args in eff.lower():
                         eff_suffix = '' # Actual effect numbers.
                         match_numbers = wotv_utils.revalues.findall(eff)
                         if len(match_numbers) == 1:
                             eff_suffix = ' ' + match_numbers[0]
-                        effects_dict[col].append(''.join((eff_prefix,
+                        effects_dict[col].append(''.join((''.join(eff_prefix),
                             wotv_utils.name_str(row), eff_suffix)))
         # Print from each list if non-empty.
         empty_list = 1
@@ -738,19 +746,44 @@ class WotvVc(commands.Cog):
             vc_eff_str_list = []
             for col, col_prefix in col_tuples.items():
                 col_eff_list = row[col].split(' / ')
+                eff_prefix = []
                 ele_found = 0
+                condition_found = 0
                 for eff in col_eff_list:
-                    eff_str = eff.replace(
-                        wotv_utils.dicts['brackets'][ele], '').strip()
-                    if wotv_utils.dicts['brackets'][ele] in eff:
-                        ele_found = 1
-                    if ele_found:
-                        vc_eff_str_list.append(''.join((wotv_utils.name_str \
-                            (row), col_prefix, eff_str)))
+                    new_effect = 1
+                    match_brackets = wotv_utils.reconditions.findall(eff)
+                    if len(match_brackets) == 1:
+                        condition_found = 1
+                        conditions = match_brackets[0] \
+                                     .strip('[]').lower().split('/')
+                        for condition in conditions:
+                             # Remove previous conditions if new effect with conditions
+                            if new_effect == 1:
+                                eff_prefix = []
+                                new_effect = 0
+                                ele_found = 0
+                            if condition == ele:
+                                ele_found = 1
+                            elif condition in \
+                                    wotv_utils.dicts['colours'].keys():
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][condition]
+                                )
+                            else:
+                                eff_prefix.append(
+                                    f"[{condition.title()}]"
+                                )
+                        eff_text = eff.replace(match_brackets[0], '').strip()
                     else:
-                        vc_eff_str_list.append(''.join((wotv_utils.name_str \
-                            (row),wotv_utils.dicts['emotes']['allele'],
-                            eff_str)))
+                        eff_text = eff
+                    if ele_found:
+                        vc_eff_str_list.append(
+                            f"{wotv_utils.name_str(row)}{col_prefix}{''.join(eff_prefix)}{eff_text}"
+                        )
+                    elif not condition_found:
+                        vc_eff_str_list.append(
+                            f"{wotv_utils.name_str(row)}{col_prefix}{wotv_utils.dicts['emotes']['allele']}{eff_text}"
+                        )
             if ele_found:
                 vc_str_list.append('\n'.join(vc_eff_str_list))
         # Print while keeping track of characters.
@@ -801,35 +834,45 @@ class WotvVc(commands.Cog):
                     'Too many results. Please try the following:', row))
         else:
             embed.title = wotv_utils.name_str(row, alias=0)
-            embed_colour = ''
+            embed_colours = []
             for col in ('Unit', 'Party', 'Party Max', 'Skill'):
                 if row[col] == '':
                     continue
                 eff_list = row[col].split(' / ')
                 eff_list_processed = []
-                eff_prefix = ''
+                eff_prefix = []
                 for eff in eff_list:
+                    new_effect = 1
                     match_brackets = wotv_utils.reconditions.findall(eff)
                     if len(match_brackets) == 1:
-                        if match_brackets[0] in wotv_utils.dicts['brackets'] \
-                                .keys():
-                            eff_prefix = ''.join((wotv_utils.dicts['emotes'] \
-                                [wotv_utils.dicts['brackets'] \
-                                [match_brackets[0]]], ' '))
-                            embed_colour = \
-                                wotv_utils.dicts['brackets'][match_brackets[0]]
-                        else:
-                            eff_prefix = match_brackets[0] + ' '
+                        conditions = match_brackets[0] \
+                                     .strip('[]').lower().split('/')
+                        for condition in conditions:
+                             # Remove previous conditions if new effect with conditions
+                            if new_effect == 1:
+                                eff_prefix = []
+                                new_effect = 0
+                            if condition in wotv_utils.dicts['colours'].keys():
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][condition]
+                                )
+                                embed_colours.append(
+                                    wotv_utils.dicts['colours'][condition]
+                                )
+                            if len(eff_prefix) == 0:
+                                eff_prefix = [match_brackets[0]]
                         eff_text = eff.replace(match_brackets[0], '').strip()
                     else:
                         eff_text = eff
-                    eff_list_processed.append(f"{eff_prefix}{eff_text}")
+                    eff_list_processed.append(
+                        f"{' '.join(eff_prefix)} {eff_text}"
+                    )
                 field_value = '\n'.join(eff_list_processed)
                 embed.add_field(name=col, value=field_value)
             if row['Url'] != '':
                 embed.set_thumbnail(url=row['Url'])
-            if embed_colour != '':
-                embed.colour = wotv_utils.dicts['colours'][embed_colour]
+            if len(embed_colours) > 0:
+                embed.colour = random.choice(embed_colours)
             if row['English'] != '':
                 embed.add_field(
                     name='WOTV-CALC',

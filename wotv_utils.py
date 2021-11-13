@@ -61,7 +61,7 @@ class WotvUtils:
                 2: 6727933,
                 3: 16821904
             },
-            'brackets': self.bracket_init(),
+            # 'brackets': self.bracket_init(),
             'emotes': self.emotes_init(),
             'colours': { # Embed colour hex codes.
                 'fire': 0xE47051,
@@ -98,14 +98,12 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'event_tuples': (
-                (('gacha', 'banner', 'step', 'summon', 'pull', 'sale'),
-                 'visiore'),
-                (('recipe', 'weapon', 'armor', 'armour', 'accessory', 'farm'),
-                 'recipe'),
-                (('pvp', 'arena', 'class', 'guild'), 'party'),
-                (('event', 'raid', 'tower', 'box'), 'event'),
-                (('shop', 'whimsy'), 'shop'),
-                (('update', 'change', 'patch', 'upgrade', 'fix'), 'update')
+                (('banner', 'gacha', 'step', 'pull', 'sale'), 'visiore'),
+                (('recipe', 'currency', 'acquisition'),'recipe'),
+                (('pvp', 'arena', 'match', 'guild'), 'party'),
+                (('event', 'raid', 'tower', 'box', 'challenge'), 'event'),
+                (('shop', 'whimsy', 'medal'), 'shop'),
+                (('update', 'change', 'fix', 'new', 'ex', 'ma2'), 'update')
             ),
         }
         self.update_text()
@@ -288,14 +286,14 @@ class WotvUtils:
             wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
         return wotv_emotes
 
-    def bracket_init(self):
-        """Only runs once to generate the dictonary entry."""
-        bracket_dict = dict()
-        for ele in ['fire', 'ice', 'wind', 'earth',
-                    'thunder', 'water', 'light', 'dark']:
-            bracket_dict[f"[{ele.capitalize()}]"] = ele
-            bracket_dict[ele] = f"[{ele.capitalize()}]"
-        return bracket_dict
+    # def bracket_init(self):
+    #     """Only runs once to generate the dictonary entry."""
+    #     bracket_dict = dict()
+    #     for ele in ['fire', 'ice', 'wind', 'earth',
+    #                 'thunder', 'water', 'light', 'dark']:
+    #         bracket_dict[f"[{ele.capitalize()}]"] = ele
+    #         bracket_dict[ele] = f"[{ele.capitalize()}]"
+    #     return bracket_dict
 
     def get_news(self):
         """Called periodically to fetch news site."""
