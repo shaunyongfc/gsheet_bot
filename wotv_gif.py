@@ -3,7 +3,17 @@
 from PIL import Image, ImageDraw
 import os
 
+from wotv_png_process import image_crop
+
 IMAGE_FOLDER = 'bot_images'
+
+
+def get_wotv_materias():
+    """Generate a list of file paths for materias."""
+    MATERIAS = ['f', 'h', 'i', 'o', 's', 'w']
+    pref = os.path.join('process_pending', 'it_aw_mt_')
+    suf = '_sr.png'
+    return [f"{pref}{a}{suf}" for a in MATERIAS]
 
 
 def get_wotv_elements():
@@ -26,13 +36,15 @@ def make_frame(image):
     return image
 
 
-def make_gif(size, path_list, gif_name):
+def make_gif(path_list, gif_name):
     """Process list of image paths into gif of output name indicated."""
-    images = [make_frame(Image.open(os.path.join(IMAGE_FOLDER, image_name)))
-              for image_name in path_list]
+    images = [make_frame(
+                image_crop(Image.open(os.path.join(IMAGE_FOLDER, image_name)))
+              ) for image_name in path_list]
     images[0].save(os.path.join(IMAGE_FOLDER, gif_name), 'GIF',
                save_all=True, append_images=images[1:], duration=500, loop=0)
 
 
 if __name__ == '__main__':
-    make_gif(58, get_wotv_elements(), 'wotv_elements.gif')
+    # make_gif(get_wotv_elements(), 'wotv_elements.gif')
+    make_gif(get_wotv_materias(), 'wotv_materias.gif')
