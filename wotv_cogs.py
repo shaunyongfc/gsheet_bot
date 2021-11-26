@@ -57,7 +57,7 @@ class WotvGeneral(commands.Cog):
                 await ctx.send('Google sheet synced for WOTV data.')
             elif arg[0] == 'text':
                 wotv_utils.update_text()
-                await ctx.send('Text updated.')
+                await ctx.send('Text updated. (If Google sheet is updated.)')
             elif arg[0] == 'esper':
                 # Update the set of effects per column in Esper
                 wotv_utils.dicts['esper_sets'] = \
@@ -162,13 +162,20 @@ class WotvGeneral(commands.Cog):
                 # Check if it is up-coming or on-going.
                 if datetime.now() < \
                         datetime.strptime(row['Start'], mydtformat):
-                    events['up-coming'].append((eventname,
-                                                row['Start'], row['End']))
+                    events['up-coming'].append((
+                        eventname,
+                        datetime.strptime(row['Start'], mydtformat),
+                        datetime.strptime(row['End'], mydtformat),
+                    ))
                 elif datetime.now() <= \
                         datetime.strptime(row['End'], mydtformat):
-                    events['on-going'].append((eventname,
-                                               row['Start'], row['End']))
-
+                    events['on-going'].append((
+                        eventname,
+                        datetime.strptime(row['Start'], mydtformat),
+                        datetime.strptime(row['End'], mydtformat),
+                    ))
+        events['on-going'].sort(key=lambda a: a[2])
+        events['up-coming'].sort(key=lambda a: a[1])
         if dt_bool == 2:
             # Generate reply embed.
             embed = discord.Embed(
@@ -185,10 +192,10 @@ class WotvGeneral(commands.Cog):
                 for eventname, eventstart, eventend in v:
                     event_count += 1
                     namelist.append(eventname)
-                    startlist.append(datetime.strftime(datetime.strptime(
-                        eventstart, mydtformat), printdtformat))
-                    endlist.append(datetime.strftime(datetime.strptime(
-                        eventend, mydtformat), printdtformat))
+                    startlist.append(datetime.strftime(
+                        eventstart, printdtformat))
+                    endlist.append(datetime.strftime(
+                        eventend, printdtformat))
                     # Add new field every 10 counts for character limit.
                     if event_count == 10:
                         embed.add_field(name=k.capitalize(),
@@ -218,21 +225,19 @@ class WotvGeneral(commands.Cog):
                     replystr_list.append(f"**{k.capitalize()} Events**")
                     for event in v:
                         if dt_bool == 1:
-                            eventstart = datetime.strftime(datetime.strptime(
-                                event[1], mydtformat), printdtformat)
-                            eventend = datetime.strftime(datetime.strptime(
-                                event[2], mydtformat), printdtformat)
+                            eventstart = datetime.strftime(
+                                event[1], printdtformat)
+                            eventend = datetime.strftime(
+                                event[2], printdtformat)
                             replystr_list.append(''.join((
                                 f"\n{event[0]} - ",
                                 f"`{eventstart}` to `{eventend}`")))
                         else:
                             replystr_list.append(f"\n{event[0]} -")
                             if k == 'on-going':
-                                eventdd = datetime.strptime(
-                                    event[2], mydtformat) - datetime.now()
+                                eventdd = event[2] - datetime.now()
                             else:
-                                eventdd = datetime.strptime(
-                                    event[1], mydtformat) - datetime.now()
+                                eventdd = event[1] - datetime.now()
                             eventddsplit = (
                                 ('day', eventdd.days),
                                 ('hour', eventdd.seconds // 3600),

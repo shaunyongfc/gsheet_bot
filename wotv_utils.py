@@ -111,7 +111,7 @@ class WotvUtils:
         # Generate the weekly command string.
         weekly_tuples = [
             ('`Sunday   `', ('gil',)),
-            ('`Monday   `', ('kame', 'pot')),
+            ('`Monday   `', ('kame', 'pot', 'materias')),
             ('`Tuesday  `', ('fire', 'wind')),
             ('`Wednesday`', ('water', 'ice')),
             ('`Thursday `', ('earth', 'dark')),
@@ -278,6 +278,7 @@ class WotvUtils:
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
+            ('materias', '913749364810338315'),
         )
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
