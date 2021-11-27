@@ -100,6 +100,35 @@ class WotvGeneral(commands.Cog):
             embed.add_field(name=a, value=b, inline=False)
         await self.log.send(ctx, embed=embed)
 
+    @commands.command(aliases=['materia', 'rune', 'materias', 'runes'])
+    async def wotvmaterias(self, ctx, *arg):
+        """Command to call info regarding materias."""
+        await self.log.log(ctx.message)
+        embed = discord.Embed(
+            colour = wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
+        embed.title = 'Ildyra Bot Help'
+        materia_tuples = wotv_utils.materia_set
+        if len(arg) > 0:
+            if arg[0].lower() in ('substat', 'sub', 'substats'):
+                materia_tuples = wotv_utils.materia_substat
+                for a, b in materia_tuples:
+                    if a == 'General Info':
+                        embed.description = b
+                    else:
+                        embed.add_field(name=a, value=b, inline=True)
+                await self.log.send(ctx, embed=embed)
+                return
+            elif arg[0].lower() in ('passive', 'passives', 'recraft'):
+                materia_tuples = wotv_utils.materia_passive
+        for a, b in materia_tuples:
+            embed.add_field(name=a, value=b, inline=False)
+        await self.log.send(ctx, embed=embed)
+
     @commands.command(aliases=['addevent'])
     async def wotvaddevent(self, ctx, *arg):
         """Add event to calendar for authorized people."""

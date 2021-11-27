@@ -201,6 +201,15 @@ class WotvUtils:
             rate_lists.append(rarity_str)
         self.help_ramada = ((row['Title'], row['Body']),
                             ('Current rate:', '\n'.join(rate_lists)))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'materia_set']
+        self.materia_set = [
+            (row['Title'], row['Body']) for _, row in df.iterrows()]
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'materia_substat']
+        self.materia_substat = [
+            (row['Title'], row['Body']) for _, row in df.iterrows()]
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'materia_passive']
+        self.materia_passive = [
+            (row['Title'], row['Body']) for _, row in df.iterrows()]
 
     def mat_sets_init(self, df):
         """Only runs once to generate the dictonary entry."""
