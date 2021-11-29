@@ -47,4 +47,6 @@ def make_gif(path_list, gif_name):
 
 if __name__ == '__main__':
     # make_gif(get_wotv_elements(), 'wotv_elements.gif')
-    make_gif(get_wotv_materias(), 'wotv_materias.gif')
+    # make_gif(get_wotv_materias(), 'wotv_materias.gif')
+    for image_name in get_wotv_materias():
+        image_crop(Image.open(os.path.join(IMAGE_FOLDER, image_name))).save(os.path.join(IMAGE_FOLDER, image_name))

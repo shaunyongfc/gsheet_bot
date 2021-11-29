@@ -110,13 +110,13 @@ class WotvUtils:
         msg_list = []
         # Generate the weekly command string.
         weekly_tuples = [
-            ('`Sunday   `', ('gil',)),
             ('`Monday   `', ('kame', 'pot', 'materias')),
-            ('`Tuesday  `', ('fire', 'wind')),
-            ('`Wednesday`', ('water', 'ice')),
-            ('`Thursday `', ('earth', 'dark')),
-            ('`Friday   `', ('thunder', 'light')),
-            ('`Saturday `', ('pink', 'gil'))
+            ('`Tuesday  `', ('fire', 'wind', 'materia_i')),
+            ('`Wednesday`', ('water', 'ice', 'materia_h')),
+            ('`Thursday `', ('earth', 'dark', 'materia_f')),
+            ('`Friday   `', ('thunder', 'light', 'materia_o')),
+            ('`Saturday `', ('pink', 'gil', 'materia_w')),
+            ('`Sunday   `', ('gil', 'materia_s')),
         ]
         for day, daylist in weekly_tuples:
             msg_line = day + ': '
@@ -284,6 +284,12 @@ class WotvUtils:
             ('shop', '805305948003368970'),
             ('party', '809924634903838810'),
             ('vcmax', '881743510145998848'),
+            ('materia_i', '914818426114027530'),
+            ('materia_f', '914818426072096798'),
+            ('materia_h', '914818426072096788'),
+            ('materia_o', '914818426126626837'),
+            ('materia_w', '914818426147602442'),
+            ('materia_s', '914818426097254440'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
