@@ -12,7 +12,7 @@ SHARDS_REQ = {
 SHARDS_DAILY = {'UR': 2, 'SSR': 3}
 STAGE_NAME = ['LB +0', 'LB +1', 'LB +2', 'LB +3', 'LB +4', 'LB +5',
               'J 19', 'J 22', 'J 25']
-LB_SUPPRESS = 4 # Omitted from printing of progress below this stage.
+LB_SUPPRESS = 5 # Omitted from printing of progress below this stage.
 
 
 class Roster:
