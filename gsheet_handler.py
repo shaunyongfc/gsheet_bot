@@ -108,9 +108,20 @@ class DfHandlerGen():
 
     def add_tag(self, keyword, content, user):
         """Used for when adding contents to tag via discord command."""
+        serial = self.tags.Serial.max() + 1
         ramadaspreadsheet.worksheet('my_tags').append_row([
-                                                        keyword, content, user])
+                                            keyword, content, user, serial])
         self.sync()
+
+    def edit_tag(self, serial, content):
+        """Used for when editting content to tag via discord command."""
+        last_row = len(self.tags) + 1
+        self.tags.loc[self.tags['Serial'] == serial, 'Content'] = content
+        set_with_dataframe(
+            ramadaspreadsheet.worksheet('my_tags'),
+            self.tags,
+            include_index=False
+        )
 
     def reset_tag(self, df_boolean):
         """Used for when resetting contents to tag via discord command."""

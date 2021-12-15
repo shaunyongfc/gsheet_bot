@@ -120,11 +120,7 @@ class GeneralCommands(commands.Cog):
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             if len(arg) == 0:
-                await self.log.send(ctx, '\n'.join((
-                    '`=tag keyword` to call contents of a tag',
-                    '`=tag keyword contents` to add contents to a tag.',
-                    '`=tagreset keyword` to remove all contents to a tag you created.'
-                )))
+                await self.log.send(ctx, general_utils.tag_help)
                 return
             elif len(arg) == 1:
                 keyword = arg[0]
@@ -133,9 +129,10 @@ class GeneralCommands(commands.Cog):
                     await self.log.send(ctx,
                         '`=tag keyword contents` to add contents first')
                 else:
-                    await self.log.send(ctx, '\n'.join(
-                        [f"**Tag {keyword}**: "] + df['Content']
-                    ))
+                    results = []
+                    for _, row in df.iterrows():
+                        results.append(f"`{row['Serial']}`: {row['Content']}")
+                    await self.log.send(ctx, '\n'.join(results))
             else:
                 keyword = arg[0]
                 dfgen.add_tag(
@@ -145,6 +142,55 @@ class GeneralCommands(commands.Cog):
                 )
                 await self.log.send(ctx, f"Content added to tag {keyword}.")
 
+    @commands.command(aliases=['edittag'])
+    async def tagedit(self, ctx, *arg):
+        """
+        Tag command to edit a tag content by serial number.
+        """
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            if len(arg) < 2:
+                await self.log.send(ctx, general_utils.tag_help)
+                return
+            elif not arg[0].isnumeric():
+                await self.log.send(ctx, general_utils.tag_help)
+                return
+            else:
+                serial = int(arg[0])
+                df_boolean = pd.DataFrame([
+                    dfgen.tags['Serial'] == serial
+                ]).all()
+                if sum(df_boolean) == 0:
+                    await self.log.send(ctx,
+                        f"Tag {serial} does not exist.")
+                else:
+                    dfgen.edit_tag(serial, ' '.join(arg[1:]))
+                    await self.log.send(ctx,
+                                        f"Contents removed from tag {serial}.")
+
+    @commands.command(aliases=['removetag', 'tagdelete'])
+    async def tagremove(self, ctx, *arg):
+        """
+        Tag command to remove a tag content by serial number.
+        """
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            if len(arg) == 0:
+                await self.log.send(ctx, general_utils.tag_help)
+                return
+            else:
+                serial = int(arg[0])
+                df_boolean = pd.DataFrame([
+                    dfgen.tags['Serial'] == serial
+                ]).all()
+                if sum(df_boolean) == 0:
+                    await self.log.send(ctx,
+                        f"Tag {serial} does not exist.")
+                else:
+                    dfgen.reset_tag(df_boolean)
+                    await self.log.send(ctx,
+                                        f"Contents removed from tag {serial}.")
+
     @commands.command(aliases=['resettag'])
     async def tagreset(self, ctx, *arg):
         """
@@ -153,11 +199,7 @@ class GeneralCommands(commands.Cog):
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             if len(arg) == 0:
-                await self.log.send(ctx, '\n'.join((
-                    '`=tag keyword` to call contents of a tag',
-                    '`=tag keyword contents` to add contents to a tag.',
-                    '`=tagreset keyword` to remove all contents to a tag you created.'
-                )))
+                await self.log.send(ctx, general_utils.tag_help)
                 return
             else:
                 keyword = ' '.join(arg)

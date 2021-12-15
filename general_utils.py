@@ -20,6 +20,15 @@ class GeneralUtils():
         }
         self.math_errors = ('Zero Division Error', 'Overflow Error',
                             '... Excuse me?')
+        self.tag_help = '\n'.join((
+            'Since this function is only available privately, there are not many limitations.',
+            'However be discreet while using them and do not abuse. I do keep logs of my bot calls.',
+            '`=tag keyword` to call contents of a tag.',
+            '`=tag keyword contents` to add contents to a tag.',
+            '`=tagedit serial contents` to change the contents of a tag with specific serial number.'
+            '`=tagremove serial` to remove a tag with specific serial number.',
+            '`=tagreset keyword` to remove all contents to a tag you created.'
+        ))
 
     def add_shortcut(self, *arg):
         """Parse command inputs to add message shortcuts and
