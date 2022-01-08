@@ -25,7 +25,8 @@ class GeneralUtils():
             'However be discreet while using them and do not abuse. I do keep logs of my bot calls.',
             '`=tag keyword` to call contents of a tag.',
             '`=tag keyword contents` to add contents to a tag.',
-            '`=tagedit serial contents` to change the contents of a tag with specific serial number.'
+            '`=tagrecent` to view list of recently-added tags.',
+            '`=tagedit serial contents` to change the contents of a tag with specific serial number.',
             '`=tagremove serial` to remove a tag with specific serial number.',
             '`=tagreset keyword` to remove all contents to a tag you created.'
         ))

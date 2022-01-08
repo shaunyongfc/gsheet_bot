@@ -142,6 +142,58 @@ class GeneralCommands(commands.Cog):
                 )
                 await self.log.send(ctx, f"Content added to tag {keyword}.")
 
+    @commands.command(aliases=['newtags', 'newtag', 'tagrecent', 'recenttags'])
+    async def tagnew(self, ctx, *arg):
+        """Tag command to return tags recently used."""
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            tags = dfgen.tags['Tag'].unique()
+            end_num = 0
+            try:
+                start_num = int(arg[0])
+                try:
+                    int(arg[1]) # To make sure there is a second number
+                    end_num = start_num - 1
+                    start_num = int(arg[1])
+                except (IndexError, ValueError):
+                    pass
+            except (IndexError, ValueError):
+                start_num = 10
+            start_num = min(start_num, end_num + 50)
+            if end_num == 0:
+                heading = f"**Recent {start_num} tags:**"
+                tags_line = ', '.join(tags[-start_num:])
+            else:
+                heading = f"**Recent {end_num + 1} ~ {start_num} tags:**"
+                tags_line = ', '.join(tags[-start_num:-end_num])
+            await self.log.send(ctx, '\n'.join((heading, tags_line)))
+
+    @commands.command(aliases=['searchtags'])
+    async def tagsearch(self, ctx, *arg):
+        """Tag command to search tags."""
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+            await self.log.log(ctx.message)
+            tags = dfgen.tags['Tag'].unique()
+            end_num = 0
+            try:
+                start_num = int(arg[0])
+                try:
+                    int(arg[1]) # To make sure there is a second number
+                    end_num = start_num - 1
+                    start_num = int(arg[1])
+                except (IndexError, ValueError):
+                    pass
+            except (IndexError, ValueError):
+                start_num = 10
+            start_num = min(start_num, end_num + 50)
+            if end_num == 0:
+                heading = f"**Recent {start_num} tags:**"
+                tags_line = ', '.join(tags[-start_num:])
+            else:
+                heading = f"**Recent {end_num + 1} ~ {start_num} tags:**"
+                tags_line = ', '.join(tags[-start_num:-end_num])
+            await self.log.send(ctx, '\n'.join((heading, tags_line)))
+
     @commands.command(aliases=['edittag'])
     async def tagedit(self, ctx, *arg):
         """
@@ -166,7 +218,7 @@ class GeneralCommands(commands.Cog):
                 else:
                     dfgen.edit_tag(serial, ' '.join(arg[1:]))
                     await self.log.send(ctx,
-                                        f"Contents removed from tag {serial}.")
+                                        f"Content in tag `{serial}` edited.")
 
     @commands.command(aliases=['removetag', 'tagdelete'])
     async def tagremove(self, ctx, *arg):
@@ -189,7 +241,7 @@ class GeneralCommands(commands.Cog):
                 else:
                     dfgen.reset_tag(df_boolean)
                     await self.log.send(ctx,
-                                        f"Contents removed from tag {serial}.")
+                                        f"Content removed from tag `{serial}`.")
 
     @commands.command(aliases=['resettag'])
     async def tagreset(self, ctx, *arg):

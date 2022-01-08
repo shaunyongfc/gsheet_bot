@@ -114,7 +114,7 @@ class WotvGeneral(commands.Cog):
         embed.title = 'Ildyra Bot Help'
         materia_tuples = wotv_utils.materia_set
         if len(arg) > 0:
-            if arg[0].lower() in ('substat', 'sub', 'substats'):
+            if arg[0].lower() in ('substat', 'sub', 'substats', 's'):
                 materia_tuples = wotv_utils.materia_substat
                 for a, b in materia_tuples:
                     if a == 'General Info':
@@ -123,7 +123,7 @@ class WotvGeneral(commands.Cog):
                         embed.add_field(name=a, value=b, inline=True)
                 await self.log.send(ctx, embed=embed)
                 return
-            elif arg[0].lower() in ('passive', 'passives', 'recraft'):
+            elif arg[0].lower() in ('passive', 'passives', 'recraft', 'p'):
                 materia_tuples = wotv_utils.materia_passive
         for a, b in materia_tuples:
             embed.add_field(name=a, value=b, inline=False)
@@ -1072,20 +1072,31 @@ class WotvEsper(commands.Cog):
                 list_lists = []
                 for index, row in row_df.iterrows():
                     # Initialise for each row with only name.
+                    filter_state = 0 # 0: First argument
                     row_list = [index]
                     for tupcol, tuparg in tuples_list:
                         # Find value and add to row list.
                         if tuparg == 'STAT':
                             row_list.append(str(row[tupcol]))
+                            filter_state = 1
                         elif tuparg in row[tupcol].lower():
                             eff_list = row[tupcol].split(' / ')
                             for eff in eff_list:
                                 if tuparg in eff.lower():
                                     re_match = wotv_utils.revalues.findall(eff)
                                     row_list.append(re_match[0])
+                                    break
+                            # To filter accuracy/evasion 7
+                            if tuparg in 'accuracy' or tuparg in 'evasion':
+                                if filter_state == 0:
+                                    if int(re_match[0]) < 8:
+                                        filter_state = 2
+                                        break
+                            filter_state = 1
                         else:
                             row_list.append('-')
-                    list_lists.append(row_list)
+                    if filter_state == 1:
+                        list_lists.append(row_list)
                 # Sort list
                 if first_arg not in ('y', 'n'):
                     list_lists.sort(key=lambda a: int(a[1]), reverse=True)
