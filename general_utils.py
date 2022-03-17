@@ -15,8 +15,8 @@ class GeneralUtils():
             '-': (lambda a, b: a - b),
             '*': (lambda a, b: a * b),
             '/': (lambda a, b: a / b),
-            '%': (lambda a, b: a % b),
             '^': (lambda a, b: a ** b),
+            '%': (lambda a, b: a % b),
         }
         self.math_errors = ('Zero Division Error', 'Overflow Error',
                             '... Excuse me?')
@@ -76,6 +76,7 @@ class GeneralUtils():
 
     def math(self, mathstr):
         """Custom recursive math command."""
+        mathstr = mathstr.strip()
         while True:
             # Handle brackets
             lbrackets = []
@@ -84,26 +85,30 @@ class GeneralUtils():
                     lbrackets.append(i)
                 elif mathchar == ')':
                     if len(lbrackets) == 1:
-                        bstart = lbrackets.pop()
-                        bend = i
+                        b_start = lbrackets.pop()
+                        b_end = i
                         break
                     elif len(lbrackets) > 0:
                         lbrackets.pop()
             else:
                 break
             # Call recursion for outermost bracket.
-            mathstr = (mathstr[0:bstart]
-                       + self.math(mathstr[bstart+1:bend])
-                       + mathstr[bend+1:])
+            mathstr = (mathstr[0:b_start].strip()
+                       + self.math(mathstr[b_start+1:b_end].strip())
+                       + mathstr[b_end+1:].strip())
+        operation_found = 0
         for opstr, opfunc in self.opdicts.items():
             # Check which operation to execute. Lowest priority first.
             op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
             if len(op_index_list) > 0:
                 op_index = op_index_list[-1]
+                # Call recursion for left and right side of the operator.
+                leftstr = self.math(mathstr[:op_index])
+                rightstr = self.math(mathstr[op_index+1:])
+                if opstr == "%" and len(rightstr) == 0:
+                    continue
+                operation_found = 1
                 try:
-                    # Call recursion for left and right side of the operator.
-                    leftstr = self.math(mathstr[:op_index]).strip()
-                    rightstr = self.math(mathstr[op_index+1 :]).strip()
                     # Update mathstr with left and right results.
                     mathstr = str(opfunc(float(leftstr), float(rightstr)))
                 except ValueError:
@@ -118,4 +123,12 @@ class GeneralUtils():
                     mathstr = self.math_errors[0]
                 except OverflowError:
                     mathstr = self.math_errors[1]
+        # Handle % sign
+        if not operation_found and len(mathstr) > 1:
+            if mathstr[-1] == "%":
+                mathstr = mathstr.rstrip("%")
+                try:
+                    mathstr = str(float(mathstr) / 100)
+                except ValueError:
+                    mathstr = self.math_errors[2]
         return mathstr

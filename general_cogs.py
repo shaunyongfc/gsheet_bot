@@ -123,7 +123,7 @@ class GeneralCommands(commands.Cog):
                 await self.log.send(ctx, general_utils.tag_help)
                 return
             elif len(arg) == 1:
-                keyword = arg[0]
+                keyword = arg[0].lower()
                 df = dfgen.tags[dfgen.tags['Tag'] == keyword]
                 if len(df) == 0:
                     await self.log.send(ctx,
@@ -134,7 +134,7 @@ class GeneralCommands(commands.Cog):
                         results.append(f"`{row['Serial']}`: {row['Content']}")
                     await self.log.send(ctx, '\n'.join(results))
             else:
-                keyword = arg[0]
+                keyword = arg[0].lower()
                 dfgen.add_tag(
                     keyword,
                     ' '.join(arg[1:]),
@@ -145,32 +145,6 @@ class GeneralCommands(commands.Cog):
     @commands.command(aliases=['newtags', 'newtag', 'tagrecent', 'recenttags'])
     async def tagnew(self, ctx, *arg):
         """Tag command to return tags recently used."""
-        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
-            await self.log.log(ctx.message)
-            tags = dfgen.tags['Tag'].unique()
-            end_num = 0
-            try:
-                start_num = int(arg[0])
-                try:
-                    int(arg[1]) # To make sure there is a second number
-                    end_num = start_num - 1
-                    start_num = int(arg[1])
-                except (IndexError, ValueError):
-                    pass
-            except (IndexError, ValueError):
-                start_num = 10
-            start_num = min(start_num, end_num + 50)
-            if end_num == 0:
-                heading = f"**Recent {start_num} tags:**"
-                tags_line = ', '.join(tags[-start_num:])
-            else:
-                heading = f"**Recent {end_num + 1} ~ {start_num} tags:**"
-                tags_line = ', '.join(tags[-start_num:-end_num])
-            await self.log.send(ctx, '\n'.join((heading, tags_line)))
-
-    @commands.command(aliases=['searchtags'])
-    async def tagsearch(self, ctx, *arg):
-        """Tag command to search tags."""
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             tags = dfgen.tags['Tag'].unique()
@@ -254,7 +228,7 @@ class GeneralCommands(commands.Cog):
                 await self.log.send(ctx, general_utils.tag_help)
                 return
             else:
-                keyword = ' '.join(arg)
+                keyword = ' '.join(arg).lower()
                 df_boolean = pd.DataFrame([
                     dfgen.tags['Tag'] == keyword,
                     dfgen.tags['User'] == ctx.message.author.id
