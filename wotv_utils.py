@@ -98,7 +98,7 @@ class WotvUtils:
             'ramada_rarity': ('R', 'SR', 'SSR', 'UR'),
             'ramada_implication': ('up', 'neutral', 'down'),
             'event_tuples': (
-                (('banner', 'gacha', 'step', 'pull', 'sale'), 'visiore'),
+                (('banner', 'gacha', 'step', 'pull', 'sale', 'fest'), 'visiore'),
                 (('recipe', 'currency', 'acquisition'),'recipe'),
                 (('pvp', 'arena', 'match', 'guild'), 'party'),
                 (('event', 'raid', 'tower', 'box', 'challenge'), 'event'),
@@ -110,18 +110,19 @@ class WotvUtils:
         msg_list = []
         # Generate the weekly command string.
         weekly_tuples = [
-            ('`Monday   `', ('kame', 'pot', 'materias')),
-            ('`Tuesday  `', ('fire', 'wind', 'materia_i')),
-            ('`Wednesday`', ('water', 'ice', 'materia_h')),
-            ('`Thursday `', ('earth', 'dark', 'materia_f')),
-            ('`Friday   `', ('thunder', 'light', 'materia_o')),
-            ('`Saturday `', ('pink', 'gil', 'materia_w')),
-            ('`Sunday   `', ('gil', 'materia_s')),
+            ('`Monday   `', ('kame', 'pot', 'materias'), ('All',)),
+            ('`Tuesday  `', ('fire', 'wind', 'materia_i'), ('Sword', 'Greatsword', 'Axe')),
+            ('`Wednesday`', ('water', 'ice', 'materia_h'), ('Spear', 'Gun', 'Accessory')),
+            ('`Thursday `', ('earth', 'dark', 'materia_f'), ('Mace', 'Bow', 'Armour')),
+            ('`Friday   `', ('thunder', 'light', 'materia_o'), ('Rod', 'Katana', 'Dagger')),
+            ('`Saturday `', ('pink', 'gil', 'materia_w'), ('Fist', 'Ninjablade', 'Accessory')),
+            ('`Sunday   `', ('gil', 'materia_s'), ('Glove', 'Book', 'Armour')),
         ]
-        for day, daylist in weekly_tuples:
+        for day, daylist, booklist in weekly_tuples:
             msg_line = day + ': '
             for ele in daylist:
                 msg_line += self.dicts['emotes'][ele]
+            msg_line += f" (Books: {', '.join(booklist)})"
             msg_list.append(msg_line)
         self.weekly = '\n'.join(msg_list)
         # Initialise existing news entries.
