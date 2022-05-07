@@ -874,16 +874,16 @@ class WotvVc(commands.Cog):
                         eff_text = eff.replace(match_brackets[0], '').strip()
                     else:
                         eff_text = eff
-                    if ele_found:
-                        vc_eff_tuples.append((
-                            f"{wotv_utils.name_str(row)}{col_prefix}{''.join(eff_prefix)}",
-                            eff_text
-                        ))
+                    if ele_found and len(eff_prefix) > 0:
+                        final_prefix = f"{''.join(eff_prefix)} "
                     elif not condition_found:
-                        vc_eff_tuples.append((
-                            f"{wotv_utils.name_str(row)}{col_prefix}{wotv_utils.dicts['emotes']['allele']}",
-                            eff_text
-                        ))
+                        final_prefix = f"{wotv_utils.dicts['emotes']['allele']} "
+                    else:
+                        final_prefix = ''
+                    vc_eff_tuples.append((
+                        f"{wotv_utils.name_str(row, name='')}{col_prefix}- {final_prefix}",
+                        eff_text
+                    ))
             if ele_found:
                 vc_tuples.extend(vc_eff_tuples)
         # Print while keeping track of characters.

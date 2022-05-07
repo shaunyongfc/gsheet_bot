@@ -400,6 +400,7 @@ class WotvUtils:
         else:
             namestr += f" {name}"
         if 'Aliases' in row.index and alias > 0:
+            engstr = ''
             if alias == 2:
                 engstr = row['English']
             if engstr == '':
