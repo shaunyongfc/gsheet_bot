@@ -518,7 +518,9 @@ class WotvEquipment(commands.Cog):
 
     @commands.command(aliases=['wel', 'eql', 'el', 'El'])
     async def wotveqlist(self, ctx, *arg):
-        """Search equipment by type, acquisition, material."""
+        """Search equipment by type, acquisition, material,
+        upgradeable with heartquartzs.
+        """
         await self.log.log(ctx.message)
         if len(arg) == 0:
             await self.log.send(ctx, 'Try `=help eq`.')
@@ -561,6 +563,10 @@ class WotvEquipment(commands.Cog):
                     embed.title = f"List of lists"
                     embed.description = '\n'.join(
                         wotv_utils.dicts['eq_lists'].keys())
+        elif arg[0].lower() in ['hq', 'heartquartzs', '+6']:
+            rows = dfwotv.eq[dfwotv.eq['Extra'] != '']
+            for index, row in rows.iterrows():
+                eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
         # Check if type search
         elif arg[0].lower() in ['type', 't', 'acquisition', 'a'] \
                 and len(arg) > 1:
@@ -579,6 +585,7 @@ class WotvEquipment(commands.Cog):
                 if argstr in row[colstr].lower():
                     eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
         else:
+            # Material search
             if arg[0].lower() in {'m', 'mat', 'material'} and len(arg) > 1:
                 argstr = ' '.join(arg[1:])
             else:
