@@ -507,6 +507,8 @@ class WotvEquipment(commands.Cog):
             embed.add_field(name='List of materials',
                             value='\n'.join(embed_text_list),
                             inline=True)
+            if row['Url'] != '':
+                embed.set_thumbnail(url=row['Url'])
             if row['English'] != '':
                 embed.add_field(
                     name='WOTV-CALC',
