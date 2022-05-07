@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from general_cogs import GeneralCommands, TestCommands, BotLog
-# from wotv_cogs import WotvGeneral, WotvEquipment, WotvVc, WotvEsper
+from wotv_cogs import WotvGeneral, WotvEquipment, WotvVc, WotvEsper
 
 
 def main():
