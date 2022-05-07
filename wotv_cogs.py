@@ -820,7 +820,7 @@ class WotvVc(commands.Cog):
         )
         # Initialise empty lists.
         col_tuples = {
-            'Party': ' ',
+            'Party': '',
             'Party Max': wotv_utils.dicts['emotes']['vcmax']
         }
         effect_sort = 0
@@ -881,7 +881,7 @@ class WotvVc(commands.Cog):
                     else:
                         final_prefix = ''
                     vc_eff_tuples.append((
-                        f"{wotv_utils.name_str(row, name='')}{col_prefix}- {final_prefix}",
+                        f"{wotv_utils.name_str(row, name='')} - {col_prefix}{final_prefix}",
                         eff_text
                     ))
             if ele_found:
