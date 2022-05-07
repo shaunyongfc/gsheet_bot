@@ -31,14 +31,13 @@ class WotvGeneral(commands.Cog):
         id_list = []
         news_list = []
         for article in articles:
-            if article['data-id'] not in wotv_utils.news_entries:
-                if article['data-id'] not in id_list:
-                    id_list.append(article['data-id'])
-                    news_list.append((
-                        article['data-id'],
-                        article.find('time').text.strip(' \n\t'),
-                        article.find('h2').text
-                    ))
+            if article['data-id'] not in wotv_utils.news_entries.union(id_list):
+                id_list.append(article['data-id'])
+                news_list.append((
+                    article['data-id'],
+                    article.find('time').text.strip(' \n\t'),
+                    article.find('h2').text
+                ))
         if len(news_list) > 0:
             wotv_utils.news_entries = [
                 article['data-id'] for article in articles]

@@ -129,7 +129,7 @@ class WotvUtils:
         r = requests.get("https://players.wotvffbe.com/")
         soup = bs(r.content, features="lxml")
         articles = soup.find_all("article")
-        self.news_entries = [article['data-id'] for article in articles]
+        self.news_entries = set([article['data-id'] for article in articles])
 
     def update_text(self):
         """
@@ -271,7 +271,6 @@ class WotvUtils:
             ('neutral', '791969566233853952'),
             ('allele', '799186663229227038'),
             ('limited', '881743510125043753'),
-            # ('esper', '799155023086878740'),
             ('kame', '799186663041531907'),
             ('pink', '799230682470678559'),
             ('pot', '799231267651584010'),
@@ -291,6 +290,10 @@ class WotvUtils:
             ('materia_o', '914818426126626837'),
             ('materia_w', '914818426147602442'),
             ('materia_s', '914818426097254440'),
+            ('materia_w', '914818426147602442'),
+            ('materia_s', '914818426097254440'),
+            ('hq_ur', '972295638261833798'),
+            ('hq_ssr', '972295638333128765'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
