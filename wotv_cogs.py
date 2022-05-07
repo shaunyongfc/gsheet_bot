@@ -763,6 +763,11 @@ class WotvVc(commands.Cog):
             'Party': ' ',
             'Party Max': wotv_utils.dicts['emotes']['vcmax']
         }
+        effect_sort = 0
+        if len(arg) > 1:
+            if arg[0].lower() in {'s', 'sort'}:
+                effect_sort = 1
+                arg = arg[1:]
         ele = arg[0].lower().replace('lightning', 'thunder')
         try:
             embed.title = ' '.join((
@@ -774,9 +779,9 @@ class WotvVc(commands.Cog):
             await ctx.send(embed = embed)
             return
         # Search each VC.
-        vc_str_list = []
+        vc_tuples = []
         for index, row in df.iterrows():
-            vc_eff_str_list = []
+            vc_eff_tuples = []
             for col, col_prefix in col_tuples.items():
                 col_eff_list = row[col].split(' / ')
                 eff_prefix = []
@@ -810,16 +815,21 @@ class WotvVc(commands.Cog):
                     else:
                         eff_text = eff
                     if ele_found:
-                        vc_eff_str_list.append(
-                            f"{wotv_utils.name_str(row)}{col_prefix}{''.join(eff_prefix)}{eff_text}"
-                        )
+                        vc_eff_tuples.append((
+                            f"{wotv_utils.name_str(row)}{col_prefix}{''.join(eff_prefix)}",
+                            eff_text
+                        ))
                     elif not condition_found:
-                        vc_eff_str_list.append(
-                            f"{wotv_utils.name_str(row)}{col_prefix}{wotv_utils.dicts['emotes']['allele']}{eff_text}"
-                        )
+                        vc_eff_tuples.append((
+                            f"{wotv_utils.name_str(row)}{col_prefix}{wotv_utils.dicts['emotes']['allele']}",
+                            eff_text
+                        ))
             if ele_found:
-                vc_str_list.append('\n'.join(vc_eff_str_list))
+                vc_tuples.extend(vc_eff_tuples)
         # Print while keeping track of characters.
+        if effect_sort == 1:
+            vc_tuples = sorted(vc_tuples, key=lambda tup: tup[1])
+        vc_str_list = [''.join([a, b]) for a, b in vc_tuples]
         field_value = '\n'.join(vc_str_list)
         if len(field_value) < 1020:
             embed.add_field(name='\u200b', value=field_value, inline=False)
