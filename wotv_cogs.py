@@ -528,7 +528,10 @@ class WotvEquipment(commands.Cog):
             name = wotv_utils.dicts['embed']['author_name'],
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
-        if arg[0].lower() in ['list', 'l']:
+        eq_str_list = []
+        result_type = 1
+        if arg[0].lower() in {'list', 'l'}:
+            result_type = 0
             if len(arg) == 1:
                 # Print list of lists.
                 embed.title = f"List of lists"
@@ -537,17 +540,25 @@ class WotvEquipment(commands.Cog):
             else:
                 # Print list of searchable items in the column.
                 argstr = ' '.join(arg[1:]).lower()
+                rowfound = 0
                 for k, v in wotv_utils.dicts['eq_lists'].items():
                     if argstr in v or argstr == k.lower():
                         argstr = k
+                        rowfound = 1
                         break
-                embed.title = f"List of {argstr}s"
-                text_list = list(wotv_utils.dicts['mat_sets'][argstr])
-                if argstr not in ['Type', 'Acquisition']:
-                    text_list = [''.join((f"{a} (",
-                        f"{dfwotv.mat.loc[a]['Aliases'].split(' / ')[0]})")) \
-                        for a in text_list]
-                embed.description = '\n'.join(text_list)
+                if rowfound:
+                    embed.title = f"List of {argstr}s"
+                    text_list = list(wotv_utils.dicts['mat_sets'][argstr])
+                    if argstr not in ['Type', 'Acquisition']:
+                        text_list = [''.join((f"{a} (",
+                            f"{dfwotv.mat.loc[a]['Aliases'].split(' / ')[0]})"\
+                            )) for a in text_list]
+                    embed.description = '\n'.join(text_list)
+                else:
+                    # No match. Print list of lists.
+                    embed.title = f"List of lists"
+                    embed.description = '\n'.join(
+                        wotv_utils.dicts['eq_lists'].keys())
         # Check if type search
         elif arg[0].lower() in ['type', 't', 'acquisition', 'a'] \
                 and len(arg) > 1:
@@ -561,59 +572,50 @@ class WotvEquipment(commands.Cog):
             argstr = argstr.lower()
             for index, row in dfwotv.eq_type.iterrows():
                 argstr = argstr.replace(index, row['VC'])
-            # Find eq that match and add to the embed
+            # Find eq that match and add to the list
             for index, row in dfwotv.eq.iterrows():
                 if argstr in row[colstr].lower():
-                    field_name = wotv_utils.name_str(row, alias=2)
-                    field_value = row['Special']
-                    embed.add_field(name=field_name,
-                                    value=field_value, inline=True)
+                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
         else:
-            # Check if material search.
-            argstr = ' '.join(arg)
+            if arg[0].lower() in {'m', 'mat', 'material'} and len(arg) > 1:
+                argstr = ' '.join(arg[1:])
+            else:
+                argstr = ' '.join(arg)
             matstr = ('',)
-            for index, row in dfwotv.mat.iterrows():
-                if argstr in row['Aliases'].lower().split(' / '):
-                    matstr = (index, row['Type'], row['Aliases'] \
-                        .split(' / ')[0])
-                    break
+            rowfound, row = wotv_utils.find_row(dfwotv.mat, arg)
+            if rowfound:
+                matstr = (index, row['Type'], row['Aliases'].split(' / ')[0])
             if matstr[0] != '':
                 # Print all eq that use said materials.
                 embed.title = f"Recipes w/ {matstr[2]}"
-                embed_text_list = {
-                    'ur': [],
-                    'ssr': []
-                }
                 for index, row in dfwotv.eq.iterrows():
                     if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' \
                             and matstr[0] in row[matstr[1]]):
-                        embed_text_list[row['Rarity'].lower()].append\
-                            (wotv_utils.name_str(row, alias=2))
-                # Separated by rarity.
-                for k, v in embed_text_list.items():
-                    if len(v) > 0:
-                        field_value = '\n'.join(v)
-                        if len(field_value) < 1020:
-                            embed.add_field(name=k.upper(), value=field_value,
-                                            inline=True)
-                        else:
-                            # Split if too long.
-                            checkpoint = 0
-                            field_value_length = -2
-                            field_name = k.upper()
-                            for i, v_entry in enumerate(v):
-                                field_value_length += len(v_entry) + 2
-                                if field_value_length > 1000:
-                                    field_value = '\n'.join(v[checkpoint:i])
-                                    embed.add_field(name=field_name,
-                                                    value=field_value,
-                                                    inline=True)
-                                    field_value_length = len(v_entry)
-                                    checkpoint = i
-                                    field_name = f"{k.upper()} (cont.)"
-                            field_value = '\n'.join(v[checkpoint:])
-                            embed.add_field(name=field_name,
-                                            value=field_value, inline=True)
+                        eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
+        if result_type and len(eq_str_list) > 0:
+            field_value = '\n'.join(eq_str_list)
+            checkpoint_list = [0]
+            # Split if too long.
+            if len(field_value) > 1020:
+                field_value_length = -2
+                for i, field_entry in enumerate(eq_str_list):
+                    field_value_length += len(field_entry) + 2
+                    if field_value_length > 1000:
+                        field_value_length = len(field_entry)
+                        checkpoint_list.append(i)
+            for i, checkpoint in enumerate(checkpoint_list, start=1):
+                if checkpoint == 0:
+                    field_name = 'Equipment'
+                else:
+                    field_name = 'Equipment (cont.)'
+                if i == len(checkpoint_list):
+                    field_value = '\n'.join(eq_str_list[checkpoint:])
+                else:
+                    field_value = '\n'.join(
+                        eq_str_list[checkpoint:checkpoint_list[i]])
+                embed.add_field(name=field_name, value=field_value, inline=False)
+        elif result_type:
+            embed.description = "Not found. Try checking with `=el l`."
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['wes', 'eqs', 'es', 'Es'])
