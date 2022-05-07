@@ -646,13 +646,38 @@ class WotvEquipment(commands.Cog):
                 embed.colour = v
                 break
         # Search each equipment for their effects.
+        eq_str_list = []
         for _, row in dfwotv.eq.iterrows():
+            in_list = 0
             eff_list = row['Special'].split(' / ')
             for eff in eff_list:
                 if args in eff.lower():
-                    embed.add_field(name=wotv_utils.name_str(row),
-                                    value=f"- {row['Special']}")
+                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
                     break
+            if not in_list:
+                if args in row['Extra'].lower():
+                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
+        field_value = '\n'.join(eq_str_list)
+        checkpoint_list = [0]
+        # Split if too long.
+        if len(field_value) > 1020:
+            field_value_length = -2
+            for i, field_entry in enumerate(eq_str_list):
+                field_value_length += len(field_entry) + 2
+                if field_value_length > 1000:
+                    field_value_length = len(field_entry)
+                    checkpoint_list.append(i)
+        for i, checkpoint in enumerate(checkpoint_list, start=1):
+            if checkpoint == 0:
+                field_name = 'Equipment'
+            else:
+                field_name = 'Equipment (cont.)'
+            if i == len(checkpoint_list):
+                field_value = '\n'.join(eq_str_list[checkpoint:])
+            else:
+                field_value = '\n'.join(
+                    eq_str_list[checkpoint:checkpoint_list[i]])
+            embed.add_field(name=field_name, value=field_value, inline=False)
         try:
             await self.log.send(ctx, embed=embed)
         except discord.HTTPException:
