@@ -1017,12 +1017,12 @@ class WotvEsper(commands.Cog):
         )
         df = dfwotv.esper
         # Check arguments
-        if arg[0] in ['m', 'mobile']:
+        if arg[0] in {'m', 'mobile'}:
             mobile_bool = 1
             arg = arg[1:]
         else:
             mobile_bool = 0
-        if arg[0] in ['sort', 's', 'rank', 'r', 'filter', 'f'] and \
+        if arg[0] in {'sort', 's', 'rank', 'r', 'filter', 'f'} and \
                 len(arg) > 1:
             # Ranking mode
             if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
@@ -1097,7 +1097,7 @@ class WotvEsper(commands.Cog):
                     if filter_state == 1:
                         list_lists.append(row_list)
                 # Sort list
-                if first_arg not in ('y', 'n'):
+                if first_arg not in {'y', 'n'}:
                     list_lists.sort(key=lambda a: int(a[1]), reverse=True)
                 # Print based on display mode
                 if mobile_bool:
@@ -1150,14 +1150,23 @@ class WotvEsper(commands.Cog):
                                     [checkpoint:checkpoint_list[i]])
                             embed.add_field(name=field_name.capitalize(),
                                             value=field_value, inline=True)
+                elif first_arg in {'y', 'n'}:
+                    field_name = 'Esper'
+                    esper_list = [
+                        wotv_utils.name_str(row_df_row, alias=0)
+                        for _, row_df_row in row_df.iterrows()
+                        ]
+                    field_value = '\n'.join(esper_list)
+                    embed.add_field(name=field_name, value=field_value,
+                                    inline=True)
                 else:
                     embed.description = ' '.join((
                         'Esper effect not found or ambiguous.',
                         'Try `=help esper`.'
                     ))
-        elif arg[0] in ['compare', 'c'] and len(arg) > 1:
+        elif arg[0] in {'compare', 'c'} and len(arg) > 1:
             # Comparison mode.
-            if mobile_bool == 0 and arg[1] in ['m', 'mobile']:
+            if mobile_bool == 0 and arg[1] in {'m', 'mobile'}:
                 mobile_bool = 1
                 args = ' '.join(arg[2:])
             else:
