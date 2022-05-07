@@ -452,6 +452,82 @@ class WotvEquipment(commands.Cog):
             name = wotv_utils.dicts['embed']['author_name'],
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
+        # Find the specific equipment.
+        rowfound, row = wotv_utils.find_row(dfwotv.eq, arg)
+        if rowfound == 0:
+            # Not found.
+            if row == '':
+                # Second chance to find by potential character name
+                rowfound, row = wotv_utils.find_row(dfwotv.eq, arg[0].rstrip("'s"))
+                if rowfound == 0:
+                    embed.title = ' '.join(arg)
+                    embed.description = ''.join((
+                        'No match found. ',
+                        'Or did you mean to use `=es` or `=el`?'))
+            else:
+                embed.title = ' '.join(arg)
+                embed.description = ''.join((
+                    'Too many results. ',
+                    'Please try the following:\n',
+                    row))
+        if rowfound:
+            # Process equipment info.
+            embed.title = row.name
+            description_list = [f"{wotv_utils.name_str(row, name='', alias=2)}"]
+            eff_list = []
+            if row['Condition'] != '':
+                description_list.append(f"*Restriction: {row['Condition']}*")
+            condition = ''
+            for eff in row['Special'].split(' / '):
+                match_brackets = wotv_utils.reconditions.findall(eff)
+                if len(match_brackets) == 1:
+                    condition = match_brackets[0]
+                    eff_list.append(eff)
+                elif condition == '':
+                    eff_list.append(eff)
+                else:
+                    eff_list.append(f"{condition} {eff}")
+            description_list.extend(eff_list)
+            if row['Extra'] != '':
+                description_list.append(f"{wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
+            embed.description = '\n'.join(description_list)
+            embed.add_field(name='Acquisition', value=row['Acquisition'],
+                            inline=True)
+            # Craft materials.
+            embed_text_list = []
+            for col in ['Regular', 'Rare', 'Cryst', 'Ore']:
+                if row[col] != '':
+                    if col == 'Cryst':
+                        embed_text_list.append(wotv_utils.get_cryst(row))
+                    else:
+                        engstr = dfwotv.mat.loc[row[col]]['Aliases'] \
+                            .split(' / ')[0]
+                        embed_text_list.append(
+                            f"- {row[col]} ({engstr})")
+            embed.add_field(name='List of materials',
+                            value='\n'.join(embed_text_list),
+                            inline=True)
+            if row['English'] != '':
+                embed.add_field(
+                    name='WOTV-CALC',
+                    value=wotv_utils.calc_url('equipment', row['English']),
+                    inline=False)
+        await self.log.send(ctx, embed=embed)
+
+    @commands.command(aliases=['wel', 'eql', 'el', 'El'])
+    async def wotveqlist(self, ctx, *arg):
+        """Search equipment by type, acquisition, material."""
+        await self.log.log(ctx.message)
+        if len(arg) == 0:
+            await self.log.send(ctx, 'Try `=help eq`.')
+            return
+        embed = discord.Embed(
+            colour = wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
         if arg[0].lower() in ['list', 'l']:
             if len(arg) == 1:
                 # Print list of lists.
@@ -488,8 +564,8 @@ class WotvEquipment(commands.Cog):
             # Find eq that match and add to the embed
             for index, row in dfwotv.eq.iterrows():
                 if argstr in row[colstr].lower():
-                    field_name = wotv_utils.name_str(row)
-                    field_value = f"- {row['Special']}"
+                    field_name = wotv_utils.name_str(row, alias=2)
+                    field_value = row['Special']
                     embed.add_field(name=field_name,
                                     value=field_value, inline=True)
         else:
@@ -511,8 +587,8 @@ class WotvEquipment(commands.Cog):
                 for index, row in dfwotv.eq.iterrows():
                     if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' \
                             and matstr[0] in row[matstr[1]]):
-                        embed_text_list[row['Rarity'].lower()] \
-                            .append(wotv_utils.name_str(row))
+                        embed_text_list[row['Rarity'].lower()].append\
+                            (wotv_utils.name_str(row, alias=2))
                 # Separated by rarity.
                 for k, v in embed_text_list.items():
                     if len(v) > 0:
@@ -538,58 +614,6 @@ class WotvEquipment(commands.Cog):
                             field_value = '\n'.join(v[checkpoint:])
                             embed.add_field(name=field_name,
                                             value=field_value, inline=True)
-            else:
-                # Find the specific equipment.
-                rowfound, row = wotv_utils.find_row(dfwotv.eq, arg)
-                if rowfound == 0:
-                    # Not found.
-                    if row == '':
-                        embed.title = ' '.join(arg)
-                        embed.description = ''.join((
-                            'No match found. ',
-                            'Or did you mean to use `=es` or `=eq l/t/a`?'))
-                    else:
-                        embed.title = ' '.join(arg)
-                        embed.description = ''.join((
-                            'Too many results. ',
-                            'Please try the following:\n',
-                            row))
-                else:
-                    # Process equipment info.
-                    embed.title = row.name
-                    embed.description = '\n'.join((
-                        f"{wotv_utils.name_str(row, name='')}",
-                        f"{row['Special']}",
-                        f"Acquisition: {row['Acquisition']}"))
-                    # Craft materials.
-                    embed_text_list = []
-                    for col in ['Regular', 'Rare', 'Cryst', 'Ore']:
-                        if row[col] != '':
-                            if col == 'Cryst':
-                                # Add Mega if UR crysts. Remove Mega if SSR.
-                                for cryst_ele in list(row[col]):
-                                    if row['Rarity'] == 'UR':
-                                        engstr = dfwotv.mat.loc[cryst_ele] \
-                                            ['Aliases'].split(' / ')[0] \
-                                            .replace('(Mega)C', 'Megac')
-                                    else:
-                                        engstr = dfwotv.mat.loc[cryst_ele] \
-                                            ['Aliases'].split(' / ')[0] \
-                                            .replace('(Mega)', '')
-                                    embed_text_list.append(
-                                        f"- {cryst_ele} ({engstr})")
-                            else:
-                                engstr = dfwotv.mat.loc[row[col]]['Aliases'] \
-                                    .split(' / ')[0]
-                                embed_text_list.append(
-                                    f"- {row[col]} ({engstr})")
-                    embed.add_field(name='List of materials',
-                                    value='\n'.join(embed_text_list),
-                                    inline=True)
-                    embed.add_field(name='WOTV-CALC',
-                                    value=wotv_utils.calc_url('equipment',
-                                        row['Aliases'].split(' / ')[0]),
-                                    inline=False)
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['wes', 'eqs', 'es', 'Es'])

@@ -292,12 +292,11 @@ class WotvUtils:
             ('materia_s', '914818426097254440'),
             ('materia_w', '914818426147602442'),
             ('materia_s', '914818426097254440'),
-            ('hq_ur', '972295638261833798'),
-            ('hq_ssr', '972295638333128765'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
             ('materias', '913749364810338315'),
+            ('heartquartzs', '972379294682734602'),
         )
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
@@ -400,8 +399,11 @@ class WotvUtils:
             namestr += f" {row.name}"
         else:
             namestr += f" {name}"
-        if 'Aliases' in row.index and alias:
-            engstr = row['Aliases'].split(' / ')[0]
+        if 'Aliases' in row.index and alias > 0:
+            if alias == 2:
+                engstr = row['English']
+            if engstr == '':
+                engstr = row['Aliases'].split(' / ')[0]
             if engstr != '':
                 if name == '':
                     namestr += engstr
@@ -472,6 +474,22 @@ class WotvUtils:
                         if suggestion != '':
                             suggestion_list.append(suggestion)
                 return 0, ' / '.join(suggestion_list)
+
+    def get_cryst(self, row):
+        """Given DataFrame row of equipment, return text string for the
+        corresponding cryst.
+        """
+        text_list = []
+        for cryst_ele in list(row['Cryst']):
+            # Add Mega if UR crysts. Remove Mega if SSR.
+            if row['Rarity'] == 'UR':
+                engstr = self.dfwotv.mat.loc[cryst_ele]['Aliases']\
+                    .split(' / ')[0].replace('(Mega)C', 'Megac')
+            else:
+                engstr = self.dfwotv.mat.loc[cryst_ele]['Aliases']\
+                    .split(' / ')[0].replace('(Mega)', '')
+            text_list.append(f"- {cryst_ele} ({engstr})")
+        return '\n'.join(text_list)
 
     def rand(self, ffbe, *arg):
         """Random command to return a random value depending on given inputs.

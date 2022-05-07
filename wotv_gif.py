@@ -8,6 +8,14 @@ from wotv_png_process import image_crop
 IMAGE_FOLDER = 'bot_images'
 
 
+def get_wotv_heartquartzs():
+    """Generate a list of file paths for heartquartzs."""
+    HEARTQUARTZS = ['ur', 'ssr', 'sr', 'r']
+    pref = os.path.join('process_pending', 'it_af_mat_6_')
+    suf = '.png'
+    return [f"{pref}{a}{suf}" for a in HEARTQUARTZS]
+
+
 def get_wotv_materias():
     """Generate a list of file paths for materias."""
     MATERIAS = ['f', 'h', 'i', 'o', 's', 'w']
@@ -48,5 +56,7 @@ def make_gif(path_list, gif_name):
 if __name__ == '__main__':
     # make_gif(get_wotv_elements(), 'wotv_elements.gif')
     # make_gif(get_wotv_materias(), 'wotv_materias.gif')
-    for image_name in get_wotv_materias():
-        image_crop(Image.open(os.path.join(IMAGE_FOLDER, image_name))).save(os.path.join(IMAGE_FOLDER, image_name))
+    # for image_name in get_wotv_heartquartzs():
+    #     image_crop(Image.open(os.path.join(IMAGE_FOLDER, image_name))).save(os.path.join(IMAGE_FOLDER, image_name))
+
+    make_gif(get_wotv_heartquartzs(), 'wotv_heartquartzs.gif')
