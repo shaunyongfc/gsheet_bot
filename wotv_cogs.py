@@ -1,5 +1,6 @@
 import discord
 import random
+import itertools
 import pandas as pd
 from discord.ext import commands, tasks
 from datetime import datetime
@@ -717,11 +718,10 @@ class WotvVc(commands.Cog):
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
         # Initialise empty lists.
-        effects_dict = {
-            'Party': [],
-            'Party Max': [],
-            'Unit': []
-        }
+        vc_dict_p_ur = {k: [] for k in wotv_utils.dicts['colours'].keys()}
+        vc_dict_u_ur = {k: [] for k in wotv_utils.dicts['colours'].keys()}
+        vc_dict_p = {k: [] for k in wotv_utils.dicts['colours'].keys()}
+        vc_dict_u = {k: [] for k in wotv_utils.dicts['colours'].keys()}
         if len(arg) == 1:
             # Check if it is a shortcut keyword.
             args = wotv_utils.shortcut_convert(arg[0])
@@ -733,10 +733,13 @@ class WotvVc(commands.Cog):
             args = args.replace(index, row['VC'])
         # Search each VC.
         for _, row in df.iterrows():
-            for col in effects_dict.keys():
+            vc_ele = ''
+            vc_party_list = []
+            vc_unit_list = []
+            for col in {'Party Max', 'Party', 'Unit'}:
                 eff_list = row[col].split(' / ')
                 # Default icon unless condition found.
-                eff_prefix = [wotv_utils.dicts['emotes']['allele']]
+                eff_prefix = []
                 for eff in eff_list:
                     # Have to process the brackets first, because
                     # might match 2nd conditional effect.
@@ -754,18 +757,76 @@ class WotvVc(commands.Cog):
                                 eff_prefix.append(
                                     wotv_utils.dicts['emotes'][condition]
                                 )
+                                if vc_ele == '':
+                                    vc_ele = condition
+                                elif vc_ele != condition:
+                                    vc_ele = 'neutral'
                             if len(eff_prefix) == 0:
                                 eff_prefix = [match_brackets[0]]
                     if args in eff.lower():
                         eff_suffix = '' # Actual effect numbers.
                         match_numbers = wotv_utils.revalues.findall(eff)
+                        universal = 0
+                        if len(eff_prefix) == 0:
+                            universal = 1
+                            eff_prefix = [wotv_utils.dicts['emotes']['allele']]
                         if len(match_numbers) == 1:
-                            eff_suffix = ' ' + match_numbers[0]
-                        effects_dict[col].append(''.join((''.join(eff_prefix),
-                            wotv_utils.name_str(row), eff_suffix)))
+                            eff_suffix = match_numbers[0]
+                        if col == 'Unit':
+                            vc_unit_list.append((
+                                f"{''.join(eff_prefix)}{wotv_utils.name_str(row, name='')} - {eff_suffix}",
+                                universal))
+                        elif col == 'Party':
+                            vc_party_list.append((
+                                f"{''.join(eff_prefix)}{wotv_utils.name_str(row, name='')} - {eff_suffix}",
+                                universal))
+                        else: # Party Max
+                            vc_party_list.append((
+                                f"{''.join(eff_prefix)}{wotv_utils.name_str(row, name='')} - {wotv_utils.dicts['emotes']['vcmax']} {eff_suffix}",
+                                universal))
+            # Add entries to corresponding element and rarity
+            if vc_ele == '' and row['Rarity'] == 'UR':
+                vc_dict_p_ur['neutral'].extend([
+                    vc_str for vc_str, _ in vc_party_list])
+                vc_dict_u_ur['neutral'].extend([
+                    vc_str for vc_str, _ in vc_unit_list])
+            elif vc_ele == '':
+                vc_dict_p['neutral'].extend([
+                    vc_str for vc_str, _ in vc_party_list])
+                vc_dict_u['neutral'].extend([
+                    vc_str for vc_str, _ in vc_unit_list])
+            elif row['Rarity'] == 'UR':
+                vc_dict_p_ur[vc_ele].extend([
+                    f"{vc_str} {wotv_utils.dicts['emotes'][vc_ele]}"
+                    if universal else vc_str
+                    for (vc_str, universal) in vc_party_list
+                ])
+                vc_dict_u_ur[vc_ele].extend([
+                    f"{vc_str} {wotv_utils.dicts['emotes'][vc_ele]}"
+                    if universal else vc_str
+                    for (vc_str, universal) in vc_unit_list
+                ])
+            else:
+                vc_dict_p[vc_ele].extend([
+                    f"{vc_str} {wotv_utils.dicts['emotes'][vc_ele]}"
+                    if universal else vc_str
+                    for (vc_str, universal) in vc_party_list
+                ])
+                vc_dict_u[vc_ele].extend([
+                    f"{vc_str} {wotv_utils.dicts['emotes'][vc_ele]}"
+                    if universal else vc_str
+                    for (vc_str, universal) in vc_unit_list
+                ])
+        # Combine entries of each element
+        vc_party_str_list = list(itertools.chain.from_iterable([
+            vc_str_list for _, vc_str_list in vc_dict_p_ur.items()] + [
+            vc_str_list for _, vc_str_list in vc_dict_p.items()]))
+        vc_unit_str_list = list(itertools.chain.from_iterable([
+            vc_str_list for _, vc_str_list in vc_dict_u_ur.items()] + [
+            vc_str_list for _, vc_str_list in vc_dict_u.items()]))
         # Print from each list if non-empty.
         empty_list = 1
-        for k, v in effects_dict.items():
+        for k, v in (('Party', vc_party_str_list), ('Unit', vc_unit_str_list)):
             if len(v) > 0:
                 empty_list = 0
                 field_value = '\n'.join(v)
