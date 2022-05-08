@@ -155,8 +155,10 @@ class WotvUtils:
         self.help_eq = []
         for _, row in df.iterrows():
             if row['Title'] == 'Equipment Help':
-                body = row['Body'].replace('[PLACEHOLDER]',
+                body = row['Body'].replace('[PLACEHOLDER1]',
                     self.dicts['emotes']['limited'])
+                body = body.replace('[PLACEHOLDER2]',
+                    self.dicts['emotes']['heartquartzs'])
             else:
                 body = row['Body']
             self.help_eq.append((row['Title'], body))

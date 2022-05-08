@@ -505,9 +505,10 @@ class WotvEquipment(commands.Cog):
                             .split(' / ')[0]
                         embed_text_list.append(
                             f"- {row[col]} ({engstr})")
-            embed.add_field(name='List of materials',
-                            value='\n'.join(embed_text_list),
-                            inline=True)
+            if len(embed_text_list) > 0:
+                embed.add_field(name='List of materials',
+                                value='\n'.join(embed_text_list),
+                                inline=True)
             if row['Url'] != '':
                 embed.set_thumbnail(url=row['Url'])
             if row['English'] != '':
