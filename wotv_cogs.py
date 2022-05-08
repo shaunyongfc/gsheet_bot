@@ -594,9 +594,8 @@ class WotvEquipment(commands.Cog):
             matstr = ('',)
             rowfound, row = wotv_utils.find_row(dfwotv.mat, arg)
             if rowfound:
-                matstr = (index, row['Type'], row['Aliases'].split(' / ')[0])
-            if matstr[0] != '':
                 # Print all eq that use said materials.
+                matstr = (row.name, row['Type'], row['Aliases'].split(' / ')[0])
                 embed.title = f"Recipes w/ {matstr[2]}"
                 for index, row in dfwotv.eq.iterrows():
                     if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' \
@@ -623,7 +622,9 @@ class WotvEquipment(commands.Cog):
                 else:
                     field_value = '\n'.join(
                         eq_str_list[checkpoint:checkpoint_list[i]])
-                embed.add_field(name=field_name, value=field_value, inline=False)
+                embed.add_field(name=field_name, value=field_value, inline=True)
+                if i % 2 == 0:
+                    embed.add_field(name='\u200b', value='\u200b', inline=True)
         elif result_type:
             embed.description = "Not found. Try checking with `=el l`."
         await self.log.send(ctx, embed=embed)
@@ -687,7 +688,9 @@ class WotvEquipment(commands.Cog):
             else:
                 field_value = '\n'.join(
                     eq_str_list[checkpoint:checkpoint_list[i]])
-            embed.add_field(name=field_name, value=field_value, inline=False)
+            embed.add_field(name=field_name, value=field_value, inline=True)
+            if i % 2 == 0:
+                embed.add_field(name='\u200b', value='\u200b', inline=True)
         try:
             await self.log.send(ctx, embed=embed)
         except discord.HTTPException:
@@ -956,6 +959,7 @@ class WotvVc(commands.Cog):
             embed.add_field(name='\u200b', value=field_value, inline=False)
         else:
             # Split if too long.
+            field_num = 0
             checkpoint = 0
             field_value_length = -2
             for i, vc_str in enumerate(vc_str_list):
@@ -963,11 +967,18 @@ class WotvVc(commands.Cog):
                 if field_value_length > 1000:
                     field_value = '\n'.join(vc_str_list[checkpoint:i])
                     embed.add_field(name='\u200b', value=field_value,
-                                    inline=False)
+                                    inline=True)
+                    field_num += 1
+                    if field_num % 2 == 0:
+                        embed.add_field(name='\u200b', value='\u200b',
+                                        inline=True)
                     field_value_length = len(vc_str)
                     checkpoint = i
             field_value = '\n'.join(vc_str_list[checkpoint:])
-            embed.add_field(name='\u200b', value=field_value, inline=False)
+            embed.add_field(name='\u200b', value=field_value, inline=True)
+            field_num += 1
+            if field_num % 2 == 0:
+                embed.add_field(name='\u200b', value='\u200b', inline=True)
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['wv', 'vc', 'VC', 'Vc'])
