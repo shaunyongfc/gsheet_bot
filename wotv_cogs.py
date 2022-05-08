@@ -476,8 +476,8 @@ class WotvEquipment(commands.Cog):
             embed.title = row.name
             description_list = [f"{wotv_utils.name_str(row, name='', alias=2)}"]
             eff_list = []
-            if row['Condition'] != '':
-                description_list.append(f"*Restriction: {row['Condition']}*")
+            if row['Restriction'] != '':
+                description_list.append(f"*Restriction: {row['Restriction']}*")
             condition = ''
             for eff in row['Special'].split(' / '):
                 match_brackets = wotv_utils.reconditions.findall(eff)
