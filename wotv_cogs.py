@@ -623,6 +623,15 @@ class WotvEquipment(commands.Cog):
                 else:
                     field_value = '\n'.join(
                         eq_str_list[checkpoint:checkpoint_list[i]])
+                if i > 6: # 6000 character limit
+                    await self.log.send(ctx, embed=embed)
+                    embed = discord.Embed(
+                        colour = wotv_utils.dicts['embed']['default_colour']
+                    )
+                    embed.set_author(
+                        name = wotv_utils.dicts['embed']['author_name'],
+                        icon_url = wotv_utils.dicts['embed']['author_icon_url']
+                    )
                 embed.add_field(name=field_name, value=field_value, inline=True)
                 if i % 2 == 0:
                     embed.add_field(name='\u200b', value='\u200b', inline=True)
