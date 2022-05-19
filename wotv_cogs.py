@@ -29,11 +29,11 @@ class WotvGeneral(commands.Cog):
         """Checks for news every minute and post to designated channels."""
         soup = wotv_utils.get_news()
         articles = soup.find_all("article")
-        id_list = []
+        id_list = set()
         news_list = []
         for article in articles:
             if article['data-id'] not in wotv_utils.news_entries.union(id_list):
-                id_list.append(article['data-id'])
+                id_list.add(article['data-id'])
                 news_list.append((
                     article['data-id'],
                     article.find('time').text.strip(' \n\t'),
