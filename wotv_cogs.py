@@ -40,8 +40,8 @@ class WotvGeneral(commands.Cog):
                     article.find('h2').text
                 ))
         if len(news_list) > 0:
-            wotv_utils.news_entries = [
-                article['data-id'] for article in articles]
+            wotv_utils.news_entries = set([
+                article['data-id'] for article in articles])
             for channel_id in dfwotv.ids['WOTV Newsfeed']:
                 await self.bot.get_channel(channel_id).send('\n'.join([
                     f":newspaper: {news[1]} - {news[2]} - <https://players.wotvffbe.com/{news[0]}/>" for news in news_list
