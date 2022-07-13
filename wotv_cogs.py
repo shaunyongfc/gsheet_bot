@@ -623,7 +623,7 @@ class WotvEquipment(commands.Cog):
                 else:
                     field_value = '\n'.join(
                         eq_str_list[checkpoint:checkpoint_list[i]])
-                if i > 6: # 6000 character limit
+                if i > 6 and i % 6 == 1: # 6000 character limit
                     await self.log.send(ctx, embed=embed)
                     embed = discord.Embed(
                         colour = wotv_utils.dicts['embed']['default_colour']
@@ -701,11 +701,15 @@ class WotvEquipment(commands.Cog):
             embed.add_field(name=field_name, value=field_value, inline=True)
             if i % 2 == 0:
                 embed.add_field(name='\u200b', value='\u200b', inline=True)
-        try:
-            await self.log.send(ctx, embed=embed)
-        except discord.HTTPException:
+        if len(eq_str_list) == 0:
             await self.log.send(ctx,
-                'Too many results. Please refine the search.')
+                'No match found. Try checking `=help eq`. Or did you mean to use `=eq` or `=el`?')
+        else:
+            try:
+                await self.log.send(ctx, embed=embed)
+            except discord.HTTPException:
+                await self.log.send(ctx,
+                    'Too many results. Please refine the search.')
 
 class WotvVc(commands.Cog):
     """Discord cog with WOTV vision card commands."""
