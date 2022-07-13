@@ -117,7 +117,8 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def tag(self, ctx, *arg):
         """Tag command to record tags with contents freely added by users."""
-        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
+        if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']) or\
+                ctx.message.author.id == id_dict['Owner']:
             await self.log.log(ctx.message)
             if len(arg) == 0:
                 await self.log.send(ctx, general_utils.tag_help)

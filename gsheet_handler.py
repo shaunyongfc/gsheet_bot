@@ -97,6 +97,7 @@ class DfHandlerGen():
         self.tags = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_tags').get_all_records()
         )
+        self.tags["Tag"] = self.tags["Tag"].astype(str)
         # Sheet for ids.
         self.ids = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_ids').get_all_records())
