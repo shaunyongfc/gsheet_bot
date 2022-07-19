@@ -115,8 +115,22 @@ class GeneralCommands(commands.Cog):
         await self.log.send(ctx, f"`{argstr} = {mathstr}`")
 
     @commands.command()
+    async def tagtoggle(self, ctx, *arg):
+        """Admin command to toggle tag commands to be enabled or disabled."""
+        if ctx.message.author.id == id_dict['Owner']:
+            if general_utils.tag_disabled:
+                general_utils.tag_disabled = False
+                await ctx.send('Tag commands are now enabled.')
+            else:
+                general_utils.tag_disabled = True
+                await ctx.send('Tag commands are now temporarily disabled.')
+
+    @commands.command()
     async def tag(self, ctx, *arg):
         """Tag command to record tags with contents freely added by users."""
+        if general_utils.tag_disabled:
+            await ctx.send('Tag commands are currently temporarily disabled.')
+            return
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']) or\
                 ctx.message.author.id == id_dict['Owner']:
             await self.log.log(ctx.message)
@@ -146,6 +160,9 @@ class GeneralCommands(commands.Cog):
     @commands.command(aliases=['newtags', 'newtag', 'tagrecent', 'recenttags'])
     async def tagnew(self, ctx, *arg):
         """Tag command to return tags recently used."""
+        if general_utils.tag_disabled:
+            await ctx.send('Tag commands are currently temporarily disabled.')
+            return
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             tags = dfgen.tags['Tag'].unique()
@@ -174,6 +191,9 @@ class GeneralCommands(commands.Cog):
         """
         Tag command to edit a tag content by serial number.
         """
+        if general_utils.tag_disabled:
+            await ctx.send('Tag commands are currently temporarily disabled.')
+            return
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             if len(arg) < 2:
@@ -200,6 +220,9 @@ class GeneralCommands(commands.Cog):
         """
         Tag command to remove a tag content by serial number.
         """
+        if general_utils.tag_disabled:
+            await ctx.send('Tag commands are currently temporarily disabled.')
+            return
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             if len(arg) == 0:
@@ -223,6 +246,9 @@ class GeneralCommands(commands.Cog):
         """
         Tag command to remove contents from a tag associated by the said user.
         """
+        if general_utils.tag_disabled:
+            await ctx.send('Tag commands are currently temporarily disabled.')
+            return
         if ctx.guild.id in list(dfgen.ids[dfgen.ids['Type'] == 'Tag']['ID']):
             await self.log.log(ctx.message)
             if len(arg) == 0:

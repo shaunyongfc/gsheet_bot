@@ -30,6 +30,7 @@ class GeneralUtils():
             '`=tagremove serial` to remove a tag with specific serial number.',
             '`=tagreset keyword` to remove all contents to a tag you created.'
         ))
+        self.tag_disabled = False # Boolean to disable tags temporarily when needed
 
     def add_shortcut(self, *arg):
         """Parse command inputs to add message shortcuts and
