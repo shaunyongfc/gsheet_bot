@@ -103,7 +103,7 @@ class WotvUtils:
                 (('pvp', 'arena', 'match', 'guild'), 'party'),
                 (('event', 'raid', 'tower', 'box', 'challenge'), 'event'),
                 (('shop', 'whimsy', 'medal'), 'shop'),
-                (('update', 'change', 'fix', 'new', 'ex', 'ma2'), 'update')
+                (('update', 'change', 'fix', 'new', 'ex', 'ma2', 'eq+'), 'update')
             ),
         }
         self.update_text()
