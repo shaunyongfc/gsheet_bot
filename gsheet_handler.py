@@ -107,38 +107,16 @@ class DfHandlerGen():
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
         self.sync()
 
-    def add_tag(self, keyword, content, user):
-        """Used for when adding contents to tag via discord command."""
-        serial = self.tags.Serial.max() + 1
-        ramadaspreadsheet.worksheet('my_tags').append_row([
-            keyword,
-            content,
-            user,
-            int(serial)
-        ])
-        self.sync()
-
-    def edit_tag(self, serial, content):
-        """Used for when editting content to tag via discord command."""
-        last_row = len(self.tags) + 1
-        self.tags.loc[self.tags['Serial'] == serial, 'Content'] = content
+    def sync_tags(self):
+        """Sync local Data to Google sheets."""
         df = self.tags.copy()
         df['User'] = df['User'].apply(str)
-        set_with_dataframe(
-            ramadaspreadsheet.worksheet('my_tags'),
-            df,
-            include_index=False
-        )
-
-    def reset_tag(self, df_boolean):
-        """Used for when resetting contents to tag via discord command."""
-        last_row = len(self.tags) + 1
-        self.tags.drop(df_boolean[df_boolean==True].index, inplace=True)
-        df = self.tags.copy()
-        df['User'] = df['User'].apply(str)
-        ramadaspreadsheet.values_clear(f"my_tags!A2:D{last_row}")
-        set_with_dataframe(
-            ramadaspreadsheet.worksheet('my_tags'),
-            df,
-            include_index=False
-        )
+        try:
+            set_with_dataframe(
+                ramadaspreadsheet.worksheet('my_tags'),
+                df,
+                include_index=False
+            )
+            return 1
+        except gspread.exceptions.APIError as e:
+            return e

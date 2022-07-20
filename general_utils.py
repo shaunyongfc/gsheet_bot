@@ -1,5 +1,6 @@
 import discord
 import re
+from id_dict import id_dict
 
 
 class GeneralUtils():
@@ -22,13 +23,14 @@ class GeneralUtils():
                             '... Excuse me?')
         self.tag_help = '\n'.join((
             'Since this function is only available privately, there are not many limitations.',
-            'However be discreet while using them and do not abuse. I do keep logs of my bot calls.',
-            '`=tag keyword` to call contents of a tag.',
-            '`=tag keyword contents` to add contents to a tag.',
-            '`=tagrecent` to view list of recently-added tags.',
-            '`=tagedit serial contents` to change the contents of a tag with specific serial number.',
-            '`=tagremove serial` to remove a tag with specific serial number.',
-            '`=tagreset keyword` to remove all contents to a tag you created.'
+            'However be discreet while using them and do not abuse. I keep logs of my bot calls.',
+            'Do NOT add mentions/pings to tags.',
+            '`=tag keyword` to call contents of a keyword.',
+            '`=tag keyword contents` to add contents to a keyword.',
+            '`=tagrecent` to view list of recently-added keywords.',
+            '`=tagedit serial contents` to change the contents of a tag with  aserial number.',
+            '`=tagremove serial` to remove a tag with a serial number.',
+            '`=tagserial serial` to view content of a serial number.',
         ))
         self.tag_disabled = False # Boolean to disable tags temporarily when needed
 
@@ -74,6 +76,24 @@ class GeneralUtils():
             except IndexError:
                 pass
         return argstr
+
+    def get_group(self, ctx):
+        """Given message context get tag group."""
+        group = 0
+        channel_ids = self.dfgen.ids[
+                            self.dfgen.ids['Type'].str.contains('TagC')]['ID']
+        server_ids = self.dfgen.ids[
+                            self.dfgen.ids['Type'].str.contains('TagS')]['ID']
+        if ctx.channel.id in list(channel_ids):
+            df = self.dfgen.ids[self.dfgen.ids['Type'].str.contains('TagC')]
+            group = int(list(df[df['ID'] == ctx.channel.id]['Type'])[0][4:])
+        elif ctx.guild.id in list(server_ids):
+            df = self.dfgen.ids[self.dfgen.ids['Type'].str.contains('TagS')]
+            group = int(list(df[df['ID'] == ctx.guild.id]['Type'])[0][4:])
+        elif ctx.message.author.id == id_dict['Owner']:
+            group = list(self.dfgen.ids[self.dfgen.ids['Type'] \
+                                                    == 'TagDefault']['ID'])[0]
+        return group
 
     def math(self, mathstr):
         """Custom recursive math command."""
