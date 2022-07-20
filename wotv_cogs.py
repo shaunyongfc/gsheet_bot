@@ -437,7 +437,7 @@ class WotvEquipment(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['we', 'eq', 'equipment', 'Eq', 'Equipment'])
+    @commands.command(aliases=['we', 'eq', 'equip', 'Eq', 'Equip'])
     async def wotveq(self, ctx, *arg):
         """General equipment search command, has multiple modes
         depending on inputs.
