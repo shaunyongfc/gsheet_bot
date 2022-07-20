@@ -77,7 +77,7 @@ class GeneralCommands(commands.Cog):
         self.log = bot_log
         self.syncpend = False
         self.cleanpend = False
-        self.synccheck.start()
+        # self.synccheck.start() # Off sync when debugging
 
     @tasks.loop(seconds=10.0)
     async def synccheck(self):
@@ -193,13 +193,14 @@ class GeneralCommands(commands.Cog):
                     serial = df['Serial'].max() + 1
                 else:
                     serial = 1
-                dfgen.tags = dfgen.tags.append({
+                df_new = pd.DataFrame([{
                     'Tag': keyword,
                     'Content': ' '.join(arg[1:]),
                     'User': str(ctx.message.author.id),
                     'Serial': serial,
                     'Group': group,
-                }, ignore_index=True)
+                }])
+                dfgen.tags = pd.concat([dfgen.tags, df_new])
                 self.syncpend = True
                 await self.log.send(ctx, f"Content added to tag {keyword}.")
 
@@ -285,7 +286,7 @@ class GeneralCommands(commands.Cog):
                     await self.log.send(ctx,
                         f"Tag {serial} does not exist.")
                 else:
-                    dfgen.tags.loc[df_boolean, 'Content'] = ' '.join(arg[1:])
+                    dfgen.tags.loc[df_boolean[df_boolean].index, 'Content'] = ' '.join(arg[1:])
                     self.syncpend = True
                     await self.log.send(ctx,
                                         f"Content in tag `{serial}` edited.")
