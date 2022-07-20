@@ -77,7 +77,7 @@ class GeneralCommands(commands.Cog):
         self.log = bot_log
         self.syncpend = False
         self.cleanpend = False
-        # self.synccheck.start() # Off sync when debugging
+        self.synccheck.start() # Off sync when debugging
 
     @tasks.loop(seconds=10.0)
     async def synccheck(self):
