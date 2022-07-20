@@ -76,6 +76,7 @@ class GeneralCommands(commands.Cog):
         self.bot = bot
         self.log = bot_log
         self.syncpend = False
+        self.cleanpend = False
         self.synccheck.start()
 
     @tasks.loop(seconds=10.0)
@@ -84,9 +85,10 @@ class GeneralCommands(commands.Cog):
         If yes, synchronises and returns result in the log channel or heroku logs.
         """
         if self.syncpend: # Check if sync is pending
-            return_val = dfgen.sync_tags()
+            return_val = dfgen.sync_tags(self.cleanpend)
             if return_val == 1:
                 self.syncpend = False
+                self.cleanpend = False
                 message = f"Synced success ({datetime.strftime(datetime.now(), mydtformat)})."
             else:
                 message = f"Sync error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)})."
@@ -314,6 +316,7 @@ class GeneralCommands(commands.Cog):
                         f"Tag {serial} does not exist.")
                 else:
                     dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
+                    self.cleanpend = True
                     self.syncpend = True
                     await self.log.send(ctx,
                                         f"Content removed from tag `{serial}`.")
@@ -341,6 +344,7 @@ class GeneralCommands(commands.Cog):
                         f"Tag {keyword} has no contents.")
                 else:
                     dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
+                    self.cleanpend = True
                     self.syncpend = True
                     await self.log.send(ctx,
                                         f"Contents removed from tag {keyword}.")

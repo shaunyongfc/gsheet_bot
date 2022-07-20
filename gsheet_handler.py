@@ -98,6 +98,7 @@ class DfHandlerGen():
             ramadaspreadsheet.worksheet('my_tags').get_all_records()
         )
         self.tags["Tag"] = self.tags["Tag"].astype(str)
+        self.tags_last = len(self.tags) + 1
         # Sheet for ids.
         self.ids = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_ids').get_all_records())
@@ -107,11 +108,13 @@ class DfHandlerGen():
         ramadaspreadsheet.worksheet('my_shortcuts').append_row(list(arg))
         self.sync()
 
-    def sync_tags(self):
+    def sync_tags(self, clean=False):
         """Sync local Data to Google sheets."""
         df = self.tags.copy()
         df['User'] = df['User'].apply(str)
         try:
+            if clean:
+                ramadaspreadsheet.values_clear(f"my_tags!A2:E{self.tags_last}")
             set_with_dataframe(
                 ramadaspreadsheet.worksheet('my_tags'),
                 df,
