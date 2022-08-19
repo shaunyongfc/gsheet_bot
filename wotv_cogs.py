@@ -50,7 +50,8 @@ class WotvGeneral(commands.Cog):
     @commands.command()
     async def wotvsync(self, ctx, *arg):
         """(Owner only) Synchronise WOTV sheets."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == id_dict['Owner'] or \
+                ctx.message.author.id in dfwotv.ids['WOTV Sync']:
             if len(arg) == 0:
                 # Synchronise WOTV sheets
                 dfwotv.sync()

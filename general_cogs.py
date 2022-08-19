@@ -150,6 +150,17 @@ class GeneralCommands(commands.Cog):
                 await ctx.send('Tag commands are now temporarily disabled.')
 
     @commands.command()
+    async def synctoggle(self, ctx, *arg):
+        """(Owner only) Toggle tags to be automatically synchronised."""
+        if ctx.message.author.id == id_dict['Owner']:
+            if self.synccheck.is_running():
+                self.synccheck.stop()
+                await ctx.send('Tags are now temporarily desynchronised.')
+            else:
+                self.synccheck.start()
+                await ctx.send('Tags synchronisation has now resumed.')
+
+    @commands.command()
     async def tag(self, ctx, *arg):
         """Tag command to record tags with contents freely added by users."""
         if general_utils.tag_disabled:
