@@ -21,6 +21,7 @@ class DfHandlerWotv():
             'WOTV Events': [],
             'FFBE Server': [],
             'WOTV Newsfeed': [],
+            'WOTV Sync': [],
         }
         # Initial synchronisations.
         self.sync()
