@@ -1,14 +1,19 @@
 import discord
 import re
-from id_dict import id_dict
+import os
+from dotenv import load_dotenv
 
 
 class GeneralUtils():
     """An object that contains utility functions for general use."""
-    def __init__(self, dfgen, id_dict):
+    def __init__(self, dfgen):
         """Object initialisation with a special dataframe handler object
         and a dictionary of ids as inputs.
         """
+        load_dotenv()
+        self.owner = int(os.getenv('OWNER'))
+        self.logs = int(os.getenv('LOGS'))
+        self.token = os.getenv('TOKEN')
         self.dfgen = dfgen
         self.res = re.compile(r'&\w+') # Regex for shortcuts.
         self.opdicts = { # For mathematical calculations.
@@ -90,7 +95,7 @@ class GeneralUtils():
         elif ctx.guild.id in list(server_ids):
             df = self.dfgen.ids[self.dfgen.ids['Type'].str.contains('TagS')]
             group = int(list(df[df['ID'] == ctx.guild.id]['Type'])[0][4:])
-        elif ctx.message.author.id == id_dict['Owner']:
+        elif ctx.message.author.id == self.owner:
             group = list(self.dfgen.ids[self.dfgen.ids['Type'] \
                                                     == 'TagDefault']['ID'])[0]
         return group

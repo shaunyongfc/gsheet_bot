@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup as bs
 
 class WotvUtils:
     """An object that contains multiple utility functions for WOTV."""
-    def __init__(self, dfwotv, id_dict):
+    def __init__(self, dfwotv):
         """Object initialisation with a special dataframe handler object
         and a dictionary of ids as inputs.
         """

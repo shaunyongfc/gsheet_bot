@@ -23,9 +23,7 @@ def main():
     bot.add_cog(WotvVc(bot, bot_log))
     bot.add_cog(WotvEsper(bot, bot_log))
 
-    with open(f"token.txt") as fp:
-        token = fp.read().rstrip('\n')
-    bot.run(token)
+    bot.run(bot_log.token)
 
 
 if __name__ == "__main__":

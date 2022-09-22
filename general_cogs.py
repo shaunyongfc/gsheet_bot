@@ -6,25 +6,26 @@ from discord.ext import commands, tasks
 
 from gsheet_handler import DfHandlerGen
 from general_utils import GeneralUtils
-from id_dict import id_dict
 
 
 mydtformat = '%Y/%m/%d %H:%M'
 dfgen = DfHandlerGen()
-general_utils = GeneralUtils(dfgen, id_dict)
+general_utils = GeneralUtils(dfgen)
 
 
 class BotLog():
     """An object to manage logging commands and responses."""
     def __init__(self, bot):
         """Registers associated bot."""
+        self.owner = general_utils.owner
+        self.token = general_utils.token
         self.bot = bot
-        self.log_channel = self.bot.get_channel(id_dict['Logs'])
+        self.log_channel = self.bot.get_channel(general_utils.logs)
 
     async def log(self, message):
         """Extract message object elements to log the command used."""
         if self.log_channel == None:
-            self.log_channel = self.bot.get_channel(id_dict['Logs'])
+            self.log_channel = self.bot.get_channel(general_utils.logs)
         if message.guild == None:
             embed = discord.Embed(title= f"{message.channel}")
         else:
@@ -93,7 +94,7 @@ class GeneralCommands(commands.Cog):
             else:
                 message = f"Sync error: {return_val} ({datetime.strftime(datetime.now(), mydtformat)})."
             try:
-                channel = self.bot.get_channel(id_dict['Logs'])
+                channel = self.bot.get_channel(general_utils.logs)
                 await channel.send(message)
             except AttributeError:
                 print(f"Sync_tags channel error. {message}.")
@@ -101,7 +102,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def sync(self, ctx):
         """(Owner only) Synchronise general sheets."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             dfgen.sync()
             await ctx.send('Google sheet synced for general data.')
 
@@ -141,7 +142,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def tagtoggle(self, ctx, *arg):
         """(Owner only) Toggle tag commands to be enabled or disabled."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             if general_utils.tag_disabled:
                 general_utils.tag_disabled = False
                 await ctx.send('Tag commands are now enabled.')
@@ -152,7 +153,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def synctoggle(self, ctx, *arg):
         """(Owner only) Toggle tags to be automatically synchronised."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             if self.synccheck.is_running():
                 self.synccheck.stop()
                 await ctx.send('Tags are now temporarily desynchronised.')
@@ -342,7 +343,7 @@ class GeneralCommands(commands.Cog):
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
         group = general_utils.get_group(ctx)
-        if group and ctx.message.author.id == id_dict['Owner']:
+        if group and ctx.message.author.id == general_utils.owner:
             await self.log.log(ctx.message)
             if len(arg) == 0:
                 await self.log.send(ctx, general_utils.tag_help)
@@ -364,7 +365,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def checkservers(self, ctx, *arg):
         """(Owner only) Check what servers bot is in."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             guilds = list(self.bot.guilds)
             guild_names = '\n'.join(f"- {a.name}" for a in guilds)
             await ctx.send(
@@ -373,13 +374,13 @@ class GeneralCommands(commands.Cog):
     @commands.command(aliases = ['scadd'])
     async def scnew(self, ctx, *arg):
         """(Owner only) Add new shortcut."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             await ctx.send(general_utils.add_shortcut(*arg))
 
     @commands.command()
     async def sendmsg(self, ctx, *arg):
         """(Owner only) Send custom message in specific channel."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             try:
                 channel = self.bot.get_channel(int(arg[0]))
                 arg = arg[1:]
@@ -396,7 +397,7 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def delmsg(self, ctx, *arg):
         """(Owner only) Delete specific message in specific channel."""
-        if ctx.message.author.id == id_dict['Owner']:
+        if ctx.message.author.id == general_utils.owner:
             if len(arg) == 1:
                 msg = await ctx.fetch_message(int(arg[0]))
             elif len(arg) == 2:

@@ -7,10 +7,9 @@ from datetime import datetime
 
 from gsheet_handler import DfHandlerWotv
 from wotv_utils import WotvUtils
-from id_dict import id_dict
 
 dfwotv = DfHandlerWotv()
-wotv_utils = WotvUtils(dfwotv, id_dict)
+wotv_utils = WotvUtils(dfwotv)
 mydtformat = '%Y/%m/%d %H:%M'
 printdtformat = '%b %d, %H:%M'
 
@@ -50,7 +49,7 @@ class WotvGeneral(commands.Cog):
     @commands.command()
     async def wotvsync(self, ctx, *arg):
         """(Owner only) Synchronise WOTV sheets."""
-        if ctx.message.author.id == id_dict['Owner'] or \
+        if ctx.message.author.id == self.log.owner or \
                 ctx.message.author.id in dfwotv.ids['WOTV Sync']:
             if len(arg) == 0:
                 # Synchronise WOTV sheets
