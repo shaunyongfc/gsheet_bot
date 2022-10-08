@@ -3,7 +3,7 @@ import random
 import itertools
 import pandas as pd
 from discord.ext import commands, tasks
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from gsheet_handler import DfHandlerWotv
 from wotv_utils import WotvUtils
@@ -174,8 +174,10 @@ class WotvGeneral(commands.Cog):
             'up-coming': []
         }
         # Goes through the dataframe
+        now_jst = datetime.now(tz=timezone(timedelta(hours=9)))\
+                          .replace(tzinfo=None)
         for _, row in dfwotv.events.iterrows():
-            if datetime.now() <= datetime.strptime(row['End'], mydtformat):
+            if now_jst <= datetime.strptime(row['End'], mydtformat):
                 # Search keyword to decide on the emote prefix.
                 eventprefix = ':calendar:'
                 for event_keywords, event_emote in \
@@ -189,14 +191,14 @@ class WotvGeneral(commands.Cog):
                         break
                 eventname = f"{eventprefix} {row['Event']}"
                 # Check if it is up-coming or on-going.
-                if datetime.now() < \
+                if now_jst < \
                         datetime.strptime(row['Start'], mydtformat):
                     events['up-coming'].append((
                         eventname,
                         datetime.strptime(row['Start'], mydtformat),
                         datetime.strptime(row['End'], mydtformat),
                     ))
-                elif datetime.now() <= \
+                elif now_jst <= \
                         datetime.strptime(row['End'], mydtformat):
                     events['on-going'].append((
                         eventname,
@@ -264,9 +266,9 @@ class WotvGeneral(commands.Cog):
                         else:
                             replystr_list.append(f"\n{event[0]} -")
                             if k == 'on-going':
-                                eventdd = event[2] - datetime.now()
+                                eventdd = event[2] - now_jst
                             else:
-                                eventdd = event[1] - datetime.now()
+                                eventdd = event[1] - now_jst
                             eventddsplit = (
                                 ('day', eventdd.days),
                                 ('hour', eventdd.seconds // 3600),
