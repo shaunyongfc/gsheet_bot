@@ -54,11 +54,20 @@ class TestCommands(commands.Cog):
     async def emotes(self, ctx, *arg):
         """Main purpose is to get animated emote ids without nitro."""
         emotes = [str(a) for a in ctx.message.guild.emojis]
-        try:
+        if len(arg) > 2:
+            if arg[1] == 'a':
+                emotes = [emote for emote in emotes if '<a:' in emote]
+            elif arg[1] == 'u':
+                emotes = [emote for emote in emotes if '<a:' not in emote]
+        if len(arg) > 0:
             if arg[0] == 'raw':
                 await ctx.send(f"`{' '.join(emotes)}`")
-        except IndexError:
-            await ctx.send(' '.join(emotes))
+                return
+            if arg[0] == 'a':
+                emotes = [emote for emote in emotes if '<a:' in emote]
+            elif arg[0] == 'u':
+                emotes = [emote for emote in emotes if '<a:' not in emote]
+        await ctx.send(' '.join(emotes))
 
     @commands.command()
     async def teststr(self, ctx):

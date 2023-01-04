@@ -780,6 +780,10 @@ class WotvVc(commands.Cog):
                                     vc_ele = condition
                                 elif vc_ele != condition:
                                     vc_ele = 'neutral'
+                            if condition in wotv_utils.dicts['weapons']:
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][f"w_{condition}"]
+                                )
                             if len(eff_prefix) == 0:
                                 eff_prefix = [match_brackets[0]]
                     if args in eff.lower():
@@ -997,6 +1001,121 @@ class WotvVc(commands.Cog):
                 embed.add_field(name='\u200b', value='\u200b', inline=True)
         await self.log.send(ctx, embed=embed)
 
+    @commands.command(aliases=['wvj', 'vcj', 'vj', 'VCJ', 'Vcj',
+                               'wvw', 'vcw', 'vw', 'VCW', 'Vcw'])
+    async def wotvvcweapon(self, ctx, *arg):
+        """Search vision cards by weapon type."""
+        await self.log.log(ctx.message)
+        if len(arg) == 0:
+            await self.log.send(ctx, 'Try `=help vc`.')
+            return
+        embed = discord.Embed()
+        df = dfwotv.vc
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            url = 'https://wotv-calc.com/JP/cards',
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
+        # Initialise empty lists.
+        col_tuples = {
+            'Party': '',
+            'Party Max': wotv_utils.dicts['emotes']['vcmax']
+        }
+        effect_sort = 0
+        if len(arg) > 1:
+            if arg[0].lower() in {'s', 'sort'}:
+                effect_sort = 1
+                arg = arg[1:]
+        argstr = ' '.join(arg).lower()
+        for index, row in dfwotv.eq_type.iterrows():
+            argstr = argstr.replace(index, row['VC'])
+        if argstr in wotv_utils.dicts['weapons']:
+            embed.title = ' '.join((
+                wotv_utils.dicts['emotes'][f"w_{argstr}"], arg[0].title()))
+            embed.colour = wotv_utils.dicts['colours']['neutral']
+        else:
+            embed.description = \
+                'No weapon type found. Or did you mean to use `=vs` or `=vc`?'
+            await ctx.send(embed = embed)
+            return
+        # Search each VC.
+        vc_tuples = []
+        for index, row in df.iterrows():
+            vc_eff_tuples = []
+            for col, col_prefix in col_tuples.items():
+                col_eff_list = row[col].split(' / ')
+                eff_prefix = []
+                ele_found = 0
+                condition_found = 0
+                for eff in col_eff_list:
+                    new_effect = 1
+                    match_brackets = wotv_utils.reconditions.findall(eff)
+                    if len(match_brackets) == 1:
+                        condition_found = 1
+                        conditions = match_brackets[0] \
+                                     .strip('[]').lower().split('/')
+                        for condition in conditions:
+                             # Remove previous conditions if new effect with conditions
+                            if new_effect == 1:
+                                eff_prefix = []
+                                new_effect = 0
+                                ele_found = 0
+                            if condition == argstr:
+                                ele_found = 1
+                            elif condition in wotv_utils.dicts['weapons']:
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][f"w_{condition}"]
+                                )
+                            else:
+                                eff_prefix.append(
+                                    f"[{condition.title()}]"
+                                )
+                        eff_text = eff.replace(match_brackets[0], '').strip()
+                    else:
+                        eff_text = eff
+                    if ele_found and len(eff_prefix) > 0:
+                        final_prefix = f"{''.join(eff_prefix)} "
+                    elif not condition_found:
+                        final_prefix = f"{wotv_utils.dicts['emotes']['allele']} "
+                    else:
+                        final_prefix = ''
+                    vc_eff_tuples.append((
+                        f"{wotv_utils.name_str(row, name='')} - {col_prefix}{final_prefix}",
+                        eff_text
+                    ))
+            if ele_found:
+                vc_tuples.extend(vc_eff_tuples)
+        # Print while keeping track of characters.
+        if effect_sort == 1:
+            vc_tuples = sorted(vc_tuples, key=lambda tup: tup[1])
+        vc_str_list = [''.join([a, b]) for a, b in vc_tuples]
+        field_value = '\n'.join(vc_str_list)
+        if len(field_value) < 1020:
+            embed.add_field(name='\u200b', value=field_value, inline=False)
+        else:
+            # Split if too long.
+            field_num = 0
+            checkpoint = 0
+            field_value_length = -2
+            for i, vc_str in enumerate(vc_str_list):
+                field_value_length += len(vc_str) + 2
+                if field_value_length > 1000:
+                    field_value = '\n'.join(vc_str_list[checkpoint:i])
+                    embed.add_field(name='\u200b', value=field_value,
+                                    inline=True)
+                    field_num += 1
+                    if field_num % 2 == 0:
+                        embed.add_field(name='\u200b', value='\u200b',
+                                        inline=True)
+                    field_value_length = len(vc_str)
+                    checkpoint = i
+            field_value = '\n'.join(vc_str_list[checkpoint:])
+            embed.add_field(name='\u200b', value=field_value, inline=True)
+            field_num += 1
+            if field_num % 2 == 0:
+                embed.add_field(name='\u200b', value='\u200b', inline=True)
+        await self.log.send(ctx, embed=embed)
+
     @commands.command(aliases=['wv', 'vc', 'VC', 'Vc'])
     async def wotvvc(self, ctx, *arg):
         """Search vision card by name."""
@@ -1049,6 +1168,10 @@ class WotvVc(commands.Cog):
                                 )
                                 embed_colours.append(
                                     wotv_utils.dicts['colours'][condition]
+                                )
+                            if condition in wotv_utils.dicts['weapons']:
+                                eff_prefix.append(
+                                    wotv_utils.dicts['emotes'][f"w_{condition}"]
                                 )
                             if len(eff_prefix) == 0:
                                 eff_prefix = [match_brackets[0]]

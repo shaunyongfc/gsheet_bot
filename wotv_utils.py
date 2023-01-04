@@ -28,14 +28,6 @@ class WotvUtils:
                 'Cryst': ('c', 'e', 'element'),
                 'Ore': ('o',)
             },
-            'eq_replace': (
-                ('staff', 'rod'),
-                ('gs', 'great sword'),
-                ('greatsword', 'great sword'),
-                ('nb', 'ninja blade'),
-                ('ninjablade', 'ninja blade'),
-                ('armour', 'armor')
-            ),
             'esper_sets': self.esper_sets_init(self.dfwotv.esper),
             'esper_suffix': {
                 'atk': 'ATK Up',
@@ -105,6 +97,9 @@ class WotvUtils:
                 (('shop', 'whimsy', 'medal'), 'shop'),
                 (('update', 'change', 'fix', 'new', 'ex', 'ma2', 'eq+'), 'update')
             ),
+            'weapons': ('axe', 'book', 'bow', 'dagger', 'fist', 'glove', 'gs', 'gun',
+                       'katana', 'mace', 'nb', 'spear', 'staffa', 'staffb', 'sworda',
+                       'swordb', 'swordc',),
         }
         self.update_text()
         msg_list = []
@@ -114,7 +109,7 @@ class WotvUtils:
             ('`Tuesday  `', ('fire', 'wind', 'materia_i'), ('Sword', 'Greatsword', 'Axe')),
             ('`Wednesday`', ('water', 'ice', 'materia_h'), ('Spear', 'Gun', 'Accessory')),
             ('`Thursday `', ('earth', 'dark', 'materia_f'), ('Mace', 'Bow', 'Armour')),
-            ('`Friday   `', ('thunder', 'light', 'materia_o'), ('Rod', 'Katana', 'Dagger')),
+            ('`Friday   `', ('thunder', 'light', 'materia_o'), ('Staff', 'Katana', 'Dagger')),
             ('`Saturday `', ('pink', 'gil', 'materia_w'), ('Fist', 'Ninjablade', 'Accessory')),
             ('`Sunday   `', ('gil', 'materia_s'), ('Glove', 'Book', 'Armour')),
         ]
@@ -297,6 +292,23 @@ class WotvUtils:
             ('elements', '796963642418790451'),
             ('materias', '913749364810338315'),
             ('heartquartzs', '972379294682734602'),
+            ('w_axe', '1060023590956838922'),
+            ('w_book', '1060023595058872370'),
+            ('w_bow', '1060024865425465444'),
+            ('w_dagger', '1060024873595981924'),
+            ('w_fist', '1060024878662684712'),
+            ('w_glove', '1060025022871248936'),
+            ('w_gs', '1060025025333301268'),
+            ('w_gun', '1060025029364039711'),
+            ('w_katana', '1060023459855470663'),
+            ('w_mace', '1060023461780652102'),
+            ('w_nb', '1060023465215803513'),
+            ('w_spear', '1060023468680286299'),
+            ('w_staffa', '1060023473197568000'),
+            ('w_staffb', '1060023475189854238'),
+            ('w_sworda', '1060023478843088976'),
+            ('w_swordb', '1060023482236289164'),
+            ('w_swordc', '1060023484689961007'),
         )
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
