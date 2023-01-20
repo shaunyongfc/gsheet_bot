@@ -1039,6 +1039,9 @@ class WotvVc(commands.Cog):
             await ctx.send(embed = embed)
             return
         # Search each VC.
+        df_job = dfwotv.text[dfwotv.text['Key'] == 'vc_job']
+        if argstr in df_job['Title'].tolist():
+            embed.description = df_job[df_job['Title'] == argstr]['Body'].tolist()[0]
         vc_tuples = []
         for index, row in df.iterrows():
             vc_eff_tuples = []
