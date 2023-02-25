@@ -1282,6 +1282,14 @@ class WotvEsper(commands.Cog):
                         inline=True)
         await self.log.send(ctx, embed=embed)
 
+    @commands.command(aliases=['esperchart'])
+    async def wotvesperchart(self, ctx, *arg):
+        """Return a chart image of espers.
+        """
+        await self.log.log(ctx.message)
+        df = dfwotv.text[dfwotv.text['Key'] == 'chart']
+        await self.log.send(ctx, df[df['Title'] == 'esper']['Body'].tolist()[0])
+
     @commands.command(aliases=['esper', 'Esper', 'espers', 'Espers'])
     async def wotvesper(self, ctx, *arg):
         """General esper search command, has multiple modes
@@ -1304,6 +1312,9 @@ class WotvEsper(commands.Cog):
         if arg[0] in {'m', 'mobile'}:
             mobile_bool = 1
             arg = arg[1:]
+        elif arg[0] == 'chart':
+            await self.wotvesperchart(ctx)
+            return
         else:
             mobile_bool = 0
         if arg[0] in {'sort', 's', 'rank', 'r', 'filter', 'f'} and \
