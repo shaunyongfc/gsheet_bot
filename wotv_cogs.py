@@ -673,13 +673,18 @@ class WotvEquipment(commands.Cog):
         for _, row in dfwotv.eq.iterrows():
             in_list = 0
             eff_list = row['Special'].split(' / ')
+            eq_str = f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}"
             for eff in eff_list:
                 if args in eff.lower():
-                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
+                    in_list = 1
                     break
-            if not in_list:
-                if args in row['Extra'].lower():
-                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
+            if len(row['Extra']) > 0:
+                eq_str+= f" {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}"
+                if not in_list:
+                    if args in row['Extra'].lower():
+                        in_list = 1
+            if in_list:
+                eq_str_list.append(eq_str)
         field_value = '\n'.join(eq_str_list)
         checkpoint_list = [0]
         # Split if too long.
