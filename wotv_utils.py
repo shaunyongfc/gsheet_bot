@@ -53,7 +53,10 @@ class WotvUtils:
                 2: 6727933,
                 3: 16821904
             },
-            # 'brackets': self.bracket_init(),
+            'tm_stats': (
+                'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'ACC', 'EVA',
+                'AGI', 'DEX', 'CRIT', 'CEVA', 'LUCK'
+            ),
             'emotes': self.emotes_init(),
             'colours': { # Embed colour hex codes.
                 'fire': 0xE47051,
@@ -317,15 +320,6 @@ class WotvUtils:
             wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
         return wotv_emotes
 
-    # def bracket_init(self):
-    #     """Only runs once to generate the dictonary entry."""
-    #     bracket_dict = dict()
-    #     for ele in ['fire', 'ice', 'wind', 'earth',
-    #                 'thunder', 'water', 'light', 'dark']:
-    #         bracket_dict[f"[{ele.capitalize()}]"] = ele
-    #         bracket_dict[ele] = f"[{ele.capitalize()}]"
-    #     return bracket_dict
-
     def get_news(self):
         """Called periodically to fetch news site."""
         r = requests.get("https://players.wotvffbe.com/")
@@ -412,10 +406,14 @@ class WotvUtils:
         else:
             namestr += f" {name}"
         if 'Aliases' in row.index and alias > 0:
+            # 0: None
+            # 1: Alias only
+            # 2: English first, Alias if no English
+            # 3: English only
             engstr = ''
-            if alias == 2:
+            if alias in (2, 3):
                 engstr = row['English']
-            if engstr == '':
+            if engstr == '' and alias != 3:
                 engstr = row['Aliases'].split(' / ')[0]
             if engstr != '':
                 if name == '':
@@ -463,7 +461,7 @@ class WotvUtils:
                             return 1, row
             else:
                 df_aliases = pd.DataFrame()
-            if 'English' in df.columns: # VC only
+            if 'English' in df.columns:
                 df_english = df[df['English'].str.lower().str.contains(argstr)]
                 if len(df_english) > 0:
                     for _, row in df_english.iterrows():

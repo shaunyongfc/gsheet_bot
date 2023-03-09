@@ -439,10 +439,86 @@ class WotvEquipment(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
+    @commands.command(aliases=['wt', 'tm', 'Tm', 'trust', 'Trust'])
+    async def wotvtm(self, ctx, *arg):
+        """Trust master information command.
+        """
+        await self.log.log(ctx.message)
+        if len(arg) == 0:
+            await self.log.send(ctx, 'Try `=help eq`.')
+            return
+        embed = discord.Embed(
+            colour = wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
+        # Find the specific equipment.
+        rowfound, row = wotv_utils.find_row(dfwotv.tm, arg)
+        if rowfound == 0:
+            # Not found.
+            if row == '':
+                    embed.title = ' '.join(arg)
+                    embed.description = ''.join((
+                        'No match found. ',
+                        'Or did you mean to use `=ts`?'))
+            else:
+                embed.title = ' '.join(arg)
+                embed.description = ''.join((
+                    'Too many results. ',
+                    'Please try the following:\n',
+                    row))
+        if rowfound:
+            # Process equipment info.
+            embed.title = row.name
+            description_list = [f"{wotv_utils.name_str(row, name='', alias=3)}"]
+            eff_list = []
+            if row['Restriction'] != '':
+                description_list.append(f"*Restriction: {row['Restriction']}*")
+            embed.description = '\n'.join(description_list)
+            stat_value = []
+            for stat_name in wotv_utils.dicts['tm_stats']:
+                if row[stat_name] != '':
+                    stat_value.append(f"**{stat_name}** {row[stat_name]}")
+            embed.add_field(
+                name='Stats',
+                value='\n'.join(stat_value),
+                inline=False
+            )
+            if row['Passive'] != '':
+                embed.add_field(
+                    name='Passive',
+                    value='\n'.join(row['Passive'].split(' / ')),
+                    inline=False
+                )
+            if row['Skill'] != '':
+                if row['S Uses'] == 1:
+                    skill_name = f"TM Skill (1 Use)"
+                else:
+                    skill_name = f"TM Skill ({row['S Uses']} Uses)"
+                if row['S Area'] == 'Self':
+                    skill_range = '__Self__'
+                elif row['S Range'] == 0:
+                    skill_range = f"__{row['S Area']} Area__"
+                else:
+                    skill_range = f"__Range: {row['S Range']} ({row['S Area']})__"
+                embed.add_field(
+                    name=skill_name,
+                    value='\n'.join([skill_range] + row['Skill'].split(' / '))
+                )
+            if row['Url'] != '':
+                embed.set_thumbnail(url=row['Url'])
+            if row['English'] != '':
+                embed.add_field(
+                    name='WOTV-CALC',
+                    value=wotv_utils.calc_url('equipment', row['English']),
+                    inline=False)
+        await self.log.send(ctx, embed=embed)
+
     @commands.command(aliases=['we', 'eq', 'equip', 'Eq', 'Equip'])
     async def wotveq(self, ctx, *arg):
-        """General equipment search command, has multiple modes
-        depending on inputs.
+        """Equipment information command.
         """
         await self.log.log(ctx.message)
         if len(arg) == 0:
@@ -481,7 +557,7 @@ class WotvEquipment(commands.Cog):
             if row['Restriction'] != '':
                 description_list.append(f"*Restriction: {row['Restriction']}*")
             condition = ''
-            for eff in row['Special'].split(' / '):
+            for eff in row['Passive'].split(' / '):
                 match_brackets = wotv_utils.reconditions.findall(eff)
                 if len(match_brackets) == 1:
                     condition = match_brackets[0]
@@ -570,7 +646,7 @@ class WotvEquipment(commands.Cog):
         elif arg[0].lower() in ['hq', 'heartquartzs', '+6']:
             rows = dfwotv.eq[dfwotv.eq['Extra'] != '']
             for index, row in rows.iterrows():
-                eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
+                eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
         # Check if type search
         elif arg[0].lower() in ['type', 't', 'acquisition', 'a'] \
                 and len(arg) > 1:
@@ -587,7 +663,7 @@ class WotvEquipment(commands.Cog):
             # Find eq that match and add to the list
             for index, row in dfwotv.eq.iterrows():
                 if argstr in row[colstr].lower():
-                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
+                    eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']}")
         else:
             # Material search
             if arg[0].lower() in {'m', 'mat', 'material'} and len(arg) > 1:
@@ -603,7 +679,7 @@ class WotvEquipment(commands.Cog):
                 for index, row in dfwotv.eq.iterrows():
                     if row[matstr[1]] == matstr[0] or (matstr[1] == 'Cryst' \
                             and matstr[0] in row[matstr[1]]):
-                        eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}")
+                        eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']}")
         if result_type and len(eq_str_list) > 0:
             field_value = '\n'.join(eq_str_list)
             checkpoint_list = [0]
@@ -672,8 +748,8 @@ class WotvEquipment(commands.Cog):
         eq_str_list = []
         for _, row in dfwotv.eq.iterrows():
             in_list = 0
-            eff_list = row['Special'].split(' / ')
-            eq_str = f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Special']}"
+            eff_list = row['Passive'].split(' / ')
+            eq_str = f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']}"
             for eff in eff_list:
                 if args in eff.lower():
                     in_list = 1

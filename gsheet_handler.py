@@ -33,6 +33,10 @@ class DfHandlerWotv():
         df = pd.DataFrame(
             wotvspreadsheet.worksheet('WOTV_eq').get_all_records())
         self.eq = df.set_index('EQ Name')
+        # Trust master data.
+        df = pd.DataFrame(
+            wotvspreadsheet.worksheet('WOTV_tm').get_all_records())
+        self.tm = df.set_index('Unit Name')
         # Vision card data.
         df = pd.DataFrame(
             wotvspreadsheet.worksheet('WOTV_vc').get_all_records())
