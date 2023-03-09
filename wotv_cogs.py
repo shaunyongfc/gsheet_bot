@@ -643,10 +643,10 @@ class WotvEquipment(commands.Cog):
                     embed.title = f"List of lists"
                     embed.description = '\n'.join(
                         wotv_utils.dicts['eq_lists'].keys())
-        elif arg[0].lower() in ['hq', 'heartquartzs', '+6']:
-            rows = dfwotv.eq[dfwotv.eq['Extra'] != '']
-            for index, row in rows.iterrows():
-                eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
+        # elif arg[0].lower() in ['hq', 'heartquartzs', '+6']:
+        #     rows = dfwotv.eq[dfwotv.eq['Extra'] != '']
+        #     for index, row in rows.iterrows():
+        #         eq_str_list.append(f"{wotv_utils.name_str(row, name='', alias=2)} - {row['Passive']} {wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}")
         # Check if type search
         elif arg[0].lower() in ['type', 't', 'acquisition', 'a'] \
                 and len(arg) > 1:
