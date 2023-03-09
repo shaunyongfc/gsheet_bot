@@ -12,6 +12,7 @@ A_LIST = ["None", "Slash", "Pierce", "Strike", "Missile", "Magic"]
 P_LIST = ["Slash", "Pierce", "Strike", "Missile"]
 SPECIAL_BUFFS = (
     # Column, Buff Name, Threshold, File Name
+    ("RES Up", "Human", 0, "human_res"),
     ("RES Up", "Single", 0, "single"),
     ("RES Up", "Area", 0, "area"),
     ("Stat Up", "LUCK%", 0, "luck"),
