@@ -2,6 +2,8 @@ import discord
 import random
 import itertools
 import pandas as pd
+import warnings
+from pandas.core.common import SettingWithCopyWarning
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
 
@@ -85,7 +87,7 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_vc
             elif arg[0].lower() == 'esper':
                 help_tuples = wotv_utils.help_esper
-            elif arg[0].lower() == 'eq':
+            elif arg[0].lower() in ('eq', 'tm', 'equip'):
                 help_tuples = wotv_utils.help_eq
             elif arg[0].lower() == 'param':
                 help_tuples = wotv_utils.help_param
@@ -515,6 +517,169 @@ class WotvEquipment(commands.Cog):
                     value=wotv_utils.calc_url('equipment', row['English']),
                     inline=False)
         await self.log.send(ctx, embed=embed)
+
+    @commands.command(aliases=['tms', 'ts', 'tmf', 'tf'])
+    async def wotvtmsearch(self, ctx, *arg):
+        """Trust master search command.
+        """
+        await self.log.log(ctx.message)
+        if len(arg) == 0:
+            await self.log.send(ctx, 'Try `=help eq`.')
+            return
+        embed = discord.Embed(
+            colour = wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            url = 'https://wotv-calc.com/JP/espers',
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
+        # TARGET FILTER
+        # Parse arguments
+        target = 'none'
+        if arg[0].lower() == 'self':
+            target = 'Self'
+            args = ' '.join(arg[1:])
+        elif arg[0].lower() == 'ranged':
+            target = 'Ranged'
+            args = ' '.join(arg[1:])
+        elif arg[0].lower() == 'single':
+            target = 'Single'
+            args = ' '.join(arg[1:])
+        elif arg[0].lower() == 'plus':
+            target = 'Plus'
+            args = ' '.join(arg[1:])
+        elif arg[0].lower() == 'diamond':
+            target = 'Diamond'
+            args = ' '.join(arg[1:])
+        elif arg[0].lower() == 'none':
+            target = ''
+            args = ' '.join(arg[1:])
+        elif arg[-1].lower() == 'self':
+            target = 'Self'
+            args = ' '.join(arg[:-1])
+        elif arg[-1].lower() == 'ranged':
+            target = 'Ranged'
+            args = ' '.join(arg[:-1])
+        elif arg[-1].lower() == 'single':
+            target = 'Single'
+            args = ' '.join(arg[:-1])
+        elif arg[-1].lower() == 'plus':
+            target = 'Plus'
+            args = ' '.join(arg[:-1])
+        elif arg[-1].lower() == 'diamond':
+            target = 'Diamond'
+            args = ' '.join(arg[:-1])
+        elif arg[-1].lower() == 'none':
+            target = ''
+            args = ' '.join(arg[:-1])
+        else:
+            args = ' '.join(arg)
+        if target != 'none':
+            embed.description = f"Target Filter: {target}"
+        # Filter appropriately
+        df_tm = dfwotv.tm
+        if target == 'none':
+            pass
+        elif target == 'Ranged':
+            df_tm = df_tm[df_tm['S Range'].ne(pd.Series('', index=df_tm.index))]
+            df_tm = df_tm[df_tm['S Range'].astype('int') > 0]
+        else:
+            df_tm = df_tm[df_tm['S Area'] == target]
+        embed.title = args
+        args = args.lower()
+        # STAT AND PASSIVES
+        eq_str_list = []
+        if args.upper() in wotv_utils.dicts['tm_stats']: # STAT
+            df = df_tm[df_tm[args.upper()].ne(pd.Series('', index=df_tm.index))]
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
+                df[args.upper()] = pd.to_numeric(df[args.upper()])
+            if len(df) > 1:
+                row_df = df.nlargest(20, args.upper())
+            else:
+                row_df = df
+            for _, row in row_df.iterrows():
+                eq_str_list.append(wotv_utils.tm_str(row, 'stat'))
+        elif args != '': # PASSIVE
+            for _, row in df_tm.iterrows():
+                in_list = 0
+                eff_list = row['Passive'].split(' / ')
+                for eff in eff_list:
+                    if args in eff.lower():
+                        in_list = 1
+                        break
+                if in_list:
+                    eq_str_list.append(wotv_utils.tm_str(row, 'stat'))
+        if len(eq_str_list) > 0:
+            field_value = '\n'.join(eq_str_list)
+            checkpoint_list = [0]
+            # Split if too long.
+            if len(field_value) > 1020:
+                field_value_length = -2
+                for i, field_entry in enumerate(eq_str_list):
+                    field_value_length += len(field_entry) + 2
+                    if field_value_length > 1000:
+                        field_value_length = len(field_entry)
+                        checkpoint_list.append(i)
+            for i, checkpoint in enumerate(checkpoint_list, start=1):
+                if checkpoint == 0:
+                    field_name = 'TM by Stats'
+                else:
+                    field_name = 'TM by Stats (cont.)'
+                if i == len(checkpoint_list):
+                    field_value = '\n'.join(eq_str_list[checkpoint:])
+                else:
+                    field_value = '\n'.join(
+                        eq_str_list[checkpoint:checkpoint_list[i]])
+                embed.add_field(name=field_name, value=field_value, inline=False)
+        # SKILL
+        tm_str_list = []
+        if len(args.split()) == 1:
+            args = wotv_utils.shortcut_convert(args)
+        args = args.lower()
+        for index, row in dfwotv.replace.iterrows():
+            args = args.replace(index, row['VC'])
+        for _, row in df_tm.iterrows():
+            in_list = 0
+            eff_list = row['Skill'].split(' / ')
+            for eff in eff_list:
+                if args in eff.lower():
+                    in_list = 1
+                    break
+            if in_list:
+                tm_str_list.append(wotv_utils.tm_str(row, 'skill'))
+        if len(tm_str_list) > 0:
+            field_value = '\n'.join(tm_str_list)
+            checkpoint_list = [0]
+            # Split if too long.
+            if len(field_value) > 1020:
+                field_value_length = -2
+                for i, field_entry in enumerate(tm_str_list):
+                    field_value_length += len(field_entry) + 2
+                    if field_value_length > 1000:
+                        field_value_length = len(field_entry)
+                        checkpoint_list.append(i)
+            for i, checkpoint in enumerate(checkpoint_list, start=1):
+                if checkpoint == 0:
+                    field_name = 'TM by Skills'
+                else:
+                    field_name = 'TM by Skill (cont.)'
+                if i == len(checkpoint_list):
+                    field_value = '\n'.join(tm_str_list[checkpoint:])
+                else:
+                    field_value = '\n'.join(
+                        tm_str_list[checkpoint:checkpoint_list[i]])
+                embed.add_field(name=field_name, value=field_value, inline=False)
+        if len(eq_str_list) + len(tm_str_list) == 0:
+            await self.log.send(ctx,
+                'No match found. Try checking `=help eq`. Or did you mean to use `=tm`?')
+        else:
+            try:
+                await self.log.send(ctx, embed=embed)
+            except discord.HTTPException:
+                await self.log.send(ctx,
+                    'Too many results. Please refine the search.')
 
     @commands.command(aliases=['we', 'eq', 'equip', 'Eq', 'Equip'])
     async def wotveq(self, ctx, *arg):

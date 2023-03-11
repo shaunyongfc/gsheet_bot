@@ -422,6 +422,30 @@ class WotvUtils:
                     namestr += f" ({engstr})"
         return namestr
 
+    def tm_str(self, row, mode='stat'):
+        """Return appropriate string for trust master search command."""
+        row_str = self.name_str(row, alias=0)
+        if row['Restriction'] != '':
+            row_str += f" [*{row['Restriction']}*]"
+        stat_value = []
+        if mode == 'stat':
+            for stat_name in self.dicts['tm_stats']:
+                if row[stat_name] != '':
+                    stat_value.append(f"**{stat_name}** {row[stat_name]}")
+            row_str += f" - {' '.join(stat_value)}"
+            if row['Passive'] != '':
+                row_str += f" - {row['Passive']}"
+        elif mode == 'skill':
+            row_str += f" - {row['Skill']}"
+            if row['S Area'] == 'Self':
+                row_str += ' (*Self x'
+            elif row['S Range'] == 0:
+                row_str += f" (*{row['S Area']} Area x"
+            else:
+                row_str += f" (*Range {row['S Range']} {row['S Area']} x"
+            row_str += f"__{row['S Uses']}__*)"
+        return row_str
+
     def calc_url(self, category, namestr):
         """Generate urls for Bismark's WOTC-CALC given raw name string."""
         calc_url = f"https://wotv-calc.com/JP/{category}/"
