@@ -128,8 +128,11 @@ class WotvGeneral(commands.Cog):
                 materia_tuples = wotv_utils.materia_passive
         for a, b in materia_tuples:
             embed.add_field(name=a, value=b, inline=False)
-        embed.add_field(name='More Info',
-            value='`=help materia` for more information')
+        embed.add_field(name='More Info', value='\n'.join((
+                'Enter `=materia set` for main stat types and set effects.',
+                'Enter `=materia substat` for substats.',
+                'Enter `=materia passive` for passives.',
+                'Enter `=help materia` for more information')))
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['addevent'])
