@@ -518,7 +518,9 @@ class WotvEquipment(commands.Cog):
             if row['English'] != '':
                 embed.add_field(
                     name='WOTV-CALC',
-                    value=wotv_utils.calc_url('equipment', row['English']),
+                    value='\n'.join((
+                        wotv_utils.calc_url('equipment', row['English']),
+                        wotv_utils.calc_url('units', row.name))),
                     inline=False)
         await self.log.send(ctx, embed=embed)
 
