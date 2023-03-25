@@ -100,9 +100,9 @@ class WotvUtils:
                 (('shop', 'whimsy', 'medal'), 'shop'),
                 (('update', 'change', 'fix', 'new', 'ex', 'ma2', 'eq+'), 'update')
             ),
-            'weapons': ('axe', 'book', 'bow', 'dagger', 'fist', 'glove', 'gs', 'gun',
-                       'katana', 'mace', 'nb', 'spear', 'staffa', 'staffb', 'sworda',
-                       'swordb', 'swordc',),
+            'weapons': ('axe', 'book', 'bow', 'dagger', 'fist', 'glove', 'gs',
+                        'gun', 'katana', 'mace', 'nb', 'spear', 'staffa',
+                        'staffb', 'sworda', 'swordb', 'swordc',),
         }
         self.update_text()
         msg_list = []
@@ -184,6 +184,10 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_esper.append((row['Title'], body))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_materia']
+        self.help_materia = []
+        for _, row in df.iterrows():
+            self.help_materia.append((row['Title'], row['Body']))
         row = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_ramada'].iloc[0]
         rate_lists = []
         for rarity in self.dicts['ramada_rarity']:

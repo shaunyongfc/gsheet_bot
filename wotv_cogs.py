@@ -87,7 +87,7 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_vc
             elif arg[0].lower() == 'esper':
                 help_tuples = wotv_utils.help_esper
-            elif arg[0].lower() in ('eq', 'tm', 'equip'):
+            elif arg[0].lower() in ('eq', 'tm', 'equip', 'trust'):
                 help_tuples = wotv_utils.help_eq
             elif arg[0].lower() == 'param':
                 help_tuples = wotv_utils.help_param
@@ -95,6 +95,8 @@ class WotvGeneral(commands.Cog):
                 help_tuples = wotv_utils.help_ramada
             elif arg[0].lower() == 'events':
                 help_tuples = wotv_utils.help_events
+            elif arg[0].lower() in ('materia', 'rune'):
+                help_tuples = wotv_utils.help_materia
             elif arg[0].lower() in ('engel', 'char', 'tamagotchi'):
                 await self.log.send(ctx, 'The function is discontinued.')
                 return
@@ -119,16 +121,15 @@ class WotvGeneral(commands.Cog):
             if arg[0].lower() in ('substat', 'sub', 'substats', 's'):
                 materia_tuples = wotv_utils.materia_substat
                 for a, b in materia_tuples:
-                    if a == 'General Info':
-                        embed.description = b
-                    else:
-                        embed.add_field(name=a, value=b, inline=True)
+                    embed.add_field(name=a, value=b, inline=True)
                 await self.log.send(ctx, embed=embed)
                 return
             elif arg[0].lower() in ('passive', 'passives', 'recraft', 'p'):
                 materia_tuples = wotv_utils.materia_passive
         for a, b in materia_tuples:
             embed.add_field(name=a, value=b, inline=False)
+        embed.add_field(name='More Info',
+            value='`=help materia` for more information')
         await self.log.send(ctx, embed=embed)
 
     @commands.command(aliases=['addevent'])
