@@ -1279,9 +1279,11 @@ class WotvVc(commands.Cog):
                 effect_sort = 1
                 arg = arg[1:]
         argstr = ' '.join(arg).lower()
+        for index, row in dfwotv.w_type.iterrows():
+            argstr = argstr.replace(index, row['VC'])
         if argstr in wotv_utils.dicts['weapons']:
             embed.title = ' '.join((
-                wotv_utils.dicts['emotes'][f"w_{argstr}"], arg[0].title()))
+                wotv_utils.dicts['emotes'][f"w_{argstr}"], argstr.title()))
             embed.colour = wotv_utils.dicts['colours']['neutral']
         else:
             embed.description = \
