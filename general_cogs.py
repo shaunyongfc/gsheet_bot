@@ -44,12 +44,16 @@ class BotLog():
             await ctx.send(content, embed=embed)
             await self.log_channel.send(content, embed=embed)
             return
+        if embeds == None:
+            await ctx.send(content)
+            await self.log_channel.send(content)
+            return
         await ctx.send(content, embed=embeds[0])
         await self.log_channel.send(content, embed=embeds[0])
         if len(embeds) > 1:
             for embed in embeds[1:]:
-                await ctx.send(content, embed=embed)
-                await self.log_channel.send(content, embed=embed)
+                await ctx.send(embed=embed)
+                await self.log_channel.send(embed=embed)
 
 
 class TestCommands(commands.Cog):

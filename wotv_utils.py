@@ -87,7 +87,7 @@ class WotvUtils:
                 'c.avo': (0, ('crit avoid', 'crit avo', 'critical avoidance',
                               'ca', 'cavo', 'c. avo', 'c.avo'))
             },
-            'calcurl': (
+            'calcurl': ( # replace str for url generation
                 ('é', 'e'),
                 (' ', '-')
             ),
@@ -103,7 +103,7 @@ class WotvUtils:
             ),
             'weapons': ('axe', 'book', 'bow', 'dagger', 'fist', 'glove', 'gs',
                         'gun', 'katana', 'mace', 'nb', 'spear', 'staffa',
-                        'staffb', 'sworda', 'swordb', 'swordc',),
+                        'staffb', 'sworda', 'swordb', 'swordc',), # for vc job type
         }
         self.update_text()
         msg_list = []
@@ -229,7 +229,7 @@ class WotvUtils:
         }
         for _, row in df.iterrows():
             for k, v in dict_sets.items():
-                if row[k] != '':
+                if row[k]:
                     if k == 'Cryst' and len(row[k]) > 1:
                         v = v.union(set(row[k]))
                     else:
@@ -246,7 +246,7 @@ class WotvUtils:
         }
         for index, row in df.iterrows():
             for k, v in dict_sets.items():
-                if row[k] != '':
+                if row[k]:
                     for eff in row[k].split(' / '):
                         re_match = self.revalues.search(eff)
                         v.add(eff[:re_match.start()].strip().lower())
