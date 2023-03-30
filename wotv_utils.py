@@ -19,7 +19,7 @@ class WotvUtils:
         # Regex for symbols to be omitted for url generation.
         self.resymbols = re.compile(r'[^\w ]')
         self.dicts = { # Dictionary to store various constants.
-            'mat_sets': self.mat_sets_init(self.dfwotv.eq),
+            'eq_sets': self.eq_sets_init(self.dfwotv.eq),
             'eq_lists': {
                 'Type': ('t',),
                 'Acquisition': ('a',),
@@ -34,8 +34,9 @@ class WotvUtils:
                 'killer': 'Killer',
                 'res': 'RES Up'
             },
-            'esper_stats': [
-                'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'],
+            'esper_stats': (
+                'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'
+            ),
             'esper_colsuffix': {
                 'ATK Up': 'ATK',
                 'Killer': 'Killer',
@@ -216,7 +217,7 @@ class WotvUtils:
         self.materia_passive = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
 
-    def mat_sets_init(self, df):
+    def eq_sets_init(self, df):
         """Only runs once to generate the dictonary entry."""
         dict_sets = {
             'Type': set(),
@@ -338,52 +339,47 @@ class WotvUtils:
         else:
             return 'weapon'
 
-    def shortcut_convert(self, argstr, col='VC'):
+    def shortcut_convert(self, args, col='VC'):
         """Convert shortcuts into corresponding contents."""
         try:
-            args = self.dfwotv.shortcut.loc[argstr.lower()][col]
-            if args != '':
-                return args
+            argshort = self.dfwotv.shortcut.loc[args.lower()][col]
+            if argshort != '':
+                return argshort
             else:
-                return argstr
+                return args
         except KeyError:
-            return argstr
+            return args
 
-    def esper_findcol(self, argstr):
+    def esper_findcol(self, args):
         """
         Find the correct column to search for an effect from an argument
         string.
         """
-        if argstr[:3] == 'ALL':
-            return argstr[4:], 'ALL'
-        # if argstr.rstrip('s') in ['awakened', 'awaken',
-        #                           '3-star', '3star', '3']:
-        #     return 'Awaken', 'y'
-        # if argstr.rstrip('s') in ['2-star', '2star', '2']:
-        #     return 'Awaken', 'n'
-        if argstr in ['collab', 'limited']:
+        if args[:3] == 'ALL':
+            return args[4:], 'ALL'
+        if args in ['collab', 'limited']:
             return 'Limited', 'y'
-        if argstr.upper() in self.dicts['esper_stats']:
-            return argstr.upper(), 'STAT'
+        if args.upper() in self.dicts['esper_stats']:
+            return args.upper(), 'STAT'
         col = 'NOTFOUND'
-        args = argstr.split()
-        if args[-1] in self.dicts['esper_suffix'].keys():
-            col = self.dicts['esper_suffix'][args[-1]]
-            argstr = ' '.join(args[:-1])
+        arg = args.split()
+        if arg[-1] in self.dicts['esper_suffix'].keys():
+            col = self.dicts['esper_suffix'][arg[-1]]
+            args = ' '.join(arg[:-1])
         else:
             for k, v in self.dicts['esper_sets'].items():
-                if argstr in v:
+                if args in v:
                     col = k
                     break
             else:
                 col_list = []
                 for k, v in self.dicts['esper_sets'].items():
                     for v_item in v:
-                        if argstr in v_item:
+                        if args in v_item:
                             col_list.append(k)
                 if len(col_list) == 1:
                     col = col_list[0]
-        return col, argstr
+        return col, args
 
     def name_str(self, row, name='NAME', element=1, rarity=1, type=1,
                  limited=1, alias=1, elestr=''):
@@ -391,7 +387,7 @@ class WotvUtils:
         emotes.
         """
         namestr = ''
-        if elestr != '':
+        if elestr:
             namestr += self.dicts['emotes'][elestr]
         elif 'Element' in row.index and element:
             namestr += self.dicts['emotes'][row['Element'].lower()]
@@ -417,19 +413,30 @@ class WotvUtils:
             engstr = ''
             if alias in (2, 3):
                 engstr = row['English']
-            if engstr == '' and alias != 3:
+            if not engstr and alias != 3:
                 engstr = row['Aliases'].split(' / ')[0]
-            if engstr != '':
-                if name == '':
+            if engstr:
+                if not name:
                     namestr += engstr
                 else:
                     namestr += f" ({engstr})"
         return namestr
 
+    def eq_str(self, row):
+        """Return appropriate string for equipment search / list command."""
+        row_str = self.name_str(row, name='', alias=2)
+        if row['Restriction']:
+            row_str += f" [*{row['Restriction']}*]"
+        if row['Passive']:
+            row_str += f" - {row['Passive']}"
+        if row['Extra']:
+            row_str += f" {self.dicts['emotes']['heartquartzs']} {row['Extra']}"
+        return row_str
+
     def tm_str(self, row, mode='stat'):
         """Return appropriate string for trust master search command."""
         row_str = self.name_str(row, alias=0)
-        if row['Restriction'] != '':
+        if row['Restriction']:
             row_str += f" [*{row['Restriction']}*]"
         stat_value = []
         if mode == 'stat':
@@ -437,7 +444,7 @@ class WotvUtils:
                 if row[stat_name] != '':
                     stat_value.append(f"**{stat_name}** {row[stat_name]}")
             row_str += f" - {' '.join(stat_value)}"
-            if row['Passive'] != '':
+            if row['Passive']:
                 row_str += f" - {row['Passive']}"
         elif mode == 'skill':
             row_str += f" - {row['Skill']}"
@@ -459,50 +466,48 @@ class WotvUtils:
             urlstr = urlstr.replace(a, b)
         return f"[{namestr}]({calc_url + urlstr})"
 
-    def find_row(self, df, arg):
+    def find_row(self, df, args):
         """Tolerance processing for query to find the correct entry.
         Return a tuple with a boolean indicating the correct entry is found.
         If false, return a list of suggestions."""
-        if isinstance(arg, str):
-            argstr = arg.lower()
-        else:
-            try:
-                arg[0].encode('ascii')
-                argstr = ' '.join(arg).lower()
-            except UnicodeEncodeError: # Check if arguments are in Japanese
-                argstr = '　'.join(arg)
         try:
-            row = df.loc[argstr]
-            return 1, row
+            args.encode('ascii')
+            args = args.lower()
+        except UnicodeEncodeError: # Check if arguments are in Japanese
+            # Different space for Japanese
+            args = '　'.join(args.split())
+        try:
+            row = df.loc[args]
+            return 0, row
         except KeyError:
-            df_name = df[df.index.str.lower().str.contains(argstr)]
+            df_name = df[df.index.str.lower().str.contains(args)]
             if len(df_name) > 0:
                 for index, row in df_name.iterrows():
-                    if argstr == index.lower():
-                        return 1, row
+                    if args == index.lower():
+                        return 0, row
             if 'Aliases' in df.columns:
-                df_aliases = df[df['Aliases'].str.lower().str.contains(argstr)]
+                df_aliases = df[df['Aliases'].str.lower().str.contains(args)]
                 if len(df_aliases) > 0:
                     for _, row in df_aliases.iterrows():
-                        if argstr in [a.lower() for a in
+                        if args in [a.lower() for a in
                                       row['Aliases'].split(' / ')]:
-                            return 1, row
+                            return 0, row
             else:
                 df_aliases = pd.DataFrame()
             if 'English' in df.columns:
-                df_english = df[df['English'].str.lower().str.contains(argstr)]
+                df_english = df[df['English'].str.lower().str.contains(args)]
                 if len(df_english) > 0:
                     for _, row in df_english.iterrows():
-                        if argstr == row['English'].lower():
-                            return 1, row
+                        if args == row['English'].lower():
+                            return 0, row
             else:
                 df_english = pd.DataFrame()
             if len(df_name) == 1:
-                return 1, df_name.iloc[0]
+                return 0, df_name.iloc[0]
             elif len(df_english) == 1:
-                return 1, df_english.iloc[0]
+                return 0, df_english.iloc[0]
             elif len(df_aliases) == 1:
-                return 1, df_aliases.iloc[0]
+                return 0, df_aliases.iloc[0]
             else:
                 suggestion_list = df_name.index.tolist()
                 if len(df_english) > 0:
@@ -512,7 +517,7 @@ class WotvUtils:
                     for suggestion in alias_list.split(' / '):
                         if suggestion != '':
                             suggestion_list.append(suggestion)
-                return 0, ' / '.join(suggestion_list)
+                return 1, suggestion_list
 
     def get_cryst(self, row):
         """Given DataFrame row of equipment, return text string for the

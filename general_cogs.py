@@ -36,12 +36,20 @@ class BotLog():
                         '%Y/%m/%d %H:%M'))
         await self.log_channel.send(embed=embed)
 
-    async def send(self, ctx, content=None, embed=None):
+    async def send(self, ctx, content=None, embed=None, embeds=None):
         """Send the same content to both the intended channel and the log
         channel.
         """
-        await ctx.send(content, embed=embed)
-        await self.log_channel.send(content, embed=embed)
+        if embed != None:
+            await ctx.send(content, embed=embed)
+            await self.log_channel.send(content, embed=embed)
+            return
+        await ctx.send(content, embed=embeds[0])
+        await self.log_channel.send(content, embed=embeds[0])
+        if len(embeds) > 1:
+            for embed in embeds[1:]:
+                await ctx.send(content, embed=embed)
+                await self.log_channel.send(content, embed=embed)
 
 
 class TestCommands(commands.Cog):
