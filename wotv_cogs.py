@@ -823,7 +823,8 @@ class EmbedWotv():
         # STAT AND PASSIVES
         statstr_list = []
         if args.upper() in wotv_utils.dicts['tm_stats']: # STAT
-            df_filtered = df[df[args.uppper()].replace('', 0),astype('int') > 0]
+            df_filtered = df[df[args.upper()].replace('', 0).astype('int') > 0]
+            df_filtered[args.upper()] = pd.to_numeric(df_filtered[args.upper()])
             if len(df_filtered):
                 row_df = df_filtered.nlargest(20, args.upper())
             for _, row in row_df.iterrows():
@@ -831,7 +832,6 @@ class EmbedWotv():
         elif not args: # PASSIVE
             # Search each tm
             for _, row in df.iterrows():
-                in_list = 0
                 if args in row['Passive'].lower():
                     statstr_list.append(wotv_utils.tm_str(row, 'stat'))
         # SKILL
@@ -841,7 +841,6 @@ class EmbedWotv():
         for index, row in dfwotv.replace.iterrows():
             args = args.replace(index, row['VC'])
         for _, row in df.iterrows():
-            in_list = 0
             if args in row['Skill'].lower():
                 skillstr_list.append(wotv_utils.tm_str(row, 'skill'))
         tuple_list = cls.split_field('TM by Stats', statstr_list) + \
@@ -863,7 +862,7 @@ class EmbedWotv():
             url='https://wotv-calc.com/JP/units',
             icon_url = wotv_utils.dicts['embed']['author_icon_url']
         )
-        embed_list = cls.split_embed(embed, tuple_list, embed_limit=2)
+        embed_list = cls.split_embed(embed, tuple_list, embed_limit=3)
         if not embed_list:
             return 1, embed_list
         else:
@@ -936,12 +935,12 @@ class EmbedWotv():
         if embed_list:
             return (
                 1,
-                f"Sorry, too many results. Try: {' / '.join(embed_list)}",
+                f"Sorry, no match found. Try: {' / '.join(embed_list)}",
                 None
             )
         return (
             1,
-            f"Sorry, no result found. Try `=help {help_str}`.",
+            f"Sorry, no match found or exceeded limit. Try `=help {help_str}`.",
             None
         )
 
