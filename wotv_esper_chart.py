@@ -41,8 +41,31 @@ RESIST_BUFFS = (
     ("Missile", "c4"),
     ("Magic", "c5"),
 )
+# ICON
+ICON_SIZE = 100
+ICON_ESPER_SIZE = 90
+ICON_ESPER_MARGIN = 5
+ICON_ELE_SIZE = 30
+ICON_AGI_SIZE = 30
+ICON_AGI_FONT = 24
+ICON_BUFF_SIZE = 20
+ICON_RES_SIZE = 25
+ICON_SHIELD_SIZES = (15, 20) # X: 15/25 -> 30/25; Y: 5/25 -> 25/25
+ICON_SHIELD_X = 15
+ICON_SHIELD_Y = 5
 
-my_font = ImageFont.truetype('Arial.ttf', 14)
+# CHART
+BORDER_SIZE = 5
+ICON_STACK = 3
+HEADER_SIZE = 100
+HEADER_MARGIN = (ICON_SIZE * ICON_STACK - HEADER_SIZE) // 2
+ROWS = ("r00", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9")
+COLUMNS = ("c6", "c1", "c2", "c3", "c4", "c5")
+PANEL_SIZE = ICON_SIZE * ICON_STACK + BORDER_SIZE
+FULL_WIDTH = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * len(COLUMNS)
+FULL_HEIGHT = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * len(ROWS)
+
+my_font = ImageFont.truetype('Arial.ttf', ICON_AGI_FONT)
 revalues = re.compile(r'-?\d+$')
 df = pd.read_excel(os.path.join(FOLDER, "esper.xlsx"))
 
@@ -53,33 +76,33 @@ def process_esper(df_row):
     specific buff icons.
     """
     im_name = f"{df_row['Esper']}.webp"
-    image = Image.new("RGBA", (60, 60))
+    image = Image.new("RGBA", (ICON_SIZE, ICON_SIZE))
     # Esper base
     base = Image.open(os.path.join(FOLDER, "esper_base", im_name))
-    base = base.resize((54, 54))
-    image.paste(base, (3, 3))
+    base = base.resize((ICON_ESPER_SIZE, ICON_ESPER_SIZE))
+    image.paste(base, (ICON_ESPER_MARGIN, ICON_ESPER_MARGIN))
     # Rarity frame
     rarity = Image.open(os.path.join(
         FOLDER, f"rarity_{df_row['Rarity'].lower()}.png"
     ))
-    rarity = rarity.resize((60, 60))
+    rarity = rarity.resize((ICON_SIZE, ICON_SIZE))
     image.paste(rarity, (0, 0), rarity)
     # Element
     ele = Image.open(os.path.join(
         FOLDER, f"r{E_LIST.index(df_row['Element'])}.png"
     ))
-    ele = ele.resize((20, 20))
+    ele = ele.resize((ICON_ELE_SIZE, ICON_ELE_SIZE))
     image.paste(ele, (0, 0), ele)
     # Agility square
     agi = Image.open(os.path.join(FOLDER, "agi.png"))
-    agi = agi.resize((18, 18))
-    image.paste(agi, (42, 0))
-    square = Image.new("RGBA", (18, 18), (0, 0, 0))
+    agi = agi.resize((ICON_AGI_SIZE, ICON_AGI_SIZE))
+    image.paste(agi, (ICON_SIZE - ICON_AGI_SIZE, 0))
+    square = Image.new("RGBA", (ICON_AGI_SIZE, ICON_AGI_SIZE), (0, 0, 0))
     mask = Image.eval(square.getchannel('A'), lambda a: 144)
-    image.paste(square, (42, 0), mask)
+    image.paste(square, (ICON_SIZE - ICON_AGI_SIZE, 0), mask)
     # Agility text
     image_draw = ImageDraw.Draw(image)
-    image_draw.text((43, 1), str(df_row['AGI']),
+    image_draw.text((ICON_SIZE - ICON_AGI_SIZE + 1, 1), str(df_row['AGI']),
         fill=(255, 255, 255), font=my_font
     )
     # Special icons
@@ -89,27 +112,26 @@ def process_esper(df_row):
         for c_buff in c_buffs:
             if buff in c_buff and int(revalues.findall(c_buff)[0]) >= threshold:
                 icon = Image.open(os.path.join(FOLDER, f"eff_{fname}.png"))
-                icon = icon.resize((12, 12))
-                image.paste(icon, (icon_x, 48), icon)
-                icon_x += 12
-        if icon_x >= 40:
+                icon = icon.resize((ICON_BUFF_SIZE, ICON_BUFF_SIZE))
+                image.paste(icon, (icon_x, ICON_SIZE - ICON_BUFF_SIZE), icon)
+                icon_x += ICON_BUFF_SIZE
+        if icon_x >= ICON_SIZE:
             break
     # Attack resist icons
-    icon_y = 36
+    icon_y = ICON_ELE_SIZE + ICON_RES_SIZE
     for buff, fname in RESIST_BUFFS:
         c_buffs = str(df_row["RES Up"]).split(" / ")
         for c_buff in c_buffs:
             if buff in c_buff:
                 icon = Image.open(os.path.join(FOLDER, f"{fname}.png"))
-                icon = icon.resize((14, 14))
+                icon = icon.resize((25, 25))
                 image.paste(icon, (0, icon_y), icon)
                 # Shield icon to indicate resist
-                # X: 7/14 -> 16/14; Y: 2/14 -> 14/14
                 shield = Image.open(os.path.join(FOLDER, "shield.png"))
-                shield = shield.resize((9, 12))
-                image.paste(shield, (7, icon_y + 2), shield)
-                icon_y -= 14
-        if icon_y <= 14:
+                shield = shield.resize(ICON_SHIELD_SIZES)
+                image.paste(shield, (ICON_SHIELD_X, icon_y + ICON_SHIELD_Y), shield)
+                icon_y -= ICON_RES_SIZE
+        if icon_y <= ICON_RES_SIZE:
             break
     # Save and report
     image.save(os.path.join(FOLDER, "esper_processed", im_name))
@@ -120,15 +142,6 @@ def make_chart():
     """
     Create chart from processed esper icons.
     """
-    ICON_SIZE = 60
-    BORDER_SIZE = 5
-    ICON_STACK = 3
-    PANEL_SIZE = ICON_SIZE * ICON_STACK + BORDER_SIZE
-    HEADER_SIZE = 60
-    FULL_WIDTH = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * 6
-    FULL_HEIGHT = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * 10
-    ROWS = ("r00", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9")
-    COLUMNS = ("c6", "c1", "c2", "c3", "c4", "c5")
     chart = Image.new("RGBA", (FULL_WIDTH, FULL_HEIGHT), (255, 255, 255)
     )
     chart_draw = ImageDraw.Draw(chart)
@@ -143,7 +156,7 @@ def make_chart():
             )
         header = Image.open(os.path.join(FOLDER, f"{ROWS[i]}.png"))
         header = header.resize((HEADER_SIZE, HEADER_SIZE))
-        chart.paste(header, (0, y + 60), header)
+        chart.paste(header, (0, y + HEADER_MARGIN), header)
     ## Vertical
     for i in range(6):
         x = HEADER_SIZE + PANEL_SIZE * i
@@ -158,7 +171,7 @@ def make_chart():
         )
         header = Image.open(os.path.join(FOLDER, f"{COLUMNS[i]}.png"))
         header = header.resize((HEADER_SIZE, HEADER_SIZE))
-        chart.paste(header, (x + 60, 0), header)
+        chart.paste(header, (x + HEADER_MARGIN, 0), header)
     ## Horizontal borders
     for i in range(10):
         y = HEADER_SIZE + PANEL_SIZE * i
