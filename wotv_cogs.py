@@ -2,8 +2,6 @@ import discord
 import random
 import itertools
 import pandas as pd
-import warnings
-from pandas.core.common import SettingWithCopyWarning
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
 
@@ -306,6 +304,7 @@ class EmbedWotv():
             vctuples = [] # List of (vc name + effect prefixes, effect) to facilitate sorting
             for col, col_prefix in col_tuples:
                 conditional = 0 # Flag for universal prefix
+                vccoltuples = []
                 eff_prefixes = [] # Prefix for other conditions sharing effect
                 for eff in row[col].split(' / '):
                     match_brackets = wotv_utils.reconditions.findall(eff)
@@ -340,10 +339,12 @@ class EmbedWotv():
                         final_prefix = f"{wotv_utils.dicts['emotes']['allele']} "
                     else:
                         final_prefix = ''
-                    vctuples.append((
+                    vccoltuples.append((
                         f"{wotv_utils.name_str(row, name='')} - {col_prefix}{final_prefix}",
                         eff_text
                     ))
+                vccoltuples.extend(vctuples) # To make max effect last
+                vctuples = vccoltuples
             if vc_match:
                 vctuples_list.extend(vctuples)
         # Print while keeping track of characters.
@@ -795,25 +796,41 @@ class EmbedWotv():
         """Generates trust master search embeds."""
         df = dfwotv.tm
         # Process keywords
+        type_args = []
+        eqtype_filter = ''
+        if len(arg) > 1:
+            type_args.append(' '.join(arg[:2]).lower())
+        type_args.append(arg[0].lower())
+        for i, type_arg in enumerate(type_args):
+            for index, row in dfwotv.eq_type.iterrows():
+                type_arg = type_arg.replace(index, row['VC'])
+            for eqtype in wotv_utils.dicts['eq_sets']['Type']:
+                if type_arg in eqtype.lower():
+                    eqtype_filter = eqtype
+                    arg = arg[2-i:]
+                    break
+            if eqtype_filter:
+                break
         target = ''
-        range_list = ('Self', 'Ranged', 'Single', 'Plus', 'Diamond', 'none')
-        for skill_range in range_list:
-            if arg[0].lower() == skill_range.lower():
-                target = skill_range
-                args = ' '.join(arg[1:])
-                break
-            elif arg[-1].lower() == skill_range.lower():
-                target = skill_range
-                args = ' '.join(arg[:-1])
-                break
-        else:
-            args = ' '.join(arg)
-        args = args.lower()
+        if arg:
+            for skill_range in (
+                    'Self', 'Ranged', 'Single', 'Plus', 'Diamond', 'none'):
+                if arg[0].lower() == skill_range.lower():
+                    target = skill_range
+                    arg = arg[1:]
+                    break
+                elif arg[-1].lower() == skill_range.lower():
+                    target = skill_range
+                    arg = arg[:-1]
+                    break
+        args = ' '.join(arg).lower()
         if not target:
             target = 'NONE'
         elif target == 'none':
             target = '' # For search purpose
         # Filter appropriately
+        if eqtype_filter:
+            df = df[df['Type'] == eqtype_filter]
         if target == 'NONE':
             pass
         elif target == 'Ranged':
@@ -823,13 +840,14 @@ class EmbedWotv():
         # STAT AND PASSIVES
         statstr_list = []
         if args.upper() in wotv_utils.dicts['tm_stats']: # STAT
-            df_filtered = df[df[args.upper()].replace('', 0).astype('int') > 0]
+            df_filtered = df[df[args.upper()].replace('', 0).astype('int') > 0]\
+                .copy(deep=True)
             df_filtered[args.upper()] = pd.to_numeric(df_filtered[args.upper()])
             if len(df_filtered):
                 row_df = df_filtered.nlargest(20, args.upper())
             for _, row in row_df.iterrows():
                 statstr_list.append(wotv_utils.tm_str(row, 'stat'))
-        elif not args: # PASSIVE
+        elif args or target == 'NONE': # PASSIVE
             # Search each tm
             for _, row in df.iterrows():
                 if args in row['Passive'].lower():
@@ -840,9 +858,10 @@ class EmbedWotv():
             args = wotv_utils.shortcut_convert(args)
         for index, row in dfwotv.replace.iterrows():
             args = args.replace(index, row['VC'])
-        for _, row in df.iterrows():
-            if args in row['Skill'].lower():
-                skillstr_list.append(wotv_utils.tm_str(row, 'skill'))
+        if args or target != 'NONE':
+            for _, row in df.iterrows():
+                if args in row['Skill'].lower():
+                    skillstr_list.append(wotv_utils.tm_str(row, 'skill'))
         tuple_list = cls.split_field('TM by Stats', statstr_list) + \
                      cls.split_field('TM by Skills', skillstr_list)
         if not tuple_list:
