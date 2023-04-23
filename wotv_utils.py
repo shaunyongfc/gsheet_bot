@@ -77,9 +77,9 @@ class WotvUtils:
                 'author_icon_url': 'https://caelum.s-ul.eu/1OLnhC15.png'
             },
             'paramcalc': { # Default parameter values and aliases.
-                'agi': (70, ('agi', 'speed', 'spd', 'agility')),
-                'dex': (250, ('dex', 'dexterity')),
-                'luck': (250, ('luck', 'luc', 'luk')),
+                'agi': (100, ('agi', 'speed', 'spd', 'agility')),
+                'dex': (350, ('dex', 'dexterity')),
+                'luck': (350, ('luck', 'luc', 'luk')),
                 'acc': (0, ('acc', 'accuracy', 'hit')),
                 'eva': (0, ('eva', 'evasion', 'evade', 'avoid')),
                 'crit': (0, ('crit', 'critical', 'crit rate',
@@ -143,7 +143,7 @@ class WotvUtils:
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_param']
         self.help_param = []
         for _, row in df.iterrows():
-            if row['Title'] == 'Default Value':
+            if row['Title'] == 'Default Values':
                 body = row['Body'].replace('[PLACEHOLDER]',
                     ', '.join([k + ' ' + str(v[0]) for k, v in \
                     self.dicts['paramcalc'].items()]))
