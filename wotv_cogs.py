@@ -385,9 +385,9 @@ class EmbedWotv():
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
                     re_match = wotv_utils.revalues.search(eff)
-                    effstr = eff
+                    effstr = eff[:re_match.start()]
                     if suffix:
-                        effstr = f"{eff[:re_match.start()]}{suffix}"
+                        effstr = f"{effstr}{suffix}"
                     esstr_list.append(f"{effstr} - `{re_match.group()}`")
         embed.add_field(name='Max Effects',
                         value='\n'.join(esstr_list),
@@ -937,6 +937,13 @@ class EmbedWotv():
                 f"Redirected to `=help {help_str}`",
                 embed_list
             )
+        elif arg[0].lower() == 'help':
+            _, embed_list = cls.help(help_str)
+            return (
+                1,
+                f"Redirected to `=help {help_str}`",
+                embed_list
+            )
         embed_error, embed_list = main_func(arg)
         if not embed_error: # Command is carried out as intended
             return 0, None, embed_list
@@ -1031,7 +1038,7 @@ class WotvGeneral(commands.Cog):
         """Command to call info regarding materias."""
         await self.log.log(ctx.message)
         embed = discord.Embed(
-            title='Ildyra Bot Help',
+            title='Materia Main Stats',
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(
@@ -1041,12 +1048,14 @@ class WotvGeneral(commands.Cog):
         materia_tuples = wotv_utils.materia_set
         if arg:
             if arg[0].lower() in ('substat', 'sub', 'substats', 's'):
+                embed.title = 'Materia Substats'
                 materia_tuples = wotv_utils.materia_substat
                 for f_name, f_value in materia_tuples:
                     embed.add_field(name=f_name, value=f_value, inline=True)
                 await self.log.send(ctx, embed=embed)
                 return
             elif arg[0].lower() in ('passive', 'passives', 'recraft', 'p'):
+                embed.title = 'Materia Passives'
                 materia_tuples = wotv_utils.materia_passive
         for f_name, f_value in materia_tuples:
             embed.add_field(name=f_name, value=f_value, inline=False)
