@@ -114,12 +114,12 @@ class EmbedWotv():
             effstr_list = []
             eff_prefixes = [] # Condition prefixes
             for eff in row[col].split(' / '):
-                match_brackets = wotv_utils.reconditions.findall(eff)
-                if match_brackets:
-                    conditions = match_brackets[0] \
+                re_match = wotv_utils.reconditions.search(eff)
+                if re_match:
+                    conditions = re_match.group() \
                                  .strip('[]').lower().split('/')
                     eff_prefixes = []
-                    eff_text = eff.replace(match_brackets[0], '').strip()
+                    eff_text = eff.replace(re_match.group(), '').strip()
                 else:
                     conditions = []
                     eff_text = eff
@@ -136,7 +136,7 @@ class EmbedWotv():
                             wotv_utils.dicts['emotes'][f"w_{condition}"]
                         )
                     if not eff_prefixes: # Special condition
-                        eff_prefixes = [match_brackets[0]] # Whole bracket
+                        eff_prefixes = [re_match[0]] # Whole bracket
                         break
                 effstr_list.append(f"{' '.join(eff_prefixes)} {eff_text}")
             f_value = '\n'.join(effstr_list)
@@ -184,9 +184,11 @@ class EmbedWotv():
                 eff_prefixes = []
                 for eff in row[col].split(' / '):
                     # Process the brackets first in case conditional effect is matched
-                    match_brackets = wotv_utils.reconditions.findall(eff)
-                    if match_brackets:
-                        conditions = match_brackets[0] \
+                    effstr = eff
+                    re_match = wotv_utils.reconditions.search(eff)
+                    if re_match:
+                        effstr = effstr[re_match.end():].strip()
+                        conditions = re_match.group() \
                                      .strip('[]').lower().split('/')
                         eff_prefixes = []
                     else:
@@ -206,19 +208,27 @@ class EmbedWotv():
                                 wotv_utils.dicts['emotes'][f"w_{condition}"]
                             )
                         if not eff_prefixes: # Special condition
-                            eff_prefixes = [match_brackets[0]]
+                            eff_prefixes = [re_match.group()]
                             break
+                    if args not in eff.lower():
+                        if args == 'agi%':
+                            if 'agi+' not in eff.lower():
+                                continue
+                        elif args == 'def up':
+                            if 'def+' not in eff.lower():
+                                continue
+                        elif args == 'spr up':
+                            if 'spr+' not in eff.lower():
+                                continue
+                        else:
+                            continue
                     if args in eff.lower(): # Match Found
-                        eff_suffix = '' # Actual effect numbers.
-                        match_numbers = wotv_utils.revalues.findall(eff)
                         additional_icon = ''
                         if not eff_prefixes: # Add max effect element icon if universal
                             additional_icon = f" {''.join(suffix_icons)}"
                             eff_prefixes = [wotv_utils.dicts['emotes']['allele']]
-                        if match_numbers:
-                            eff_suffix = match_numbers[0]
                         vcdict[key_prefix].append(
-                            f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='')} - {max_icon}{eff_suffix}{additional_icon}"
+                            f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='')} - {max_icon}{effstr}{additional_icon}"
                         )
                 if eff_prefixes:
                     suffix_icons = eff_prefixes
@@ -241,6 +251,8 @@ class EmbedWotv():
             title=args.title(),
             colour=wotv_utils.dicts['embed']['default_colour'],
         )
+        if arg[0].lower() in wotv_utils.dicts['colours'].keys():
+            embed.description = f"`=ve {arg[0]}` for list of elemental vcs"
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
                          url='https://wotv-calc.com/JP/cards',
                          icon_url=wotv_utils.dicts['embed']['author_icon_url'])
@@ -307,12 +319,12 @@ class EmbedWotv():
                 vccoltuples = []
                 eff_prefixes = [] # Prefix for other conditions sharing effect
                 for eff in row[col].split(' / '):
-                    match_brackets = wotv_utils.reconditions.findall(eff)
-                    if match_brackets:
+                    re_match = wotv_utils.reconditions.search(eff)
+                    if re_match:
                         conditional = 1
-                        conditions = match_brackets[0] \
+                        conditions = re_match.group() \
                                      .strip('[]').lower().split('/')
-                        eff_text = eff.replace(match_brackets[0], '').strip()
+                        eff_text = eff[re_match.end():].strip()
                         eff_prefixes = [] # Reset prefix
                     else:
                         conditions = []
@@ -385,6 +397,8 @@ class EmbedWotv():
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
                     re_match = wotv_utils.revalues.search(eff)
+                    if not re_match:
+                        continue
                     effstr = eff[:re_match.start()]
                     if suffix:
                         effstr = f"{effstr}{suffix}"
@@ -457,8 +471,10 @@ class EmbedWotv():
                 elif tuparg in row[tupcol].lower():
                     for eff in row[tupcol].split(' / '):
                         if tuparg in eff.lower():
-                            re_match = wotv_utils.revalues.findall(eff)
-                            eslist.append(re_match[0])
+                            re_match = wotv_utils.revalues.search(eff)
+                            if not re_match:
+                                continue
+                            eslist.append(re_match.group())
                             break
                     # To filter accuracy/evasion 7
                     if tuparg in 'accuracy' or tuparg in 'evasion':
@@ -533,7 +549,7 @@ class EmbedWotv():
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
                     re_match = wotv_utils.revalues.search(eff)
-                    if re_match == None:
+                    if not re_match:
                         continue
                     effstr = eff
                     if suffix:
@@ -595,9 +611,9 @@ class EmbedWotv():
                 ]
         condition = ''
         for eff in row['Passive'].split(' / '):
-            match_brackets = wotv_utils.reconditions.findall(eff)
-            if match_brackets:
-                condition = match_brackets[0]
+            re_match = wotv_utils.reconditions.search(eff)
+            if re_match:
+                condition = re_match.group()
                 effstr_list.append(eff)
             elif condition == '':
                 effstr_list.append(eff)
@@ -931,14 +947,14 @@ class EmbedWotv():
         redirect_tuples: list of tuples of (redirect_func, redirect_str)
         """
         if not arg: # No argument, redirect to help
-            _, embed_list = cls.help(help_str)
+            _, embed_list = cls.help([help_str])
             return (
                 1,
                 f"Redirected to `=help {help_str}`",
                 embed_list
             )
         elif arg[0].lower() == 'help':
-            _, embed_list = cls.help(help_str)
+            _, embed_list = cls.help([help_str])
             return (
                 1,
                 f"Redirected to `=help {help_str}`",
@@ -1314,7 +1330,7 @@ class WotvGeneral(commands.Cog):
         """
         await self.log.log(ctx.message)
         if not arg:
-            _, embeds = EmbedWotv.help('param')
+            _, embeds = EmbedWotv.help(['param'])
             await self.log.send(
                 ctx,
                 'Redirected to `=help param`',
@@ -1332,17 +1348,16 @@ class WotvGeneral(commands.Cog):
         for argstr in arg:
             # Find position and value of number
             re_match = wotv_utils.revalues.search(argstr)
-            try:
-                paramval = int(re_match.group())
-                paramstr = argstr[0:re_match.start()].strip()
-                for k, v in wotv_utils.dicts['paramcalc'].items():
-                    if paramstr in v[1]:
-                        if k not in ('agi', 'dex', 'luck') or paramval >= 0:
-                            # Disallow negative values for the three stats.
-                            params[k] = paramval
-                        break
-            except AttributeError:
-                pass
+            if not re_match:
+                continue
+            paramval = int(re_match.group())
+            paramstr = argstr[0:re_match.start()].strip()
+            for k, v in wotv_utils.dicts['paramcalc'].items():
+                if paramstr in v[1]:
+                    if k not in ('agi', 'dex', 'luck') or paramval >= 0:
+                        # Disallow negative values for the three stats.
+                        params[k] = paramval
+                    break
         # Actual calculations
         results = (
             ('ACC', (11*params['dex']**0.2/20 + params['luck']**0.96/200
@@ -1533,7 +1548,7 @@ class WotvEsper(commands.Cog):
         """Calculate required amount of magicites from inputs."""
         await self.log.log(ctx.message)
         if not arg:
-            _, embeds = EmbedWotv.help('esper')
+            _, embeds = EmbedWotv.help(['esper'])
             await self.log.send(
                 ctx,
                 'Apparently you need some assistance. Redirected to `=help esper`',
@@ -1557,20 +1572,19 @@ class WotvEsper(commands.Cog):
                 neutral = 1
                 continue
             re_match = wotv_utils.revalues.search(argstr.rstrip('%'))
-            try:
-                paramval = int(re_match.group())
-                paramstr = argstr[0:re_match.start()].strip()
-                if paramstr in ('star', 'stars') and paramval in (1, 2, 3):
-                    esper_start = paramval
-                elif paramstr in ('bonus',) and 0 <= paramval <= 100:
-                    bonus = paramval
-                else:
-                    for k in wotv_utils.dicts['magicites'].keys():
-                        if paramstr == k.lower():
-                            magicites[k] = max(paramval, 0)
-                            break
-            except AttributeError:
-                pass
+            if not re_match:
+                continue
+            paramval = int(re_match.group())
+            paramstr = argstr[0:re_match.start()].strip()
+            if paramstr in ('star', 'stars') and paramval in (1, 2, 3):
+                esper_start = paramval
+            elif paramstr in ('bonus',) and 0 <= paramval <= 100:
+                bonus = paramval
+            else:
+                for k in wotv_utils.dicts['magicites'].keys():
+                    if paramstr == k.lower():
+                        magicites[k] = max(paramval, 0)
+                        break
         # Actual calculations
         req_exp = sum([wotv_utils.dicts['esper_exp'][a] for a in \
             range(esper_start, 4, 1)])
