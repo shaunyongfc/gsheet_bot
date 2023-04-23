@@ -19,7 +19,6 @@ class WotvUtils:
         # Regex for symbols to be omitted for url generation.
         self.resymbols = re.compile(r'[^\w ]')
         self.dicts = { # Dictionary to store various constants.
-            'eq_sets': self.eq_sets_init(self.dfwotv.eq),
             'eq_lists': {
                 'Type': ('t',),
                 'Acquisition': ('a',),
@@ -28,7 +27,6 @@ class WotvUtils:
                 'Cryst': ('c', 'e', 'element'),
                 'Ore': ('o',)
             },
-            'esper_sets': self.esper_sets_init(self.dfwotv.esper),
             'esper_suffix': {
                 'atk': 'ATK Up',
                 'killer': 'Killer',
@@ -105,6 +103,7 @@ class WotvUtils:
                         'gun', 'katana', 'mace', 'nb', 'spear', 'staffa',
                         'staffb', 'sworda', 'swordb', 'swordc',), # for vc job type
         }
+        self.dicts_sets_init()
         self.update_text()
         msg_list = []
         # Generate the weekly command string.
@@ -217,9 +216,10 @@ class WotvUtils:
         self.materia_passive = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
 
-    def eq_sets_init(self, df):
-        """Only runs once to generate the dictonary entry."""
-        dict_sets = {
+    def dicts_sets_init(self):
+        """Generate the certain dictonary entries of sets."""
+        # EQ
+        self.dicts['eq_sets'] = {
             'Type': set(),
             'Acquisition': set(),
             'Regular': set(),
@@ -227,30 +227,54 @@ class WotvUtils:
             'Cryst': set(),
             'Ore': set()
         }
-        for _, row in df.iterrows():
-            for k, v in dict_sets.items():
+        for _, row in self.dfwotv.eq.iterrows():
+            for k, v in self.dicts['eq_sets'].items():
                 if row[k]:
                     if k == 'Cryst' and len(row[k]) > 1:
                         v = v.union(set(row[k]))
                     else:
                         v.add(row[k])
-        return dict_sets
 
-    def esper_sets_init(self, df):
-        """Only runs once to generate the dictonary entry."""
-        dict_sets = {
+        # Esper
+        self.dicts['esper_sets'] = {
             'ATK Up': set(),
             'Killer': set(),
             'Stat Up': set(),
             'RES Up': set(),
         }
-        for index, row in df.iterrows():
-            for k, v in dict_sets.items():
+        self.dicts['esper_sets_lower'] = self.dicts['esper_sets'].copy()
+        for _, row in self.dfwotv.esper.iterrows():
+            for k in self.dicts['esper_sets'].keys():
                 if row[k]:
                     for eff in row[k].split(' / '):
                         re_match = self.revalues.search(eff)
-                        v.add(eff[:re_match.start()].strip().lower())
-        return dict_sets
+                        self.dicts['esper_sets'][k]\
+                            .add(eff[:re_match.start()].strip())
+                        self.dicts['esper_sets_lower'][k]\
+                            .add(eff[:re_match.start()].strip().lower())
+
+        # VC and EQ/TM
+        passive_tuples = (
+            ('vc_set', ('Unit', 'Party', 'Party Max'), self.dfwotv.vc),
+            ('eq_set', ('Passive', 'Extra'), self.dfwotv.eq),
+            ('eq_set', ('Passive',), self.dfwotv.tm),
+            ('tm_set', ('Skill',), self.dfwotv.tm),
+        )
+        for dict_entry, dict_cols, dict_df in passive_tuples:
+            if dict_entry not in self.dicts:
+                self.dicts[dict_entry] = set()
+            for _, row in dict_df.iterrows():
+                for col in dict_cols:
+                    for eff in row[col].split(' / '):
+                        effstr = eff
+                        re_match = self.reconditions.search(eff)
+                        if re_match:
+                            effstr = effstr[re_match.end():].strip()
+                        re_match = self.revalues.search(effstr)
+                        if re_match:
+                            effstr = effstr[:re_match.start()].strip()
+                        self.dicts[dict_entry].add(effstr)
+            self.dicts[dict_entry].remove('')
 
     def emotes_init(self):
         """Only runs once to generate the dictonary entry."""
@@ -330,15 +354,6 @@ class WotvUtils:
         r = requests.get("https://players.wotvffbe.com/")
         return bs(r.content, features="lxml")
 
-    def eqt_convert(self, type_str):
-        """Used to convert equipment type string into type emote shortcut."""
-        if type_str == 'Accessory':
-            return 'accessory'
-        elif 'Armor' in type_str:
-            return 'armor'
-        else:
-            return 'weapon'
-
     def shortcut_convert(self, args, col='VC'):
         """Convert shortcuts into corresponding contents."""
         try:
@@ -349,37 +364,6 @@ class WotvUtils:
                 return args
         except KeyError:
             return args
-
-    def esper_findcol(self, args):
-        """
-        Find the correct column to search for an effect from an argument
-        string.
-        """
-        if args[:3] == 'ALL':
-            return args[4:], 'ALL'
-        if args in ['collab', 'limited']:
-            return 'Limited', 'y'
-        if args.upper() in self.dicts['esper_stats']:
-            return args.upper(), 'STAT'
-        col = 'NOTFOUND'
-        arg = args.split()
-        if arg[-1] in self.dicts['esper_suffix'].keys():
-            col = self.dicts['esper_suffix'][arg[-1]]
-            args = ' '.join(arg[:-1])
-        else:
-            for k, v in self.dicts['esper_sets'].items():
-                if args in v:
-                    col = k
-                    break
-            else:
-                col_list = []
-                for k, v in self.dicts['esper_sets'].items():
-                    for v_item in v:
-                        if args in v_item:
-                            col_list.append(k)
-                if len(col_list) == 1:
-                    col = col_list[0]
-        return col, args
 
     def name_str(self, row, name='NAME', element=1, rarity=1, type=1,
                  limited=1, alias=1, elestr=''):
@@ -534,6 +518,47 @@ class WotvUtils:
                     .split(' / ')[0].replace('(Mega)', '')
             text_list.append(f"- {cryst_ele} ({engstr})")
         return '\n'.join(text_list)
+
+
+    def eqt_convert(self, type_str):
+        """Used to convert equipment type string into type emote shortcut."""
+        if type_str == 'Accessory':
+            return 'accessory'
+        elif 'Armor' in type_str:
+            return 'armor'
+        else:
+            return 'weapon'
+
+    def esper_findcol(self, args):
+        """
+        Find the correct column to search for an effect from an argument
+        string.
+        """
+        if args[:3] == 'ALL':
+            return args[4:], 'ALL'
+        if args in ['collab', 'limited']:
+            return 'Limited', 'y'
+        if args.upper() in self.dicts['esper_stats']:
+            return args.upper(), 'STAT'
+        col = 'NOTFOUND'
+        arg = args.split()
+        if arg[-1] in self.dicts['esper_suffix'].keys():
+            col = self.dicts['esper_suffix'][arg[-1]]
+            args = ' '.join(arg[:-1])
+        else:
+            for k, v in self.dicts['esper_sets_lower'].items():
+                if args in v:
+                    col = k
+                    break
+            else:
+                col_list = []
+                for k, v in self.dicts['esper_sets_lower'].items():
+                    for v_item in v:
+                        if args in v_item:
+                            col_list.append(k)
+                if len(col_list) == 1:
+                    col = col_list[0]
+        return col, args
 
     def rand(self, ffbe, *arg):
         """Random command to return a random value depending on given inputs.

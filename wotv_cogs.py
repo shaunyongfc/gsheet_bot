@@ -21,23 +21,26 @@ class EmbedWotv():
     purposes. Separated from the cogs to facilitate redirection.
     """
     @classmethod
-    def split_field(cls, f_name, entry_list):
+    def split_field(cls, f_name, entry_list, max_lines=0):
         """Given list of line entries (str), split into list of field tuples of
         field name (str) and value (str) with respect to character limits."""
         if not entry_list: # Empty list
             return entry_list
         tuple_list = []
         f_value = '\n'.join(entry_list)
-        if len(f_value) < 1020: # Short enough to fit into 1
+        if len(f_value) < 1020 and not max_lines: # Short enough to fit into 1
             return [(f_name, f_value)]
         checkpoint = 0
         char_count = -2
+        line_count = 0
         for i, entry in enumerate(entry_list):
             char_count += len(entry) + 2
-            if char_count > 1000:
+            line_count += 1
+            if char_count > 1000 or (max_lines and line_count > max_lines):
                 f_value = '\n'.join(entry_list[checkpoint:i])
                 tuple_list.append((f_name, f_value))
                 char_count = len(entry)
+                line_count = 1
                 if not checkpoint: # No need to repeat headings
                     f_name = BLANK
                 checkpoint = i
@@ -551,9 +554,9 @@ class EmbedWotv():
                     re_match = wotv_utils.revalues.search(eff)
                     if not re_match:
                         continue
-                    effstr = eff
+                    effstr = eff[:re_match.start()]
                     if suffix:
-                        effstr = f"{eff[:re_match.start()]}{suffix}"
+                        effstr += suffix
                     if effstr in effdict_dict[col].keys():
                         effdict_dict[col][effstr][i] = re_match.group()
                     else:
@@ -904,6 +907,45 @@ class EmbedWotv():
             return 0, embed_list
 
     @classmethod
+    def passivelist(cls, arg):
+        """Generates list of passives embed."""
+        # Esper specially processed
+        if arg[0].lower() == 'esper':
+            args = 'esper'
+            passivestr_list = []
+            for col, suffix in wotv_utils.dicts['esper_colsuffix'].items():
+                if not suffix:
+                    passivestr_list.extend(
+                        list(sorted(wotv_utils.dicts['esper_sets'][col]))
+                    )
+                    continue
+                for eff in sorted(wotv_utils.dicts['esper_sets'][col]):
+                    passivestr_list.append(f"{eff} {suffix}")
+        else:
+            if arg[0].lower() == 'vc':
+                args = 'vc'
+            elif arg[0].lower() in ('eq', 'equip', 'equipment'):
+                args = 'eq'
+            elif arg[0].lower() in ('tm', 'trust'):
+                args = 'tm'
+            else:
+                return 1, []
+            passivestr_list = list(sorted(wotv_utils.dicts[f"{args}_set"]))
+        tuple_list = cls.split_field(BLANK, passivestr_list, max_lines=15)
+        embed = discord.Embed(
+            title=f"List of Passives - {args}",
+            colour=wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name = wotv_utils.dicts['embed']['author_name'],
+            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+        )
+        embed_list = cls.split_embed(
+            embed, tuple_list, inline_num=1, embed_limit=3
+        )
+        return 0, embed_list
+
+    @classmethod
     def help(cls, arg):
         """Generates help embed."""
         help_tuples = wotv_utils.help_general # Default help
@@ -919,7 +961,7 @@ class EmbedWotv():
                 (('eq', 'tm', 'equip', 'trust'), wotv_utils.help_eq),
                 (('param',), wotv_utils.help_param),
                 (('stars', 'ramada', 'moore'), wotv_utils.help_ramada),
-                (('events'), wotv_utils.help_events),
+                (('events',), wotv_utils.help_events),
                 (('materia', 'rune'), wotv_utils.help_materia),
             ):
                 if arg[0].lower() in key:
@@ -1027,18 +1069,23 @@ class WotvGeneral(commands.Cog):
             if not arg:
                 # Synchronise WOTV sheets
                 dfwotv.sync()
+                wotv_utils.dicts_sets_init()
                 await ctx.send('Google sheet synced for WOTV data.')
             elif arg[0] == 'text':
                 wotv_utils.update_text()
                 await ctx.send('Text updated. (If Google sheet is updated.)')
-            elif arg[0] == 'esper':
-                # Update the set of effects per column in Esper
-                wotv_utils.dicts['esper_sets'] = \
-                    wotv_utils.esper_sets(dfwotv.esper)
-                await ctx.send('Esper keyword sets updated.')
             elif arg[0] == 'events':
                 dfwotv.sync_events()
                 await ctx.send('Google sheet synced for WOTV events.')
+
+    @commands.command(aliases=['passive', 'passives'])
+    async def wotvpassive(self, ctx, *arg):
+        """Check list of passives to look for ways to search."""
+        await self.log.log(ctx.message)
+        _, msg_content, msg_embeds = EmbedWotv.redirect(
+            arg, EmbedWotv.passivelist, '', tuple()
+        )
+        await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
     @commands.command(aliases=['help', 'about', 'info', 'aboutme', 'readme', 'Help'])
     async def wotvhelp(self, ctx, *arg):
