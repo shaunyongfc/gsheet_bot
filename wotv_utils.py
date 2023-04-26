@@ -365,50 +365,52 @@ class WotvUtils:
         except KeyError:
             return args
 
-    def name_str(self, row, name='NAME', element=1, rarity=1, type=1,
-                 limited=1, alias=1, elestr=''):
+    def name_str(self, row, element=1, group=1, rarity=1, type=1, limited=1,
+                 name='English', backup_name='Aliases'):
         """Process an entry to return the name string decorated with
         emotes.
+        row: DataFrame series
+        element, group, rarity, type, limited: 1 or 0 to indicate whether to include
+        name: 'NAME' to use the row name as name.
+              If a column name is applicable, the column is used.
+              Otherwise, use the name as name.
+        backup_name: Same as name but as backup if name is not available.
         """
-        namestr = ''
-        if elestr:
-            namestr += self.dicts['emotes'][elestr]
-        elif 'Element' in row.index and element:
-            namestr += self.dicts['emotes'][row['Element'].lower()]
+        # EQ: EQ Name (JP), English, Aliases
+        # TM: Unit Name (JP), English, TM (JP), TM (EN), Aliases
+        # VC: VC Name (JP), English, Aliases
+        # Esper: Esper (JP), English, Aliases
+        prefix_str = ''
+        name_str = ''
+        if 'Element' in row.index and element:
+            prefix_str += self.dicts['emotes'][row['Element'].lower()]
+        if 'Group' in row.index and group:
+            prefix_str += self.dicts['emotes'][f"w_{row['Group'].lower()}"]
         if 'Rarity' in row.index and rarity:
-            namestr += self.dicts['emotes'][row['Rarity'].lower()]
-        if 'Type' in row.index and type:
-            namestr += self.dicts['emotes'][self.eqt_convert(row['Type'])]
+            prefix_str += self.dicts['emotes'][row['Rarity'].lower()]
+        if 'Type' in row.index and type: # EQ
+            prefix_str += self.dicts['emotes'][self.eqt_convert(row['Type'])]
         if 'Limited' in row.index and limited:
             if row['Limited'] != '':
-                namestr += self.dicts['emotes']['limited']
-        # if 'Awaken' in row.index and awaken:
-        #     if row['Awaken'] == 'y':
-        #         namestr += self.dicts['emotes']['esper']
+                prefix_str += self.dicts['emotes']['limited']
         if name == 'NAME':
-            namestr += f" {row.name}"
+            name_str = row.name
+        elif name in row.index:
+            name_str = row[name].split(' / ')[0]
         else:
-            namestr += f" {name}"
-        if 'Aliases' in row.index and alias > 0:
-            # 0: None
-            # 1: Alias only
-            # 2: English first, Alias if no English
-            # 3: English only
-            engstr = ''
-            if alias in (2, 3):
-                engstr = row['English']
-            if not engstr and alias != 3:
-                engstr = row['Aliases'].split(' / ')[0]
-            if engstr:
-                if not name:
-                    namestr += engstr
-                else:
-                    namestr += f" ({engstr})"
-        return namestr
+            name_str = name
+        if not name_str:
+            if name == 'NAME':
+                name_str = row.name
+            elif backup_name in row.index:
+                name_str = row[backup_name].split(' / ')[0]
+            else:
+                name_str = backup_name
+        return f"{prefix_str} {name_str}"
 
     def eq_str(self, row):
         """Return appropriate string for equipment search / list command."""
-        row_str = self.name_str(row, name='', alias=2)
+        row_str = self.name_str(row)
         if row['Restriction']:
             row_str += f" [*{row['Restriction']}*]"
         if row['Passive']:
@@ -419,7 +421,7 @@ class WotvUtils:
 
     def tm_str(self, row, mode='stat'):
         """Return appropriate string for trust master search command."""
-        row_str = self.name_str(row, alias=0)
+        row_str = self.name_str(row, element=0, group=0)
         if row['Restriction']:
             row_str += f" [*{row['Restriction']}*]"
         stat_value = []

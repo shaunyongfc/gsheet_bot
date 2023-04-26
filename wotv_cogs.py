@@ -104,7 +104,7 @@ class EmbedWotv():
         if row_error:
             return row_error, row
         embed = discord.Embed(
-            title=wotv_utils.name_str(row, alias=0),
+            title=wotv_utils.name_str(row, name='NAME'),
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
@@ -231,7 +231,7 @@ class EmbedWotv():
                             additional_icon = f" {''.join(suffix_icons)}"
                             eff_prefixes = [wotv_utils.dicts['emotes']['allele']]
                         vcdict[key_prefix].append(
-                            f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='')} - {max_icon}{effstr}{additional_icon}"
+                            f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='Aliases')} - {max_icon}{effstr}{additional_icon}"
                         )
                 if eff_prefixes:
                     suffix_icons = eff_prefixes
@@ -314,7 +314,8 @@ class EmbedWotv():
         )
         vctuples_list = []
         # Search df
-        for index, row in df.iterrows():
+        for index, row in df.sort_values(
+                ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             vc_match = 0 # Flag to indicate vc matching criterion
             vctuples = [] # List of (vc name + effect prefixes, effect) to facilitate sorting
             for col, col_prefix in col_tuples:
@@ -355,7 +356,7 @@ class EmbedWotv():
                     else:
                         final_prefix = ''
                     vccoltuples.append((
-                        f"{wotv_utils.name_str(row, name='')} - {col_prefix}{final_prefix}",
+                        f"{wotv_utils.name_str(row, name='Aliases')} - {col_prefix}{final_prefix}",
                         eff_text
                     ))
                 vccoltuples.extend(vctuples) # To make max effect last
@@ -379,7 +380,7 @@ class EmbedWotv():
         if row_error:
             return row_error, row
         embed = discord.Embed(
-            title=wotv_utils.name_str(row, alias=0),
+            title=wotv_utils.name_str(row),
             colour=wotv_utils.dicts['colours'][row['Element'].lower()]
         )
         embed.set_author(
@@ -496,7 +497,7 @@ class EmbedWotv():
         if first_arg not in {'y', 'n'}:
             eslist_list.sort(key=lambda a: int(a[1]), reverse=True)
         for eslist in eslist_list:
-            esstr = wotv_utils.name_str(row_df.loc[eslist[0]], alias=0)
+            esstr = wotv_utils.name_str(row_df.loc[eslist[0]])
             if eslist:
                 esstr += f" - `{' | '.join(eslist[1:])}`"
             esstr_list.append(esstr)
@@ -537,7 +538,7 @@ class EmbedWotv():
             row_error, row = wotv_utils.find_row(df, argstr)
             if not row_error:
                 row_list.append(row)
-                esper_list.append(wotv_utils.name_str(row, alias=0))
+                esper_list.append(wotv_utils.name_str(row))
         if len(esper_list) < 2: # Need 2 or more espers to compare
             return 1, esper_list
         # Initialise
@@ -603,7 +604,7 @@ class EmbedWotv():
         row_error, row = wotv_utils.find_row(df, ' '.join(arg))
         if row_error:
             return row_error, row
-        description_list = [wotv_utils.name_str(row, name='', alias=2)]
+        description_list = [wotv_utils.name_str(row)]
         effstr_list = []
         embed_colours = []
         if row['Restriction']:
@@ -685,7 +686,8 @@ class EmbedWotv():
         # Initialise
         eqstr_list = []
         # Search df
-        for _, row in df.iterrows():
+        for _, row in df.sort_values(
+                ['Rarity', 'Release'], ascending=[False, True]).iterrows():
             if args in row['Passive'].lower() or args in row['Extra'].lower():
                 eqstr_list.append(wotv_utils.eq_str(row))
         if not eqstr_list: # No match
@@ -732,7 +734,8 @@ class EmbedWotv():
             return 1, []
         eqstr_list = []
         # Search df
-        for _, row in dfwotv.eq.iterrows():
+        for _, row in dfwotv.eq.sort_values(
+                ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             if match_str in row[col]:
                 eqstr_list.append(wotv_utils.eq_str(row))
         tuple_list = cls.split_field(BLANK, eqstr_list)
@@ -756,11 +759,11 @@ class EmbedWotv():
         if row_error:
             return row_error, row
         # Process equipment info
-        description_list = [wotv_utils.name_str(row, name='', alias=3)]
+        description_list = [wotv_utils.name_str(row, type=0)]
         if row['Restriction']:
             description_list.append(f"*Restriction: {row['Restriction']}*")
         embed = discord.Embed(
-            title = row.name,
+            title = wotv_utils.name_str(row, name='TM Name', element=0, group=0),
             description = '\n'.join(description_list),
             colour = wotv_utils.dicts['embed']['default_colour']
         )
@@ -800,12 +803,12 @@ class EmbedWotv():
             )
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
-        if row['English']:
+        if row['TM English']:
             embed.add_field(
                 name='WOTV-CALC',
                 value='\n'.join((
-                    wotv_utils.calc_url('equipment', row['English']),
-                    wotv_utils.calc_url('units', row.name)
+                    wotv_utils.calc_url('equipment', row['TM English']),
+                    wotv_utils.calc_url('units', row['English'])
                 )),
                 inline=False)
         return 0, [embed]
