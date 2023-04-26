@@ -12,6 +12,8 @@ dfwotv = DfHandlerWotv()
 wotv_utils = WotvUtils(dfwotv)
 MYDTFORMAT = '%Y/%m/%d %H:%M'
 PRINTDTFORMAT = '%b %d, %H:%M'
+DFDTFORMAT = '%Y%m%d'
+EMBEDDTFORMAT = '%d %B %Y'
 BLANK = '\u200b'
 
 
@@ -144,6 +146,10 @@ class EmbedWotv():
                 effstr_list.append(f"{' '.join(eff_prefixes)} {eff_text}")
             f_value = '\n'.join(effstr_list)
             embed.add_field(name=col, value=f_value)
+        release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
+        if row['Pool'] != 'Regular':
+            release_str += f" ({row['Pool']})"
+        embed.add_field(name='Release', value=release_str)
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         if embed_colours:
@@ -410,6 +416,10 @@ class EmbedWotv():
         embed.add_field(name='Max Effects',
                         value='\n'.join(esstr_list),
                         inline=False)
+        evoke_str = row['Evoke']
+        if row['Evoke Field']:
+            evoke_str += f"\n**Field**: {row['Evoke Field']}"
+        embed.add_field(name='Evoke', value=evoke_str, inline=False)
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         embed.add_field(name='WOTV-CALC',
@@ -645,8 +655,10 @@ class EmbedWotv():
             url='https://wotv-calc.com/JP/equipment',
             icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
-        embed.add_field(name='Acquisition', value=row['Acquisition'],
-                        inline=True)
+        acq_str = f"{row['Acquisition']}\nRelease: {datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        if row['Release+']:
+            acq_str += f"\n{wotv_utils.dicts['emotes']['heartquartzs']} {datetime.strftime(datetime.strptime(str(row['Release+']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        embed.add_field(name='Acquisition', value=acq_str, inline=False)
         # Craft materials (legacy)
         material_list = []
         for col in ['Regular', 'Rare', 'Cryst', 'Ore']:
@@ -655,12 +667,12 @@ class EmbedWotv():
                     material_list.append(wotv_utils.get_cryst(row))
                 else:
                     engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
-                    material_list.append(f"- {row[col]} ({engstr})")
+                    material_list.append(f"{row[col]} ({engstr})")
         if material_list:
             embed.add_field(
                 name='List of materials',
                 value='\n'.join(material_list),
-                inline=True
+                inline=False
             )
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
