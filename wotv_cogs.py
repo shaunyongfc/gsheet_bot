@@ -161,6 +161,77 @@ class EmbedWotv():
         return 0, [embed]
 
     @classmethod
+    def vcparty(cls, arg):
+        """Generates list of units applicable to the vc."""
+        row_error, row = wotv_utils.find_row(dfwotv.vc, ' '.join(arg))
+        if row_error:
+            return row_error, row
+        re_match = wotv_utils.reconditions.search(row['Party Max'].split(' / ')[0])
+        if not re_match: # No condition
+            return 1, []
+        conditions = re_match.group().strip('[]').split('/')
+        split_type = 0
+        if conditions[0].lower() in wotv_utils.dicts['colours'].keys():
+            split_type = 1 # 0: Group, 1: Element
+        elif conditions[0] in wotv_utils.dicts['Weapons']:
+            split_type = 0
+        else:
+            return 1, [] # Not general condition
+        embed = discord.Embed(
+            title=wotv_utils.name_str(row, name='NAME'),
+            colour=wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+                         url='https://wotv-calc.com/JP/cards',
+                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+        if row['Url']:
+            embed.set_thumbnail(url=row['Url'])
+        list_dict = dict()
+        if split_type: # For element
+            for group in wotv_utils.dicts['Weapons']:
+                list_dict[group.lower()] = []
+            embed_colours = []
+            for condition in conditions:
+                embed_colours.append(
+                    wotv_utils.dicts['colours'][condition.lower()]
+                )
+            embed.colour = random.choice(embed_colours)
+        else:
+            for element in wotv_utils.dicts['colours'].keys():
+                list_dict[element] = []
+        df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
+        for _, u_row in df.iterrows():
+            if split_type and u_row['Element'] in conditions:
+                list_dict[u_row['Group'].lower()].append(u_row['English'])
+            elif (not split_type) and u_row['Group'] in conditions:
+                list_dict[u_row['Element'].lower()].append(u_row['English'])
+        if split_type:
+            line_list = []
+            for key, unit_list in list_dict.items():
+                if not unit_list:
+                    continue
+                line_list.append(
+                    wotv_utils.dicts['emotes'][f"w_{key}"] + ' ' + ' / '.join(unit_list),
+                )
+            tuple_list = cls.split_field(BLANK, line_list)
+            for _, field_value in tuple_list:
+                embed.add_field(name=BLANK, value=field_value, inline=False)
+        else:
+            for key, unit_list in list_dict.items():
+                if not unit_list:
+                    continue
+                embed.add_field(
+                    name=f"{wotv_utils.dicts['emotes'][key]} {key.title()}",
+                    value=' / '.join(unit_list),
+                    inline=False
+                )
+        if row['English']:
+            embed.add_field(name='WOTV-CALC',
+                            value=wotv_utils.calc_url('card', row['English']),
+                            inline=False)
+        return 0, [embed]
+
+    @classmethod
     def vcsearch(cls, arg):
         """Generates vision card search embeds."""
         df = dfwotv.vc
@@ -1575,6 +1646,20 @@ class WotvVc(commands.Cog):
             (
                 (EmbedWotv.vclist, 'Vision Card List (`=vcl`)'),
                 (EmbedWotv.vcinfo, 'Vision Card Information (`=vc`)'),
+            )
+        )
+        await self.log.send(ctx, msg_content, embeds=msg_embeds)
+
+    @commands.command(aliases=['vcp', 'vp', 'Vcp', 'Vp'])
+    async def wotvvcparty(self, ctx, *arg):
+        """Search relevant units by vc."""
+        await self.log.log(ctx.message)
+        _, msg_content, msg_embeds = EmbedWotv.redirect(
+            arg, EmbedWotv.vcparty, 'vc',
+            (
+                (EmbedWotv.vcinfo, 'Vision Card Information (`=vc`)'),
+                (EmbedWotv.vclist, 'Vision Card List (`=vcl`)'),
+                (EmbedWotv.vcsearch, 'Vision Card Search (`=vcs`)'),
             )
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)

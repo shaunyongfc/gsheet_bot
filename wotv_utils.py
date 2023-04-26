@@ -102,6 +102,9 @@ class WotvUtils:
             'weapons': ('axe', 'book', 'bow', 'dagger', 'fist', 'glove', 'gs',
                         'gun', 'katana', 'mace', 'nb', 'spear', 'staffa',
                         'staffb', 'sworda', 'swordb', 'swordc',), # for vc job type
+            'Weapons': ('SwordA', 'SwordB', 'SwordC', 'StaffA', 'StaffB', 'GS',
+                        'Spear', 'Axe', 'Bow', 'Gun', 'Fist', 'Dagger', 'NB',
+                        'Katana', 'Mace', 'Glove', 'Book') # capitalized and ordered
         }
         self.dicts_sets_init()
         self.update_text()
