@@ -104,7 +104,15 @@ class WotvUtils:
                         'staffb', 'sworda', 'swordb', 'swordc',), # for vc job type
             'Weapons': ('SwordA', 'SwordB', 'SwordC', 'StaffA', 'StaffB', 'GS',
                         'Spear', 'Axe', 'Bow', 'Gun', 'Fist', 'Dagger', 'NB',
-                        'Katana', 'Mace', 'Glove', 'Book') # capitalized and ordered
+                        'Katana', 'Mace', 'Glove', 'Book'), # capitalized and ordered
+            'weapon_dict': {
+                'sworda': 'Red Mage',
+                'swordb': 'Warrior',
+                'swordc': 'Knight',
+                'staffa': 'Black Mage',
+                'staffb': 'Devout',
+            },
+            'rarity': ('UR', 'SSR', 'SR', 'R', 'N')
         }
         self.dicts_sets_init()
         self.update_text()
@@ -163,6 +171,10 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_eq.append((row['Title'], body))
+        df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_unit']
+        self.help_unit = []
+        for _, row in df.iterrows():
+            self.help_unit.append((row['Title'], body))
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_vc']
         self.help_vc = []
         for _, row in df.iterrows():
@@ -339,8 +351,8 @@ class WotvUtils:
             ('w_mace', '1060023461780652102'),
             ('w_nb', '1060023465215803513'),
             ('w_spear', '1060023468680286299'),
-            ('w_staffa', '1060023473197568000'),
-            ('w_staffb', '1060023475189854238'),
+            ('w_staffa', '1060023475189854238'),
+            ('w_staffb', '1060023473197568000'),
             ('w_sworda', '1060023478843088976'),
             ('w_swordb', '1060023482236289164'),
             ('w_swordc', '1060023484689961007'),

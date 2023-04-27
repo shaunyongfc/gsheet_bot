@@ -106,9 +106,12 @@ class EmbedWotv():
                                              col_list=('English', 'Aliases'))
         if row_error:
             return row_error, row
+        description = f"Cost: {row['Cost']}\nGroup: {row['Group']}"
+        if row['Group'].lower() in wotv_utils.dicts['weapon_dict'].keys():
+            description += f" ({wotv_utils.dicts['weapon_dict'][row['Group'].lower()]})"
         embed = discord.Embed(
             title=wotv_utils.name_str(row, type=0),
-            description=f"Cost: {row['Cost']}",
+            description=description,
             colour=wotv_utils.dicts['colours'][row['Element'].lower()]
         )
         embed.set_author(
@@ -139,6 +142,82 @@ class EmbedWotv():
         embed.add_field(name='WOTV-CALC',
                         value=wotv_utils.calc_url('units', row['English']),
                         inline=False)
+        return 0, [embed]
+
+    @classmethod
+    def unitlist(cls, arg):
+        """Generates list of units of specific element or weapon group."""
+        # Check if element or weapon type / job and initialise embed
+        ele = arg[0].lower().replace('lightning', 'thunder')
+        args = ' '.join(arg).lower()
+        for index, row in dfwotv.w_type.iterrows():
+            args = args.replace(index, row['VC'])
+        if ele in wotv_utils.dicts['colours'].keys() and ele != 'neutral':
+            df = dfwotv.tm[dfwotv.tm['Element'].str.lower() == ele]
+            split_col = 'Group'
+            embed = discord.Embed(
+                title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
+                colour=wotv_utils.dicts['colours'][ele]
+            )
+        elif args in wotv_utils.dicts['weapons']:
+            df = dfwotv.tm[dfwotv.tm['Group'].str.lower() == args]
+            split_col = 'Element'
+            embed_title = wotv_utils.dicts['emotes'][f"w_{args}"] + \
+                          f" {args.title()}"
+            if args in wotv_utils.dicts['weapon_dict'].keys():
+                embed_title = embed_title[:-1] + embed_title[-1].upper() + \
+                              f" ({wotv_utils.dicts['weapon_dict'][args]})"
+            embed = discord.Embed(
+                title=embed_title,
+                colour=wotv_utils.dicts['colours']['neutral']
+            )
+        else: # Return empty list if match fail, otherwise there has to be some results
+            return 1, []
+        # Initialise
+        embed.description = f"Refer to `=vl {args}` for list of relevant VCs."
+        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+                         url='https://wotv-calc.com/JP/units',
+                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+        list_dict = dict()
+        if split_col == 'Group': # For element
+            for group in wotv_utils.dicts['Weapons']:
+                list_dict[group] = dict()
+        else: # For weapon group
+            for element in wotv_utils.dicts['colours'].keys():
+                list_dict[element.title()] = dict()
+        for unit_dict in list_dict.values():
+            for rarity in wotv_utils.dicts['rarity']:
+                unit_dict[rarity] = []
+        # Add unit entry with respect to element/group and rarity
+        for _, row in df.iterrows():
+            list_dict[row[split_col]][row['Rarity']].append(row['English'])
+        # Generate embed fields
+        if split_col == 'Group':
+            line_list = []
+            for group, unit_dict in list_dict.items():
+                rarity_list = []
+                for rarity, unit_list in unit_dict.items():
+                    if not unit_list:
+                        continue
+                    rarity_list.append(f"{wotv_utils.dicts['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                if rarity_list:
+                    line_list.append(wotv_utils.dicts['emotes'][f"w_{group.lower()}"] + f" {' '.join(rarity_list)}")
+            tuple_list = cls.split_field(BLANK, line_list)
+            for _, field_value in tuple_list:
+                embed.add_field(name=BLANK, value=field_value, inline=False)
+        else:
+            for element, unit_dict in list_dict.items():
+                rarity_list = []
+                for rarity, unit_list in unit_dict.items():
+                    if not unit_list:
+                        continue
+                    rarity_list.append(f"{wotv_utils.dicts['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                if rarity_list:
+                    embed.add_field(
+                        name=f"{wotv_utils.dicts['emotes'][element.lower()]} {element}",
+                        value='\n'.join(rarity_list),
+                        inline=False
+                    )
         return 0, [embed]
 
     @classmethod
@@ -214,11 +293,10 @@ class EmbedWotv():
         if not re_match: # No condition
             return 1, []
         conditions = re_match.group().strip('[]').split('/')
-        split_type = 0
         if conditions[0].lower() in wotv_utils.dicts['colours'].keys():
-            split_type = 1 # 0: Group, 1: Element
+            split_col = 'Group'
         elif conditions[0] in wotv_utils.dicts['Weapons']:
-            split_type = 0
+            split_col = 'Element'
         else:
             return 1, [] # Not general condition
         embed = discord.Embed(
@@ -232,7 +310,7 @@ class EmbedWotv():
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         list_dict = dict()
-        if split_type: # For element
+        if split_col == 'Group': # For element
             for group in wotv_utils.dicts['Weapons']:
                 list_dict[group.lower()] = []
             embed_colours = []
@@ -241,32 +319,30 @@ class EmbedWotv():
                     wotv_utils.dicts['colours'][condition.lower()]
                 )
             embed.colour = random.choice(embed_colours)
-        else:
+        else: # For weapon group
             for element in wotv_utils.dicts['colours'].keys():
                 list_dict[element] = []
         df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
         for _, u_row in df.iterrows():
-            if split_type and u_row['Element'] in conditions:
-                list_dict[u_row['Group'].lower()].append(u_row['English'])
-            elif (not split_type) and u_row['Group'] in conditions:
-                list_dict[u_row['Element'].lower()].append(u_row['English'])
-        if split_type:
+            if u_row[split_col] in conditions:
+                list_dict[u_row[split_col].lower()].append(u_row['English'])
+        if split_col == 'Group':
             line_list = []
-            for key, unit_list in list_dict.items():
+            for group, unit_list in list_dict.items():
                 if not unit_list:
                     continue
                 line_list.append(
-                    wotv_utils.dicts['emotes'][f"w_{key}"] + ' ' + ' / '.join(unit_list),
+                    wotv_utils.dicts['emotes'][f"w_{group}"] + ' ' + ' / '.join(unit_list),
                 )
             tuple_list = cls.split_field(BLANK, line_list)
             for _, field_value in tuple_list:
                 embed.add_field(name=BLANK, value=field_value, inline=False)
         else:
-            for key, unit_list in list_dict.items():
+            for element, unit_list in list_dict.items():
                 if not unit_list:
                     continue
                 embed.add_field(
-                    name=f"{wotv_utils.dicts['emotes'][key]} {key.title()}",
+                    name=f"{wotv_utils.dicts['emotes'][element]} {element.title()}",
                     value=' / '.join(unit_list),
                     inline=False
                 )
@@ -413,23 +489,26 @@ class EmbedWotv():
             args = ele
             embed = discord.Embed(
                 title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
+                description=f"Refer to `=ul {args}` for list of relevant units.",
                 colour=wotv_utils.dicts['colours'][ele]
             )
         elif args in wotv_utils.dicts['weapons']:
-            w_emote = wotv_utils.dicts['emotes'][f"w_{args}"]
+            embed_title = wotv_utils.dicts['emotes'][f"w_{args}"] + \
+                          f" {args.title()}"
+            if args in wotv_utils.dicts['weapon_dict'].keys():
+                embed_title = embed_title[:-1] + embed_title[-1].upper() + \
+                              f" ({wotv_utils.dicts['weapon_dict'][args]})"
             embed = discord.Embed(
-                title=f"{w_emote} {args.title()}",
+                title=embed_title,
+                description=f"Refer to `=vl {args}` for list of relevant units.",
                 colour=wotv_utils.dicts['colours']['neutral']
             )
-            df_job = dfwotv.text[dfwotv.text['Key'] == 'vc_job']
-            if args in df_job['Title'].tolist():
-                embed.description = df_job[df_job['Title'] == args]['Body'].tolist()[0]
         else: # Return empty list if match fail, otherwise there has to be some results
             return 1, []
         # Initialise
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
                          url='https://wotv-calc.com/JP/cards',
-                        icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
         col_tuples = (
             ('Party Max', wotv_utils.dicts['emotes']['vcmax']),
             ('Party', '')
@@ -1088,6 +1167,7 @@ class EmbedWotv():
                 )
             for key, value in (
                 (('vc',), wotv_utils.help_vc),
+                (('unit',), wotv_utils.help_unit),
                 (('esper',), wotv_utils.help_esper),
                 (('eq', 'tm', 'equip', 'trust'), wotv_utils.help_eq),
                 (('param',), wotv_utils.help_param),
@@ -1576,9 +1656,22 @@ class WotvUnit(commands.Cog):
         """Unit information command."""
         await self.log.log(ctx.message)
         _, msg_content, msg_embeds = EmbedWotv.redirect(
-            arg, EmbedWotv.unitinfo, 'vc',
+            arg, EmbedWotv.unitinfo, 'unit',
             (
-                (EmbedWotv.tminfo, 'Trust Master Information (`=tm`)'),
+                (EmbedWotv.unitlist, 'Unit List (`=ul`)'),
+                (EmbedWotv.tminfo, 'Trust Master Information (`=tm`)')
+            )
+        )
+        await self.log.send(ctx, msg_content, embeds=msg_embeds)
+
+    @commands.command(aliases=['ul'])
+    async def wotvunitlist(self, ctx, *arg):
+        """Unit list command."""
+        await self.log.log(ctx.message)
+        _, msg_content, msg_embeds = EmbedWotv.redirect(
+            arg, EmbedWotv.unitlist, 'unit',
+            (
+                (EmbedWotv.unitinfo, 'Unit Information (`=unit`)'),
             )
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
