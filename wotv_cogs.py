@@ -411,7 +411,7 @@ class EmbedWotv():
                         if not eff_prefixes: # Special condition
                             eff_prefixes = [re_match.group()]
                             break
-                    if args not in eff.lower():
+                    if args not in effstr.lower():
                         if args == 'agi%':
                             if 'agi+' not in eff.lower():
                                 continue
@@ -423,7 +423,7 @@ class EmbedWotv():
                                 continue
                         else:
                             continue
-                    if args in eff.lower(): # Match Found
+                    if args in effstr.lower(): # Match Found
                         additional_icon = ''
                         if not eff_prefixes: # Add max effect element icon if universal
                             additional_icon = f" {''.join(suffix_icons)}"

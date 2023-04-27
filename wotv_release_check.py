@@ -18,7 +18,7 @@ for index, row in dfwotv.tm.iterrows():
     add_release(release_dict, row['Release'], index)
     if row['EX']:
         add_release(release_dict, row['EX'], f"{index} EX")
-    if row['Rein']:
+    if row['TR']:
         add_release(release_dict, row['TR'], f"{index} TR")
     if row['MA2']:
         add_release(release_dict, row['MA2'], f"{index} MA2")
