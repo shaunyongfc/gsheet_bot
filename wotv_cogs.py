@@ -99,6 +99,49 @@ class EmbedWotv():
         return embed_list
 
     @classmethod
+    def unitinfo(cls, arg):
+        """Generates unit information embed."""
+        df = dfwotv.tm
+        row_error, row = wotv_utils.find_row(df, ' '.join(arg),
+                                             col_list=('English', 'Aliases'))
+        if row_error:
+            return row_error, row
+        embed = discord.Embed(
+            title=wotv_utils.name_str(row, type=0),
+            description=f"Cost: {row['Cost']}",
+            colour=wotv_utils.dicts['colours'][row['Element'].lower()]
+        )
+        embed.set_author(
+            name=wotv_utils.dicts['embed']['author_name'],
+            url='https://wotv-calc.com/JP/units',
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+        )
+        embed.add_field(
+            name='Trust Master',
+            value='\n'.join((wotv_utils.name_str(
+                row, name='TM English', backup_name='TM Name',
+                element=0, group=0
+            ), f"Refer to `=tm {row['English']}`")),
+            inline=False
+        )
+        release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
+        if row['Pool'] != 'Regular':
+            release_str += f" ({row['Pool']})"
+        if row['EX']:
+            release_str += f"\n**EX Job**: {datetime.strftime(datetime.strptime(str(row['EX']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        if row['TR']:
+            release_str += f"\n**Transcendence**: {datetime.strftime(datetime.strptime(str(row['TR']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        if row['MA2']:
+            release_str += f"\n**MA2**: {datetime.strftime(datetime.strptime(str(row['MA2']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        embed.add_field(name='Release', value=release_str, inline=False)
+        if row['Url']:
+            embed.set_thumbnail(url=row['Url'])
+        embed.add_field(name='WOTV-CALC',
+                        value=wotv_utils.calc_url('units', row['English']),
+                        inline=False)
+        return 0, [embed]
+
+    @classmethod
     def vcinfo(cls, arg):
         """Generates vision card information embed."""
         df = dfwotv.vc
@@ -180,7 +223,7 @@ class EmbedWotv():
             return 1, [] # Not general condition
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='NAME'),
-            description=f"`=vc {row['Aliases'].split(' / ')[0]}` for other info.",
+            description=f"`=vc {row['Aliases'].split(' / ')[0]}` for VC info.",
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
@@ -826,12 +869,12 @@ class EmbedWotv():
         tuple_list = cls.split_field(BLANK, eqstr_list)
         embed = discord.Embed(
             title=f"List of {col} - {match_str}",
-            colour = wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dicts['embed']['author_name'],
             url='https://wotv-calc.com/JP/equipment',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list)
         return 0, embed_list
@@ -848,14 +891,14 @@ class EmbedWotv():
         if row['Restriction']:
             description_list.append(f"*Restriction: {row['Restriction']}*")
         embed = discord.Embed(
-            title = wotv_utils.name_str(row, name='TM Name', element=0, group=0),
-            description = '\n'.join(description_list),
-            colour = wotv_utils.dicts['embed']['default_colour']
+            title=wotv_utils.name_str(row, name='TM Name', element=0, group=0),
+            description='\n'.join(description_list),
+            colour=wotv_utils.dicts['colours'][row['Element'].lower()]
         )
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dicts['embed']['author_name'],
             url='https://wotv-calc.com/JP/units',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         stat_list = []
         for stat_name in wotv_utils.dicts['tm_stats']:
@@ -886,8 +929,8 @@ class EmbedWotv():
                 name=skill_name,
                 value='\n'.join([skill_range] + row['Skill'].split(' / '))
             )
-        if row['Url']:
-            embed.set_thumbnail(url=row['Url'])
+        if row['TM Url']:
+            embed.set_thumbnail(url=row['TM Url'])
         if row['TM English']:
             embed.add_field(
                 name='WOTV-CALC',
@@ -984,9 +1027,9 @@ class EmbedWotv():
                 embed.colour = colour_code
                 break
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dicts['embed']['author_name'],
             url='https://wotv-calc.com/JP/units',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list, embed_limit=3)
         if not embed_list:
@@ -1025,8 +1068,8 @@ class EmbedWotv():
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dicts['embed']['author_name'],
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(
             embed, tuple_list, inline_num=1, embed_limit=3
@@ -1060,8 +1103,8 @@ class EmbedWotv():
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dicts['embed']['author_name'],
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         for f_name, f_value in help_tuples:
             embed.add_field(name=f_name, value=f_value, inline=False)
@@ -1416,11 +1459,11 @@ class WotvGeneral(commands.Cog):
         """Return recent changelogs."""
         await self.log.log(ctx.message)
         embed = discord.Embed(
-            colour = wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dicts['embed']['author_name'],
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
         )
         embed.title = 'Ildyra Bot Changelog'
         try:
@@ -1521,6 +1564,25 @@ class WotvGeneral(commands.Cog):
         await self.log.send(ctx, 'The tamagotchi function has been discontinued. Thank you for your support.')
 
 
+class WotvUnit(commands.Cog):
+    """Discord cog with WOTV units commands."""
+    def __init__(self, bot, bot_log):
+        """Registers associated bot."""
+        self.bot = bot
+        self.log = bot_log
+
+    @commands.command(aliases=['unit'])
+    async def wotvunit(self, ctx, *arg):
+        """Unit information command."""
+        await self.log.log(ctx.message)
+        _, msg_content, msg_embeds = EmbedWotv.redirect(
+            arg, EmbedWotv.unitinfo, 'vc',
+            (
+                (EmbedWotv.tminfo, 'Trust Master Information (`=tm`)'),
+            )
+        )
+        await self.log.send(ctx, msg_content, embeds=msg_embeds)
+
 class WotvEquipment(commands.Cog):
     """Discord cog with WOTV equipment commands."""
     def __init__(self, bot, bot_log):
@@ -1535,7 +1597,7 @@ class WotvEquipment(commands.Cog):
         _, msg_content, msg_embeds = EmbedWotv.redirect(
             arg, EmbedWotv.tminfo, 'eq',
             (
-                (EmbedWotv.tmsearch, 'Trust Master Search (`=tms`)'),
+                (EmbedWotv.eqlist, 'Equipment List (`=eql`)'),
             )
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
@@ -1580,9 +1642,9 @@ class WotvEquipment(commands.Cog):
                     description='List of arguments for equipment list command `=eql`'
                 )
                 embed.set_author(
-                    name = wotv_utils.dicts['embed']['author_name'],
+                    name=wotv_utils.dicts['embed']['author_name'],
                     url='https://wotv-calc.com/JP/equipment',
-                    icon_url = wotv_utils.dicts['embed']['author_icon_url']
+                    icon_url=wotv_utils.dicts['embed']['author_icon_url']
                 )
                 for col, eq_set in wotv_utils.dicts['eq_sets'].items():
                     embed.add_field(

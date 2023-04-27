@@ -455,7 +455,7 @@ class WotvUtils:
             urlstr = urlstr.replace(a, b)
         return f"[{namestr}]({calc_url + urlstr})"
 
-    def find_row(self, df, args):
+    def find_row(self, df, args, col_list='DEFAULT'):
         """Tolerance processing for query to find the correct entry.
         Return a tuple with a boolean indicating the correct entry is found.
         If false, return a list of suggestions."""
@@ -474,7 +474,8 @@ class WotvUtils:
             for index, row in df_name.iterrows():
                 if args == index.lower():
                     return 0, row
-        col_list = ('English', 'Aliases', 'TM Name', 'TM English')
+        if col_list == 'DEFAULT':
+            col_list = ('English', 'Aliases', 'TM Name', 'TM English')
         df_tuples = []
         for col in col_list:
             if col in df.columns:
