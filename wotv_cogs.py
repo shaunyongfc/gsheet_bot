@@ -107,6 +107,7 @@ class EmbedWotv():
             return row_error, row
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='NAME'),
+            description=f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units.",
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
@@ -161,7 +162,7 @@ class EmbedWotv():
         return 0, [embed]
 
     @classmethod
-    def vcparty(cls, arg):
+    def vcunits(cls, arg):
         """Generates list of units applicable to the vc."""
         row_error, row = wotv_utils.find_row(dfwotv.vc, ' '.join(arg))
         if row_error:
@@ -179,6 +180,7 @@ class EmbedWotv():
             return 1, [] # Not general condition
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='NAME'),
+            description=f"`=vc {row['Aliases'].split(' / ')[0]}` for other info.",
             colour=wotv_utils.dicts['embed']['default_colour']
         )
         embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
@@ -1650,12 +1652,12 @@ class WotvVc(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['vcp', 'vp', 'Vcp', 'Vp'])
-    async def wotvvcparty(self, ctx, *arg):
+    @commands.command(aliases=['vcu', 'vu', 'Vcu', 'Vu'])
+    async def wotvvcunits(self, ctx, *arg):
         """Search relevant units by vc."""
         await self.log.log(ctx.message)
         _, msg_content, msg_embeds = EmbedWotv.redirect(
-            arg, EmbedWotv.vcparty, 'vc',
+            arg, EmbedWotv.vcunits, 'vc',
             (
                 (EmbedWotv.vcinfo, 'Vision Card Information (`=vc`)'),
                 (EmbedWotv.vclist, 'Vision Card List (`=vcl`)'),

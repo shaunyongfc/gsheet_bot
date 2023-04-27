@@ -465,48 +465,34 @@ class WotvUtils:
         except UnicodeEncodeError: # Check if arguments are in Japanese
             # Different space for Japanese
             args = '　'.join(args.split())
-        try:
+        # Exact match first
+        if args in df.index: # Exact match + match case
             row = df.loc[args]
             return 0, row
-        except KeyError:
-            df_name = df[df.index.str.lower().str.contains(args)]
-            if len(df_name) > 0:
-                for index, row in df_name.iterrows():
-                    if args == index.lower():
-                        return 0, row
-            if 'Aliases' in df.columns:
-                df_aliases = df[df['Aliases'].str.lower().str.contains(args)]
-                if len(df_aliases) > 0:
-                    for _, row in df_aliases.iterrows():
-                        if args in [a.lower() for a in
-                                      row['Aliases'].split(' / ')]:
+        df_name = df[df.index.str.lower().str.contains(args)]
+        if len(df_name):
+            for index, row in df_name.iterrows():
+                if args == index.lower():
+                    return 0, row
+        col_list = ('English', 'Aliases', 'TM Name', 'TM English')
+        df_tuples = []
+        for col in col_list:
+            if col in df.columns:
+                df_filtered = df[df[col].str.lower().str.contains(args)]
+                if len(df_filtered):
+                    for _, row in df_filtered.iterrows():
+                        if args in row[col].lower().split(' / '):
                             return 0, row
-            else:
-                df_aliases = pd.DataFrame()
-            if 'English' in df.columns:
-                df_english = df[df['English'].str.lower().str.contains(args)]
-                if len(df_english) > 0:
-                    for _, row in df_english.iterrows():
-                        if args == row['English'].lower():
-                            return 0, row
-            else:
-                df_english = pd.DataFrame()
-            if len(df_name) == 1:
-                return 0, df_name.iloc[0]
-            elif len(df_english) == 1:
-                return 0, df_english.iloc[0]
-            elif len(df_aliases) == 1:
-                return 0, df_aliases.iloc[0]
-            else:
-                suggestion_list = df_name.index.tolist()
-                if len(df_english) > 0:
-                    suggestion_list = suggestion_list\
-                                      + df_english['English'].tolist()
-                for alias_list in df_aliases['Aliases'].tolist():
-                    for suggestion in alias_list.split(' / '):
-                        if suggestion != '':
-                            suggestion_list.append(suggestion)
-                return 1, suggestion_list
+                    df_tuples.append((col, df_filtered))
+        # Subset match & generate list of suggestions
+        if len(df_name) == 1:
+            return 0, df_name.iloc[0]
+        suggestion_list = df_name.index.tolist()
+        for col, col_df in df_tuples:
+            if len(col_df) == 1:
+                return 0, col_df.iloc[0]
+            suggestion_list.extend(col_df[col].tolist())
+        return 1, suggestion_list
 
     def get_cryst(self, row):
         """Given DataFrame row of equipment, return text string for the
