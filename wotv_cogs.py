@@ -500,7 +500,7 @@ class EmbedWotv():
                               f" ({wotv_utils.dicts['weapon_dict'][args]})"
             embed = discord.Embed(
                 title=embed_title,
-                description=f"Refer to `=vl {args}` for list of relevant units.",
+                description=f"Refer to `=ul {args}` for list of relevant units.",
                 colour=wotv_utils.dicts['colours']['neutral']
             )
         else: # Return empty list if match fail, otherwise there has to be some results
