@@ -105,14 +105,38 @@ class WotvUtils:
             'Weapons': ('SwordA', 'SwordB', 'SwordC', 'StaffA', 'StaffB', 'GS',
                         'Spear', 'Axe', 'Bow', 'Gun', 'Fist', 'Dagger', 'NB',
                         'Katana', 'Mace', 'Glove', 'Book'), # capitalized and ordered
-            'weapon_dict': {
+            'weapon_dict': { # representative job
                 'sworda': 'Red Mage',
                 'swordb': 'Warrior',
                 'swordc': 'Knight',
                 'staffa': 'Black Mage',
                 'staffb': 'Devout',
             },
-            'rarity': ('UR', 'SSR', 'SR', 'R', 'N')
+            'rarity': ('UR', 'SSR', 'SR', 'R', 'N'),
+            'history_tuples': ( # process args
+                (('eq', 'equip'), (['Release', 'Release+'], [], []), 3),
+                (('hq',), (['Release+'], [], []), 6),
+                (('vc', 'vcs'), ([], ['Release'], []), 6),
+                (('unit', 'units'), ([], [], ['Release', 'EX', 'TR', 'MA2']), 3),
+                (('ex',), ([], [], ['EX']), 6),
+                (('tr', 'rein', '140'), ([], [], ['TR']), 3),
+                (('ma2',), ([], [], ['MA2']), 6)
+            ),
+            'history_replace': { # column name to heading
+                'Release+': 'Heartquartz'
+            },
+            'history_formats': ( # tolerance processing for date
+                '%Y%m',
+                '%y%m',
+                '%B%Y',
+                '%b%Y',
+                '%B%y',
+                '%b%y'
+            ),
+            'history_headings': ( # to order properly
+                'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N'
+                'MA2', 'VC', 'EQ', 'Heartquartz'
+            )
         }
         self.dicts_sets_init()
         self.update_text()
@@ -174,7 +198,7 @@ class WotvUtils:
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_unit']
         self.help_unit = []
         for _, row in df.iterrows():
-            self.help_unit.append((row['Title'], body))
+            self.help_unit.append((row['Title'], row['Body']))
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_vc']
         self.help_vc = []
         for _, row in df.iterrows():
@@ -400,7 +424,8 @@ class WotvUtils:
         if 'Element' in row.index and element:
             prefix_str += self.dicts['emotes'][row['Element'].lower()]
         if 'Group' in row.index and group:
-            prefix_str += self.dicts['emotes'][f"w_{row['Group'].lower()}"]
+            if row['Group'] in self.dicts['Weapons']: # In case of Hope
+                prefix_str += self.dicts['emotes'][f"w_{row['Group'].lower()}"]
         if 'Rarity' in row.index and rarity:
             prefix_str += self.dicts['emotes'][row['Rarity'].lower()]
         if 'Type' in row.index and type: # EQ

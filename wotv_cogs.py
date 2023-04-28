@@ -1156,6 +1156,89 @@ class EmbedWotv():
         return 0, embed_list
 
     @classmethod
+    def history(cls, arg):
+        """Generates embeds of release history."""
+        end = datetime.now(tz=timezone(timedelta(hours=9)))\
+                          .replace(tzinfo=None)
+        period = 3
+        start = end - timedelta(days=period * 30)
+        cols = (['Release'], ['Release'], ['Release'])
+        # eq, vc, unit
+        for args in arg:
+            for args_match, args_cols, args_period in \
+                    wotv_utils.dicts['history_tuples']:
+                if args.lower() in args_match:
+                    cols = args_cols
+                    pediod = args_period
+            for history_format in wotv_utils.dicts['history_formats']:
+                try:
+                    args_start = datetime.strptime(args, history_format)
+                    if args_start < end:
+                        start = args_start
+                    break
+                except ValueError:
+                    args_start = None
+        end = start + timedelta(days=period * 30)
+        date_dict = dict()
+        history_replace = wotv_utils.dicts['history_replace']
+        for i, (df_name, df) in enumerate(
+            [('EQ', dfwotv.eq), ('VC', dfwotv.vc), ('Unit', dfwotv.tm)]
+                ):
+            if not cols[i]:
+                continue
+            history_replace['Release'] = df_name
+            for _, row in df.iterrows():
+                for col in cols[i]:
+                    if not row[col]:
+                        continue
+                    history_date = datetime.strptime(str(row[col]), DFDTFORMAT)
+                    if start <= history_date <= end:
+                        if col == 'TR':
+                            heading = f"TR {row['Rarity']}"
+                            name_str = wotv_utils.name_str(row, rarity=0, type=0)
+                        elif df_name == 'Unit':
+                            heading = col
+                            name_str = wotv_utils.name_str(row, type=0)
+                        else:
+                            heading = col
+                            name_str = wotv_utils.name_str(row)
+                        if col in history_replace.keys():
+                            heading = history_replace[col]
+                        if row[col] not in date_dict.keys():
+                            date_dict[row[col]] = dict()
+                        if heading not in date_dict[row[col]].keys():
+                            date_dict[row[col]][heading] = [name_str]
+                        else:
+                            date_dict[row[col]][heading].append(name_str)
+        tuple_list = []
+        for release_date in sorted(list(date_dict.keys())):
+            date_list = []
+            for heading in wotv_utils.dicts['history_headings']:
+                if heading not in date_dict[release_date].keys():
+                    continue
+                if heading.split()[0] == 'TR':
+                    rarity = wotv_utils.dicts['emotes'][heading.split()[1].lower()]
+                    heading_str = f"**Transcendence** {rarity}"
+                else:
+                    heading_str = f"**{heading}**"
+                date_list.append(f"{heading_str} {' '.join(date_dict[release_date][heading])}")
+            tuple_list.extend(cls.split_field(
+                datetime.strftime(datetime.strptime(
+                    str(release_date), DFDTFORMAT), EMBEDDTFORMAT),
+                date_list
+            ))
+        embed = discord.Embed(
+            title='WOTV History',
+            colour=wotv_utils.dicts['embed']['default_colour']
+        )
+        embed.set_author(
+            name=wotv_utils.dicts['embed']['author_name'],
+            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+        )
+        embed_list = cls.split_embed(embed, tuple_list, inline_num=0)
+        return 0, embed_list
+
+    @classmethod
     def help(cls, arg):
         """Generates help embed."""
         help_tuples = wotv_utils.help_general # Default help
@@ -1301,6 +1384,13 @@ class WotvGeneral(commands.Cog):
         """Customised help command."""
         await self.log.log(ctx.message)
         _, embed_list = EmbedWotv.help(arg)
+        await self.log.send(ctx, embeds=embed_list)
+
+    @commands.command(aliases=['history', 'release'])
+    async def wotvhistory(self, ctx, *arg):
+        """Generate embeds of WOTV release history."""
+        await self.log.log(ctx.message)
+        _, embed_list = EmbedWotv.history(arg)
         await self.log.send(ctx, embeds=embed_list)
 
     @commands.command(aliases=['materia', 'materias', 'Materia', 'Materias',
