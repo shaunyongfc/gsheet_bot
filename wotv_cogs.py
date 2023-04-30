@@ -1173,7 +1173,7 @@ class EmbedWotv():
             for history_format in wotv_utils.dicts['history_formats']:
                 try:
                     args_start = datetime.strptime(args, history_format)
-                    if args_start < end:
+                    if args_start < end + timedelta(days=30):
                         start = args_start
                     break
                 except ValueError:
