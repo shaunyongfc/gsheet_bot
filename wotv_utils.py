@@ -134,7 +134,7 @@ class WotvUtils:
                 '%b%y'
             ),
             'history_headings': ( # to order properly
-                'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N'
+                'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N',
                 'MA2', 'VC', 'EQ', 'Heartquartz'
             )
         }
