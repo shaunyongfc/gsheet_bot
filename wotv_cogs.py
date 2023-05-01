@@ -294,8 +294,10 @@ class EmbedWotv():
             return 1, []
         conditions = re_match.group().strip('[]').split('/')
         if conditions[0].lower() in wotv_utils.dicts['colours'].keys():
+            condition_col = 'Element'
             split_col = 'Group'
         elif conditions[0] in wotv_utils.dicts['Weapons']:
+            condition_col = 'Group'
             split_col = 'Element'
         else:
             return 1, [] # Not general condition
@@ -310,7 +312,7 @@ class EmbedWotv():
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         list_dict = dict()
-        if split_col == 'Group': # For element
+        if split_col == 'Group': # Splitting by weapon group
             for group in wotv_utils.dicts['Weapons']:
                 list_dict[group.lower()] = []
             embed_colours = []
@@ -319,12 +321,12 @@ class EmbedWotv():
                     wotv_utils.dicts['colours'][condition.lower()]
                 )
             embed.colour = random.choice(embed_colours)
-        else: # For weapon group
+        else: # Splitting by element
             for element in wotv_utils.dicts['colours'].keys():
                 list_dict[element] = []
         df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
         for _, u_row in df.iterrows():
-            if u_row[split_col] in conditions:
+            if u_row[condition_col] in conditions:
                 list_dict[u_row[split_col].lower()].append(u_row['English'])
         if split_col == 'Group':
             line_list = []
