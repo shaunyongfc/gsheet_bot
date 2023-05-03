@@ -75,7 +75,7 @@ def process_esper(df_row):
     Read data for 1 esper and add rarity frame, element agi and
     specific buff icons.
     """
-    im_name = f"{df_row['Esper']}.webp"
+    im_name = f"{df_row['English']}.webp"
     image = Image.new("RGBA", (ICON_SIZE, ICON_SIZE))
     # Esper base
     base = Image.open(os.path.join(FOLDER, "esper_base", im_name))
@@ -183,7 +183,7 @@ def make_chart():
     ## Generate list of lists
     esper_lists = [[[] for _ in range(6)] for _ in range(10)]
     for _, df_row in df.iterrows():
-        esper_tuple = (df_row["Esper"], df_row["AGI"])
+        esper_tuple = (df_row['English'], df_row["AGI"])
         atk_ups = str(df_row["ATK Up"])
         a_up = 0
         e_up = 0
