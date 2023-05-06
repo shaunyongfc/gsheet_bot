@@ -136,7 +136,20 @@ class WotvUtils:
             'history_headings': ( # to order properly
                 'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N',
                 'MA2', 'VC', 'EQ', 'Heartquartz'
-            )
+            ),
+            'gr_debuffs': (
+                'Slow', 'AGI', 'Single RES', 'Area RES', 'ELE RES', 'All Elemental RES',
+                'Slash RES', 'Pierce RES', 'Strike RES', 'Missile RES', 'Magic RES', 'All Type RES',
+                'DEF', 'SPR', 'Special'
+            ),
+            'gr_types': {
+                'SL': 'Slash',
+                'PI': 'Pierce',
+                'ST': 'Strike',
+                'MS': 'Missile',
+                'MG': 'Magic',
+                'TL': 'Typeless'
+            }
         }
         self.dicts_sets_init()
         self.update_text()
@@ -588,6 +601,39 @@ class WotvUtils:
                 if len(col_list) == 1:
                     col = col_list[0]
         return col, args
+
+    def gr_parse(self, effstr, include_type=False, omit_1H=True, include_value=True):
+        """Parse the contents in the tm (unit) google sheet regarding debuffs
+        and multihits for guild raid functionality.
+        """
+        parsed_str = ''
+        while effstr:
+            try:
+                prefix, suffix = effstr.split(' ', 1)
+            except ValueError:
+                break
+            if prefix in ('LB', 'Slow', 'Crit'):
+                parsed_str += f"{prefix} "
+                effstr = suffix
+            elif prefix == 'OE':
+                parsed_str += 'Off-Element '
+                effstr = suffix
+            else:
+                break
+        if effstr[0] == 'A':
+            parsed_str += 'AoE '
+            effstr = effstr[1:]
+        if effstr[0] == '0':
+            parsed_str += 'Non-Attack'
+            effstr = effstr[2:]
+        else:
+            if not omit_1H or effstr[0] != '1':
+                parsed_str += f"{effstr[0]}-Hit"
+            if include_type:
+                parsed_str += f" {self.dicts['gr_types'][effstr[2:4]]}"
+            effstr = effstr[4:]
+        parsed_str += effstr
+        return parsed_str.strip()
 
     def rand(self, ffbe, *arg):
         """Random command to return a random value depending on given inputs.

@@ -4,6 +4,7 @@ import itertools
 import pandas as pd
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
+from collections import defaultdict
 
 from gsheet_handler import DfHandlerWotv
 from wotv_utils import WotvUtils
@@ -371,7 +372,8 @@ class EmbedWotv():
         for key in ('pUR', 'p', 'uUR', 'u'):
             vc_dicts[key] = {k: [] for k in wotv_utils.dicts['colours'].keys()}
         # Search df
-        for _, row in df.iterrows():
+        for _, row in df.sort_values(
+                ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             vc_ele = '' # Determined by max effect for universal vc
             vcdict = {'p': [], 'u': []} # List of party and unit effects
             suffix_icons = []
@@ -896,7 +898,7 @@ class EmbedWotv():
         eqstr_list = []
         # Search df
         for _, row in df.sort_values(
-                ['Rarity', 'Release'], ascending=[False, True]).iterrows():
+                ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             if args in row['Passive'].lower() or args in row['Extra'].lower():
                 eqstr_list.append(wotv_utils.eq_str(row))
         if not eqstr_list: # No match
@@ -1075,7 +1077,7 @@ class EmbedWotv():
                 .copy(deep=True)
             df_filtered[args.upper()] = pd.to_numeric(df_filtered[args.upper()])
             if len(df_filtered):
-                row_df = df_filtered.nlargest(20, args.upper())
+                row_df = df_filtered.nlargest(50, args.upper())
             for _, row in row_df.iterrows():
                 statstr_list.append(wotv_utils.tm_str(row, 'stat'))
         elif args or target == 'NONE': # PASSIVE
@@ -1241,6 +1243,164 @@ class EmbedWotv():
         return 0, embed_list
 
     @classmethod
+    def guildraid(cls, arg):
+        """(Prototype) Generates guild raid embed from unit data for useful units.
+        """
+        # Check if element or weapon type / job and initialise embed
+        if not arg: # Basic latest guild raid info
+            df = dfwotv.text[dfwotv.text['Key'] == 'guild_raid']
+            embed = discord.Embed(
+                title='Guild Raid',
+                description=df[df['Title'] == 'Embed']['Body'].tolist()[0],
+                colour=wotv_utils.dicts['embed']['default_colour']
+            )
+            embed.set_author(
+                name=wotv_utils.dicts['embed']['author_name'],
+                icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            )
+            df = df[df['Title'] != 'Embed']
+            for _, row in df.iterrows():
+                embed.add_field(
+                    name=row['Title'],
+                    value=row['Body'],
+                    inline=False
+                )
+            return 0, [embed]
+        ele = arg[0].lower().replace('lightning', 'thunder')
+        args = ' '.join(arg).lower()
+        for index, row in dfwotv.w_type.iterrows():
+            args = args.replace(index, row['VC'])
+        if ele in wotv_utils.dicts['colours'].keys() and ele != 'neutral':
+            args = ele
+            embed = discord.Embed(
+                title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
+                colour=wotv_utils.dicts['colours'][ele]
+            )
+        else:
+            return cls.guildraid([])
+        # Boss info if designated at latest GR
+        df = dfwotv.text[dfwotv.text['Key'] == 'gr_ele']
+        df = df[df['Title'] == ele.title()]
+        if len(df):
+            embed.description = df['Body'].tolist()[0]
+        else:
+            embed.description = 'No designated boss for this element.'
+        # Get multihit VCs into dict
+        vc_dict = dict()
+        df = dfwotv.text[dfwotv.text['Key'] == 'gr_vc']
+        for _, row in df.iterrows():
+            vc_dict[row['Title']] = row['Body']
+        # Initialise
+        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+                     url='https://wotv-calc.com/JP/cards',
+                     icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+        df = dfwotv.tm[dfwotv.tm['Element'] == args.title()]
+        debuff_main = {key: [] for key in wotv_utils.dicts['gr_debuffs']} # Proper order
+        debuff_sub = {key: [] for key in wotv_utils.dicts['gr_debuffs']} # Proper order
+        list_dps = [] # DPS without debuffs
+        # Loop all eligible units
+        for _, row in df.iterrows():
+            unit_name = wotv_utils.name_str(row, type=0, element=0)
+            multihit_strs = []
+            multihit_innate = 0
+            unit_dict = defaultdict(list)
+            # Each debuff
+            # TBD: only either Slow or AGI depending on boss?
+            if row['DB Slow']:
+                for eff in row['DB Slow'].split(' / '):
+                    unit_dict['Slow'].append(wotv_utils.gr_parse(eff))
+            if row['DB AGI']:
+                for eff in row['DB AGI'].split(' / '):
+                    unit_dict['AGI'].append(wotv_utils.gr_parse(eff))
+            if row['DB Target']:
+                for eff in row['DB Target'].split(' / '):
+                    if eff[0] == 'S':
+                        unit_dict['Single RES'].append(wotv_utils.gr_parse(eff[2:]))
+                    else:
+                        unit_dict['Area RES'].append(wotv_utils.gr_parse(eff[2:]))
+            if row['DB Element']:
+                for eff in row['DB Element'].split(' / '):
+                    if eff[:3] == 'All':
+                        unit_dict['All Elemental RES'].append(wotv_utils.gr_parse(eff[4:]))
+                    else:
+                        unit_dict['ELE RES'].append(wotv_utils.gr_parse(eff))
+            if row['DB Type']:
+                for eff in row['DB Type'].split(' / '):
+                    if eff[:3] == 'All':
+                        unit_dict['All Type RES'].append(wotv_utils.gr_parse(eff[4:]))
+                    else:
+                        unit_dict[f"{wotv_utils.dicts['gr_types'][eff[:2]]} RES"]\
+                            .append(wotv_utils.gr_parse(eff[3:]))
+            if row['DB DEF']:
+                for eff in row['DB DEF'].split(' / '):
+                    unit_dict['DEF'].append(wotv_utils.gr_parse(eff))
+            if row['DB SPR']:
+                for eff in row['DB SPR'].split(' / '):
+                    unit_dict['SPR'].append(wotv_utils.gr_parse(eff))
+            if row['DB Special']:
+                for eff in row['DB Special'].split(' / '):
+                    prefix, suffix = eff.split(' ', 1)
+                    unit_dict['Special'].append(f"{prefix.replace('_', ' ')} {wotv_utils.gr_parse(suffix)}")
+            # Check for DPS capabilities
+            if row['Multihit']:
+                for eff in row['Multihit'].split(' / '):
+                    multihit_strs.append(wotv_utils.gr_parse(eff, include_type=True))
+                    multihit_innate = 1
+                    # TBD: to check whether > 3 hits at least for list_dps?
+            weapons = row['Sub Weapon'].split(' / ')
+            weapons.insert(0, row['Group'].rstrip('ABC'))
+            for weapon in weapons:
+                if weapon in vc_dict.keys():
+                    pmh, vc_str = vc_dict[weapon].split()
+                    if row['PMH'] == 'H' or row['PMH'] == pmh:
+                        multihit_strs.append(vc_str)
+            # Add to result dict
+            if multihit_strs:
+                row_dict = debuff_main
+                suffix_str = f" ({', '.join(multihit_strs)})"
+            else:
+                row_dict = debuff_sub
+                suffix_str = ''
+            for key, value_list in unit_dict.items():
+                unit_str = unit_name
+                value_str = ' or '.join(value_list)
+                if value_str:
+                    unit_str += f" [{value_str}]"
+                unit_str += suffix_str
+                row_dict[key].append(unit_str)
+                suffix_str = ''
+            if multihit_innate and not unit_dict:
+                list_dps.append(f"{unit_name}{suffix_str}")
+        # Rearrange dict of lists into lists of strs
+        debuff_main_strs = []
+        tuple_list = []
+        for key, value_list in debuff_main.items():
+            if not value_list:
+                continue
+            if key == 'ELE RES':
+                heading = f"{args.title()} RES"
+            else:
+                heading = key
+            tuple_list.extend(cls.split_field(heading, value_list))
+        tuple_list.extend(cls.split_field('Other DPS', list_dps))
+        debuff_sub_strs = []
+        for key, value_list in debuff_sub.items():
+            if not value_list:
+                continue
+            if key == 'ELE RES':
+                heading = f"{args.title()} RES"
+            else:
+                heading = key
+            debuff_sub_strs.append(f"**{heading}**: {', '.join(value_list)}")
+        tuple_list.extend(
+            cls.split_field('Debuffer Alternatives', debuff_sub_strs)
+        )
+        embed_list = cls.split_embed(
+            embed, tuple_list, inline_num=0, embed_limit=3
+        )
+        return 0, embed_list
+
+    @classmethod
     def help(cls, arg):
         """Generates help embed."""
         help_tuples = wotv_utils.help_general # Default help
@@ -1393,6 +1553,13 @@ class WotvGeneral(commands.Cog):
         """Generate embeds of WOTV release history."""
         await self.log.log(ctx.message)
         _, embed_list = EmbedWotv.history(arg)
+        await self.log.send(ctx, embeds=embed_list)
+
+    @commands.command(aliases=['gr', 'guildraid'])
+    async def wotvgr(self, ctx, *arg):
+        """(Prototype) Generate guild raid related embeds."""
+        await self.log.log(ctx.message)
+        _, embed_list = EmbedWotv.guildraid(arg)
         await self.log.send(ctx, embeds=embed_list)
 
     @commands.command(aliases=['materia', 'materias', 'Materia', 'Materias',
