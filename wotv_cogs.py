@@ -645,7 +645,7 @@ class EmbedWotv():
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         embed.add_field(name='WOTV-CALC',
-                        value=wotv_utils.calc_url('esper', row.name),
+                        value=wotv_utils.calc_url('esper', row['English']),
                         inline=False)
         return 0, [embed]
 
@@ -1071,6 +1071,7 @@ class EmbedWotv():
         if len(arg) > 1: # In case first two words are used for eq type
             type_args.append(' '.join(arg[:2]).lower())
         type_args.append(arg[0].lower())
+        eqtype_filter = ''
         eqtype_candidates = []
         for i, type_arg in enumerate(type_args):
             for index, row in dfwotv.eq_type.iterrows():
@@ -1079,6 +1080,7 @@ class EmbedWotv():
                 eqtype_str = eqtype.split(' - ')[-1].lower()
                 if type_arg in eqtype_str:
                     eqtype_candidates.append((i, eqtype))
+
         if len(eqtype_candidates) == 1:
             arg = arg[2-eqtype_candidates[0][0]:]
             eqtype_filter = eqtype_candidates[0][1]
@@ -1383,7 +1385,11 @@ class EmbedWotv():
             if row['DB Special']:
                 for eff in row['DB Special'].split(' / '):
                     prefix, suffix = eff.split(' ', 1)
-                    unit_dict['Special'].append(f"{prefix.replace('_', ' ').strip()} {wotv_utils.gr_parse(suffix)}")
+                    special_str = prefix.replace('_', ' ')
+                    special_suffix = wotv_utils.gr_parse(suffix)
+                    if special_suffix:
+                        special_str += f" {special_suffix}"
+                    unit_dict['Special'].append(special_str)
             # Check for DPS capabilities
             if row['Multihit']:
                 for eff in row['Multihit'].split(' / '):
