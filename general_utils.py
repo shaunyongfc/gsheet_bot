@@ -16,7 +16,7 @@ class GeneralUtils():
         self.token = os.getenv('TOKEN')
         self.dfgen = dfgen
         self.res = re.compile(r'&\w+') # Regex for shortcuts.
-        self.opdicts = { # For mathematical calculations.
+        self.opdict = { # For mathematical calculations.
             '+': (lambda a, b: a + b),
             '-': (lambda a, b: a - b),
             '*': (lambda a, b: a * b),
@@ -123,7 +123,7 @@ class GeneralUtils():
                        + self.math(mathstr[b_start+1:b_end].strip())
                        + mathstr[b_end+1:].strip())
         operation_found = 0
-        for opstr, opfunc in self.opdicts.items():
+        for opstr, opfunc in self.opdict.items():
             # Check which operation to execute. Lowest priority first.
             op_index_list = [i for i, a in enumerate(mathstr) if a == opstr]
             if len(op_index_list) > 0:

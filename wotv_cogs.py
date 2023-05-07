@@ -11,10 +11,10 @@ from wotv_utils import WotvUtils
 
 dfwotv = DfHandlerWotv()
 wotv_utils = WotvUtils(dfwotv)
-MYDTFORMAT = '%Y/%m/%d %H:%M'
-PRINTDTFORMAT = '%b %d, %H:%M'
-DFDTFORMAT = '%Y%m%d'
-EMBEDDTFORMAT = '%d %B %Y'
+MYDTFORMAT = '%Y/%m/%d %H:%M' # For events sheet
+PRINTDTFORMAT = '%b %d, %H:%M' # For events command
+DFDTFORMAT = '%Y%m%d' # For other sheets
+EMBEDDTFORMAT = '%d %B %Y' # For ohter commands
 BLANK = '\u200b'
 
 
@@ -40,6 +40,7 @@ class EmbedWotv():
             char_count += len(entry) + 2
             line_count += 1
             if char_count > 1000 or (max_lines and line_count > max_lines):
+                # Add entries so far to the list (field) and add new field
                 f_value = '\n'.join(entry_list[checkpoint:i])
                 tuple_list.append((f_name, f_value))
                 char_count = len(entry)
@@ -78,15 +79,15 @@ class EmbedWotv():
             inline = False
         for f_name, f_value in tuple_list:
             if inline_num == 2 and field_count % 3 == 2:
+                # Add blank field to for 2 column embeds
                 embed.add_field(name=BLANK, value=BLANK, inline=True)
                 char_count += len(BLANK) * 2
                 field_count += 1
             field_char = len(f_name) + len(f_value)
             if char_count + field_char > 5500 or field_count >= 24:
-                if inline_num == 2 and field_count % 3 == 2: # To balance display
-                    embed.add_field(name=BLANK, value=BLANK, inline=True)
+                # Add current embed to the list and reinitialise new embed
                 embed_list.append(embed)
-                if len(embed_list) >= embed_limit: # Exceeded limit
+                if len(embed_list) >= embed_limit: # Exceeded embed limit
                     return []
                 embed = discord.Embed(colour=embed_colour)
                 char_count = 0
@@ -94,7 +95,8 @@ class EmbedWotv():
             embed.add_field(name=f_name, value=f_value, inline=inline)
             char_count += field_char
             field_count += 1
-        if inline_num == 2 and field_count % 3 == 2: # To balance display
+        if inline_num == 2 and field_count % 3 == 2:
+            # To balance display so that the last row doesn't display awkwardly
             embed.add_field(name=BLANK, value=BLANK, inline=True)
         embed_list.append(embed)
         return embed_list
@@ -102,32 +104,31 @@ class EmbedWotv():
     @classmethod
     def unitinfo(cls, arg):
         """Generates unit information embed."""
-        df = dfwotv.tm
-        row_error, row = wotv_utils.find_row(df, ' '.join(arg),
+        row_error, row = wotv_utils.find_row(dfwotv.tm, ' '.join(arg),
                                              col_list=('English', 'Aliases'))
         if row_error:
             return row_error, row
+        # Basic information
         description = f"Cost: {row['Cost']}\nGroup: {row['Group']}"
-        if row['Group'].lower() in wotv_utils.dicts['weapon_dict'].keys():
-            description += f" ({wotv_utils.dicts['weapon_dict'][row['Group'].lower()]})"
+        if row['Group'].lower() in wotv_utils.dict['weapon_dict'].keys():
+            description += f" ({wotv_utils.dict['weapon_dict'][row['Group'].lower()]})"
         embed = discord.Embed(
             title=wotv_utils.name_str(row, type=0),
             description=description,
-            colour=wotv_utils.dicts['colours'][row['Element'].lower()]
+            colour=wotv_utils.dict['colours'][row['Element'].lower()]
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/units',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
+        # TM information
         embed.add_field(
             name='Trust Master',
-            value='\n'.join((wotv_utils.name_str(
-                row, name='TM English', backup_name='TM Name',
-                element=0, group=0
-            ), f"Refer to `=tm {row['English']}`")),
+            value=f"{wotv_utils.name_str(row, name='TM English', backup_name='TM Name', element=0, group=0)}\nRefer to `=tm {row['English']}`",
             inline=False
         )
+        # Release information
         release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
         if row['Pool'] != 'Regular':
             release_str += f" ({row['Pool']})"
@@ -138,11 +139,14 @@ class EmbedWotv():
         if row['MA2']:
             release_str += f"\n**MA2**: {datetime.strftime(datetime.strptime(str(row['MA2']), DFDTFORMAT), EMBEDDTFORMAT)}"
         embed.add_field(name='Release', value=release_str, inline=False)
+        # Thumbnail and URL
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
-        embed.add_field(name='WOTV-CALC',
-                        value=wotv_utils.calc_url('units', row['English']),
-                        inline=False)
+        embed.add_field(
+            name='WOTV-CALC',
+            value=wotv_utils.calc_url('units', row['English']),
+            inline=False
+        )
         return 0, [embed]
 
     @classmethod
@@ -153,41 +157,44 @@ class EmbedWotv():
         args = ' '.join(arg).lower()
         for index, row in dfwotv.w_type.iterrows():
             args = args.replace(index, row['VC'])
-        if ele in wotv_utils.dicts['colours'].keys() and ele != 'neutral':
+        if ele in wotv_utils.dict['colours'].keys() and ele != 'neutral':
+            # Argument is an element and units are split by groups
             df = dfwotv.tm[dfwotv.tm['Element'].str.lower() == ele]
             split_col = 'Group'
             embed = discord.Embed(
-                title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
-                colour=wotv_utils.dicts['colours'][ele]
+                title=f"{wotv_utils.dict['emotes'][ele]} {arg[0].title()}",
+                colour=wotv_utils.dict['colours'][ele]
             )
-        elif args in wotv_utils.dicts['weapons']:
+        elif args in wotv_utils.dict['weapons']:
+            # Argument is a group and units are split by elements
             df = dfwotv.tm[dfwotv.tm['Group'].str.lower() == args]
             split_col = 'Element'
-            embed_title = wotv_utils.dicts['emotes'][f"w_{args}"] + \
+            embed_title = wotv_utils.dict['emotes'][f"w_{args}"] + \
                           f" {args.title()}"
-            if args in wotv_utils.dicts['weapon_dict'].keys():
+            if args in wotv_utils.dict['weapon_dict'].keys():
                 embed_title = embed_title[:-1] + embed_title[-1].upper() + \
-                              f" ({wotv_utils.dicts['weapon_dict'][args]})"
+                              f" ({wotv_utils.dict['weapon_dict'][args]})"
             embed = discord.Embed(
                 title=embed_title,
-                colour=wotv_utils.dicts['colours']['neutral']
+                colour=wotv_utils.dict['colours']['neutral']
             )
-        else: # Return empty list if match fail, otherwise there has to be some results
+        else:
+            # Match fail
             return 1, []
-        # Initialise
+        # Further initialisation
         embed.description = f"Refer to `=vl {args}` for list of relevant VCs."
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/units',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
         list_dict = dict()
-        if split_col == 'Group': # For element
-            for group in wotv_utils.dicts['Weapons']:
+        if split_col == 'Group':# For element argument
+            for group in wotv_utils.dict['Weapons']:
                 list_dict[group] = dict()
-        else: # For weapon group
-            for element in wotv_utils.dicts['colours'].keys():
+        else: # For weapon group argument
+            for element in wotv_utils.dict['colours'].keys():
                 list_dict[element.title()] = dict()
         for unit_dict in list_dict.values():
-            for rarity in wotv_utils.dicts['rarity']:
+            for rarity in wotv_utils.dict['rarity']:
                 unit_dict[rarity] = []
         # Add unit entry with respect to element/group and rarity
         for _, row in df.iterrows():
@@ -200,9 +207,9 @@ class EmbedWotv():
                 for rarity, unit_list in unit_dict.items():
                     if not unit_list:
                         continue
-                    rarity_list.append(f"{wotv_utils.dicts['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                    rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
-                    line_list.append(wotv_utils.dicts['emotes'][f"w_{group.lower()}"] + f" {' '.join(rarity_list)}")
+                    line_list.append(wotv_utils.dict['emotes'][f"w_{group.lower()}"] + f" {' '.join(rarity_list)}")
             tuple_list = cls.split_field(BLANK, line_list)
             for _, field_value in tuple_list:
                 embed.add_field(name=BLANK, value=field_value, inline=False)
@@ -212,10 +219,10 @@ class EmbedWotv():
                 for rarity, unit_list in unit_dict.items():
                     if not unit_list:
                         continue
-                    rarity_list.append(f"{wotv_utils.dicts['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                    rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
                     embed.add_field(
-                        name=f"{wotv_utils.dicts['emotes'][element.lower()]} {element}",
+                        name=f"{wotv_utils.dict['emotes'][element.lower()]} {element}",
                         value='\n'.join(rarity_list),
                         inline=False
                     )
@@ -224,19 +231,21 @@ class EmbedWotv():
     @classmethod
     def vcinfo(cls, arg):
         """Generates vision card information embed."""
-        df = dfwotv.vc
-        row_error, row = wotv_utils.find_row(df, ' '.join(arg))
+        row_error, row = wotv_utils.find_row(dfwotv.vc, ' '.join(arg))
         if row_error:
             return row_error, row
+        # Initialise
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='NAME'),
             description=f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units.",
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/cards',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
         embed_colours = set() # Set to prevent duplicates
+        condition_flag = 0
+        # Generate field per column
         for col in ('Unit', 'Party', 'Party Max', 'Skill'):
             if not row[col]: # Empty column
                 continue
@@ -249,20 +258,21 @@ class EmbedWotv():
                                  .strip('[]').lower().split('/')
                     eff_prefixes = []
                     eff_text = eff.replace(re_match.group(), '').strip()
+                    condition_flag = 1
                 else:
                     conditions = []
                     eff_text = eff
                 for condition in conditions: # Skipped if no new condition
-                    if condition in wotv_utils.dicts['colours'].keys():
+                    if condition in wotv_utils.dict['colours'].keys():
                         eff_prefixes.append(
-                            wotv_utils.dicts['emotes'][condition]
+                            wotv_utils.dict['emotes'][condition]
                         )
                         embed_colours.add(
-                            wotv_utils.dicts['colours'][condition]
+                            wotv_utils.dict['colours'][condition]
                         )
-                    if condition in wotv_utils.dicts['weapons']:
+                    if condition in wotv_utils.dict['weapons']:
                         eff_prefixes.append(
-                            wotv_utils.dicts['emotes'][f"w_{condition}"]
+                            wotv_utils.dict['emotes'][f"w_{condition}"]
                         )
                     if not eff_prefixes: # Special condition
                         eff_prefixes = [re_match[0]] # Whole bracket
@@ -270,10 +280,15 @@ class EmbedWotv():
                 effstr_list.append(f"{' '.join(eff_prefixes)} {eff_text}")
             f_value = '\n'.join(effstr_list)
             embed.add_field(name=col, value=f_value)
+        # Suggest command for conditional VC
+        if condition_flag:
+            embed.description = f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units.",
+        # Release information
         release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
         if row['Pool'] != 'Regular':
             release_str += f" ({row['Pool']})"
         embed.add_field(name='Release', value=release_str)
+        # Final decorations and URL
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         if embed_colours:
@@ -291,39 +306,42 @@ class EmbedWotv():
         if row_error:
             return row_error, row
         re_match = wotv_utils.reconditions.search(row['Party Max'].split(' / ')[0])
-        if not re_match: # No condition
+        if not re_match: # No condition, like job crystal
             return 1, []
         conditions = re_match.group().strip('[]').split('/')
-        if conditions[0].lower() in wotv_utils.dicts['colours'].keys():
+        if conditions[0].lower() in wotv_utils.dict['colours'].keys():
+            # Conditions are elements and units are split by groups
             condition_col = 'Element'
             split_col = 'Group'
-        elif conditions[0] in wotv_utils.dicts['Weapons']:
+        elif conditions[0] in wotv_utils.dict['Weapons']:
+            # Conditions are groups and units are split by elements
             condition_col = 'Group'
             split_col = 'Element'
         else:
-            return 1, [] # Not general condition
+            return 1, [] # Not general condition, in case of future release
+        # Initialise
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='NAME'),
             description=f"`=vc {row['Aliases'].split(' / ')[0]}` for VC info.",
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
-                         url='https://wotv-calc.com/JP/cards',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
-        if row['Url']:
-            embed.set_thumbnail(url=row['Url'])
+        embed.set_author(
+            name=wotv_utils.dict['embed']['author_name'],
+            url='https://wotv-calc.com/JP/cards',
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
+        )
         list_dict = dict()
         if split_col == 'Group': # Splitting by weapon group
-            for group in wotv_utils.dicts['Weapons']:
+            for group in wotv_utils.dict['Weapons']:
                 list_dict[group.lower()] = []
             embed_colours = []
             for condition in conditions:
                 embed_colours.append(
-                    wotv_utils.dicts['colours'][condition.lower()]
+                    wotv_utils.dict['colours'][condition.lower()]
                 )
             embed.colour = random.choice(embed_colours)
         else: # Splitting by element
-            for element in wotv_utils.dicts['colours'].keys():
+            for element in wotv_utils.dict['colours'].keys():
                 list_dict[element] = []
         df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
         for _, u_row in df.iterrows():
@@ -335,7 +353,7 @@ class EmbedWotv():
                 if not unit_list:
                     continue
                 line_list.append(
-                    wotv_utils.dicts['emotes'][f"w_{group}"] + ' ' + ' / '.join(unit_list),
+                    wotv_utils.dict['emotes'][f"w_{group}"] + ' ' + ' / '.join(unit_list),
                 )
             tuple_list = cls.split_field(BLANK, line_list)
             for _, field_value in tuple_list:
@@ -345,10 +363,13 @@ class EmbedWotv():
                 if not unit_list:
                     continue
                 embed.add_field(
-                    name=f"{wotv_utils.dicts['emotes'][element]} {element.title()}",
+                    name=f"{wotv_utils.dict['emotes'][element]} {element.title()}",
                     value=' / '.join(unit_list),
                     inline=False
                 )
+        # Add thumbnail and URL
+        if row['Url']:
+            embed.set_thumbnail(url=row['Url'])
         if row['English']:
             embed.add_field(name='WOTV-CALC',
                             value=wotv_utils.calc_url('card', row['English']),
@@ -358,7 +379,6 @@ class EmbedWotv():
     @classmethod
     def vcsearch(cls, arg):
         """Generates vision card search embeds."""
-        df = dfwotv.vc
         # Process keywords
         if len(arg) == 1: # Check if shortcut keyword.
             args = wotv_utils.shortcut_convert(arg[0])
@@ -370,9 +390,14 @@ class EmbedWotv():
         # Initialise
         vc_dicts = dict() # vc_dicts[p/u + UR/-][element] = list of vcstr
         for key in ('pUR', 'p', 'uUR', 'u'):
-            vc_dicts[key] = {k: [] for k in wotv_utils.dicts['colours'].keys()}
+            vc_dicts[key] = {k: [] for k in wotv_utils.dict['colours'].keys()}
+        col_tuples = (
+           ('Party Max', 'p', f"{wotv_utils.dict['emotes']['vcmax']} "),
+           ('Party', 'p', ''),
+           ('Unit', 'u', '')
+        )
         # Search df
-        for _, row in df.sort_values(
+        for _, row in dfwotv.vc.sort_values(
                 ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             vc_ele = '' # Determined by max effect for universal vc
             vcdict = {'p': [], 'u': []} # List of party and unit effects
@@ -381,11 +406,7 @@ class EmbedWotv():
                 key_suffix = 'UR'
             else:
                 key_suffix = ''
-            for col, key_prefix, max_icon in (
-               ('Party Max', 'p', f"{wotv_utils.dicts['emotes']['vcmax']} "),
-               ('Party', 'p', ''),
-               ('Unit', 'u', '')
-            ):
+            for col, key_prefix, max_icon in col_tuples:
                 eff_prefixes = []
                 for eff in row[col].split(' / '):
                     # Process the brackets first in case conditional effect is matched
@@ -400,21 +421,22 @@ class EmbedWotv():
                         conditions = []
                     for condition in conditions:
                          # Remove previous conditions if new effect with conditions
-                        if condition in wotv_utils.dicts['colours'].keys():
+                        if condition in wotv_utils.dict['colours'].keys():
                             eff_prefixes.append(
-                                wotv_utils.dicts['emotes'][condition]
+                                wotv_utils.dict['emotes'][condition]
                             )
                             if vc_ele == '':
                                 vc_ele = condition
                             elif vc_ele != condition: # Multi-elemental VC
                                 vc_ele = 'neutral' # For sorting only
-                        if condition in wotv_utils.dicts['weapons']:
+                        if condition in wotv_utils.dict['weapons']:
                             eff_prefixes.append(
-                                wotv_utils.dicts['emotes'][f"w_{condition}"]
+                                wotv_utils.dict['emotes'][f"w_{condition}"]
                             )
                         if not eff_prefixes: # Special condition
                             eff_prefixes = [re_match.group()]
                             break
+                    # Add to unit effects for related stat ups
                     if args not in effstr.lower():
                         if args == 'agi%':
                             if 'agi+' not in eff.lower():
@@ -431,7 +453,7 @@ class EmbedWotv():
                         additional_icon = ''
                         if not eff_prefixes: # Add max effect element icon if universal
                             additional_icon = f" {''.join(suffix_icons)}"
-                            eff_prefixes = [wotv_utils.dicts['emotes']['allele']]
+                            eff_prefixes = [wotv_utils.dict['emotes']['allele']]
                         vcdict[key_prefix].append(
                             f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='Aliases')} - {max_icon}{effstr}{additional_icon}"
                         )
@@ -454,15 +476,15 @@ class EmbedWotv():
             return 1, tuple_list
         embed = discord.Embed(
             title=args.title(),
-            colour=wotv_utils.dicts['embed']['default_colour'],
+            colour=wotv_utils.dict['embed']['default_colour'],
         )
-        if arg[0].lower() in wotv_utils.dicts['colours'].keys():
+        if arg[0].lower() in wotv_utils.dict['colours'].keys():
             embed.description = f"`=ve {arg[0]}` for list of elemental vcs"
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/cards',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
         # Change embed colour if requested effect is elemental
-        for colour, colour_code in wotv_utils.dicts['colours'].items():
+        for colour, colour_code in wotv_utils.dict['colours'].items():
             if colour in args:
                 embed.colour = colour_code
                 break
@@ -477,7 +499,6 @@ class EmbedWotv():
     @classmethod
     def vclist(cls, arg):
         """Generates vision card list embeds by element or weapon type / job."""
-        df = dfwotv.vc
         # Parse for argument to sort by effect rather than vc
         effect_sort = 0
         if len(arg) > 1:
@@ -489,37 +510,37 @@ class EmbedWotv():
         args = ' '.join(arg).lower()
         for index, row in dfwotv.w_type.iterrows():
             args = args.replace(index, row['VC'])
-        if ele in wotv_utils.dicts['colours'].keys() and ele != 'neutral':
+        if ele in wotv_utils.dict['colours'].keys() and ele != 'neutral':
             args = ele
             embed = discord.Embed(
-                title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
+                title=f"{wotv_utils.dict['emotes'][ele]} {arg[0].title()}",
                 description=f"Refer to `=ul {args}` for list of relevant units.",
-                colour=wotv_utils.dicts['colours'][ele]
+                colour=wotv_utils.dict['colours'][ele]
             )
-        elif args in wotv_utils.dicts['weapons']:
-            embed_title = wotv_utils.dicts['emotes'][f"w_{args}"] + \
+        elif args in wotv_utils.dict['weapons']:
+            embed_title = wotv_utils.dict['emotes'][f"w_{args}"] + \
                           f" {args.title()}"
-            if args in wotv_utils.dicts['weapon_dict'].keys():
+            if args in wotv_utils.dict['weapon_dict'].keys():
                 embed_title = embed_title[:-1] + embed_title[-1].upper() + \
-                              f" ({wotv_utils.dicts['weapon_dict'][args]})"
+                              f" ({wotv_utils.dict['weapon_dict'][args]})"
             embed = discord.Embed(
                 title=embed_title,
                 description=f"Refer to `=ul {args}` for list of relevant units.",
-                colour=wotv_utils.dicts['colours']['neutral']
+                colour=wotv_utils.dict['colours']['neutral']
             )
         else: # Return empty list if match fail, otherwise there has to be some results
             return 1, []
         # Initialise
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/cards',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
         col_tuples = (
-            ('Party Max', wotv_utils.dicts['emotes']['vcmax']),
+            ('Party Max', wotv_utils.dict['emotes']['vcmax']),
             ('Party', '')
         )
         vctuples_list = []
         # Search df
-        for index, row in df.sort_values(
+        for index, row in dfwotv.vc.sort_values(
                 ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             vc_match = 0 # Flag to indicate vc matching criterion
             vctuples = [] # List of (vc name + effect prefixes, effect) to facilitate sorting
@@ -542,13 +563,13 @@ class EmbedWotv():
                          # Remove previous conditions if new effect with different conditions
                         if condition == args: # Condition match found
                             vc_match = 1
-                        elif condition in wotv_utils.dicts['colours'].keys():
+                        elif condition in wotv_utils.dict['colours'].keys():
                             eff_prefixes.append(
-                                wotv_utils.dicts['emotes'][condition]
+                                wotv_utils.dict['emotes'][condition]
                             )
-                        elif condition in wotv_utils.dicts['weapons']:
+                        elif condition in wotv_utils.dict['weapons']:
                             eff_prefixes.append(
-                                wotv_utils.dicts['emotes'][f"w_{condition}"]
+                                wotv_utils.dict['emotes'][f"w_{condition}"]
                             )
                         else:
                             eff_prefixes.append(
@@ -557,7 +578,7 @@ class EmbedWotv():
                     if eff_prefixes:
                         final_prefix = f"{''.join(eff_prefixes)} "
                     elif not conditional:
-                        final_prefix = f"{wotv_utils.dicts['emotes']['allele']} "
+                        final_prefix = f"{wotv_utils.dict['emotes']['allele']} "
                     else:
                         final_prefix = ''
                     vccoltuples.append((
@@ -568,7 +589,7 @@ class EmbedWotv():
                 vctuples = vccoltuples
             if vc_match:
                 vctuples_list.extend(vctuples)
-        # Print while keeping track of characters.
+        # Generate embeds
         if effect_sort:
             vctuples_list = sorted(vc_tuples, key=lambda tup: tup[1])
         vcstr_list = [f"{vcprefix}{vceffstr}"
@@ -580,28 +601,29 @@ class EmbedWotv():
     @classmethod
     def esperinfo(cls, arg):
         """Generates esper information embed."""
-        df = dfwotv.esper
-        row_error, row = wotv_utils.find_row(df, ' '.join(arg))
+        row_error, row = wotv_utils.find_row(dfwotv.esper, ' '.join(arg))
         if row_error:
             return row_error, row
+        # Initialise embed
         embed = discord.Embed(
             title=wotv_utils.name_str(row),
-            colour=wotv_utils.dicts['colours'][row['Element'].lower()]
+            colour=wotv_utils.dict['colours'][row['Element'].lower()]
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/espers',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
+        # Basic stats
         esstr_list = []
-        for col in wotv_utils.dicts['esper_stats']:
+        for col in wotv_utils.dict['esper_stats']:
             esstr_list.append(f"`{col}{' ' * (4 - len(col))}` `{row[col]}`")
         embed.add_field(name='Stat',
                         value='\n'.join(esstr_list),
                         inline=False)
         esstr_list = []
         # Effect columns
-        for col, suffix in wotv_utils.dicts['esper_colsuffix'].items():
+        for col, suffix in wotv_utils.dict['esper_colsuffix'].items():
             if row[col]:
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
@@ -616,6 +638,7 @@ class EmbedWotv():
                         value='\n'.join(esstr_list),
                         inline=False)
         evoke_str = row['Evoke']
+        # Evoke effect
         if row['Evoke Field']:
             evoke_str += f"\n**Field**: {row['Evoke Field']}"
         embed.add_field(name='Evoke', value=evoke_str, inline=False)
@@ -629,7 +652,6 @@ class EmbedWotv():
     @classmethod
     def espersearch(cls, arg):
         """Generates esper search embeds."""
-        df = dfwotv.esper
         # Convert arg list to split with | instead and process keywords
         args = ' '.join(arg)
         arg = [a.lower().strip() for a in args.split('|')]
@@ -645,19 +667,20 @@ class EmbedWotv():
                 arg = arg[1:]
             else:
                 break
+        df = dfwotv.esper
         if first_col == 'NOTFOUND':
             return 1, []
         if first_arg == 'STAT': # If stat, find 20 largest values
-            row_df = df.nlargest(20, first_col)
+            df_ranked = df.nlargest(20, first_col)
         else:
-            row_df = df[df[first_col].str.lower().str.contains(first_arg)]
+            df_ranked = df[df[first_col].str.lower().str.contains(first_arg)]
         # Parse arguments for display
         if first_arg in ('y', 'n'): # If first filter is just yes/no, leave it out of display feature
             arg = arg[1:]
         heading_list = []
         arg_tuples = []
         for argstr in arg: # Skip if arg is empty
-            if argstr.upper() in wotv_utils.dicts['esper_stats']:
+            if argstr.upper() in wotv_utils.dict['esper_stats']:
                 arg_tuples.append((argstr.upper(), 'STAT'))
                 heading_list.append(argstr.upper())
             else:
@@ -665,7 +688,7 @@ class EmbedWotv():
                 if col != 'NOTFOUND':
                     arg_tuples.append((col, esper_arg))
                     heading = esper_arg.title()
-                    suffix = wotv_utils.dicts['esper_colsuffix'][col]
+                    suffix = wotv_utils.dict['esper_colsuffix'][col]
                     if suffix:
                         heading = f"{heading} {suffix}"
                     heading_list.append(heading)
@@ -673,7 +696,7 @@ class EmbedWotv():
         esstr_list = []
         eslist_list = []
         # Search df
-        for index, row in row_df.iterrows():
+        for index, row in df_ranked.iterrows():
             filter_state = 0 # Flag of 0: First argument, 1: Effect matched, 2: Matched but below threshold
             eslist = [index] # [Name, value from arg1, value from arg2 ...]
             for tupcol, tuparg in arg_tuples:
@@ -706,7 +729,7 @@ class EmbedWotv():
         if first_arg not in {'y', 'n'}:
             eslist_list.sort(key=lambda a: int(a[1]), reverse=True)
         for eslist in eslist_list:
-            esstr = wotv_utils.name_str(row_df.loc[eslist[0]])
+            esstr = wotv_utils.name_str(df_ranked.loc[eslist[0]])
             if eslist:
                 esstr += f" - `{' | '.join(eslist[1:])}`"
             esstr_list.append(esstr)
@@ -715,13 +738,13 @@ class EmbedWotv():
         )
         embed = discord.Embed(
             title=args.title(),
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/espers',
-                         icon_url=wotv_utils.dicts['embed']['author_icon_url'])
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
         # Change embed colour if requested effect is elemental.
-        for colour, colour_code in wotv_utils.dicts['colours'].items():
+        for colour, colour_code in wotv_utils.dict['colours'].items():
             if colour in args:
                 embed.colour = colour_code
                 break
@@ -733,7 +756,6 @@ class EmbedWotv():
     @classmethod
     def espercompare(cls, arg):
         """Generates esper comparison embed."""
-        df = dfwotv.esper
         # Convert arg list to split with | instead and process keywords
         args = ' '.join(arg)
         arg = [a.lower().strip() for a in args.split('|')]
@@ -744,21 +766,21 @@ class EmbedWotv():
         esper_list = []
         for argstr in arg:
             # Find the espers
-            row_error, row = wotv_utils.find_row(df, argstr)
+            row_error, row = wotv_utils.find_row(dfwotv.esper, argstr)
             if not row_error:
                 row_list.append(row)
                 esper_list.append(wotv_utils.name_str(row))
         if len(esper_list) < 2: # Need 2 or more espers to compare
             return 1, esper_list
         # Initialise
-        stat_dict = {stat: [] for stat in wotv_utils.dicts['esper_stats']}
+        stat_dict = {stat: [] for stat in wotv_utils.dict['esper_stats']}
         effdict_dict = {col: dict() for col in #effs_dict[col][effstr][esper id]
-            wotv_utils.dicts['esper_colsuffix'].keys()}
+            wotv_utils.dict['esper_colsuffix'].keys()}
         # Process each esper
         for i, row in enumerate(row_list):
             for stat in stat_dict.keys():
                 stat_dict[stat].append(str(row[stat]))
-            for col, suffix in wotv_utils.dicts['esper_colsuffix'].items():
+            for col, suffix in wotv_utils.dict['esper_colsuffix'].items():
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:
                     re_match = wotv_utils.revalues.search(eff)
@@ -788,18 +810,19 @@ class EmbedWotv():
                     eff_dict[effstr].append('-')
         # Combine lists and generate fields
         tuple_list = cls.split_field('Stat - ' + ' | '.join(esper_list), [
-            f"{stat} - `{' | '.join(stat_values)}`" for stat, stat_values in stat_dict.items()
+            f"{stat} - `{'` | `'.join(stat_values)}`" for stat, stat_values in stat_dict.items()
         ]) + cls.split_field('Max Effects - ' + ' | '.join(esper_list), [
-            f"{effstr} - `{' | '.join(eff_values)}`" for effstr, eff_values in eff_dict.items()
+            f"{effstr} - `{'` | `'.join(eff_values)}`" for effstr, eff_values in eff_dict.items()
         ])
+        # Final decorations and split embed in case length issue
         embed = discord.Embed(
-            colour=wotv_utils.dicts['embed']['default_colour'],
+            colour=wotv_utils.dict['embed']['default_colour'],
             title=args.title()
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/espers',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list)
         if not embed_list:
@@ -809,54 +832,62 @@ class EmbedWotv():
     @classmethod
     def eqinfo(cls, arg):
         """Generates equipment information embed."""
-        df = dfwotv.eq
-        row_error, row = wotv_utils.find_row(df, ' '.join(arg))
+        row_error, row = wotv_utils.find_row(dfwotv.eq, ' '.join(arg))
         if row_error:
             return row_error, row
+        # Initialise
         description_list = [wotv_utils.name_str(row)]
         effstr_list = []
-        embed_colours = []
+        embed_colours = set()
         if row['Restriction']:
             description_list.append(f"*Restriction: {row['Restriction']}*")
-            if row['Restriction'].lower() in wotv.utils.dicts['colours'].keys():
-                embed_colours = [ # Mostly for elemental rings
-                    wotv.utils.dicts['colours'][row['Restriction']]
-                ]
-        condition = ''
+            if row['Restriction'].lower() in wotv_utils.dict['colours'].keys():
+                # Colour for elemental rings
+                embed_colours.add(
+                    wotv_utils.dict['colours'][row['Restriction'].lower()]
+                )
+        conditions = ''
+        # Passive effects
         for eff in row['Passive'].split(' / '):
             re_match = wotv_utils.reconditions.search(eff)
             if re_match:
-                condition = re_match.group()
+                conditions = re_match.group()
+                for condition in conditions.strip('[]').split('/'):
+                    if condition.lower() in wotv_utils.dict['colours'].keys():
+                        embed_colours.add(
+                            wotv_utils.dict['colours'][condition.lower()]
+                        )
                 effstr_list.append(eff)
-            elif condition == '':
+            elif conditions == '':
                 effstr_list.append(eff)
-            else:
-                effstr_list.append(f"{condition} {eff}")
+            else: # From previous conditions
+                effstr_list.append(f"{conditions} {eff}")
         description_list.extend(effstr_list)
+        # Heartquartz effects
         if row['Extra'] != '':
-            description_list.append(
-                f"{wotv_utils.dicts['emotes']['heartquartzs']} {row['Extra']}"
-            )
-        # Change embed colour if there are elemental passives
+            for eff in row['Extra'].split(' / '):
+                description_list.append(f"{wotv_utils.dict['emotes']['heartquartzs']} {eff}")
+        # Change embed colour if there are elemental ATK passives
+        for colour, colour_code in wotv_utils.dict['colours'].items():
+            if f"{colour.title()} ATK" in row['Passive']:
+                embed_colours.add(colour_code)
         if not embed_colours:
-            for colour, colour_code in wotv_utils.dicts['colours'].items():
-                if colour in row['Passive']:
-                    embed_colours.append(colour_code)
-        if not embed_colours:
-            embed_colours=[wotv_utils.dicts['embed']['default_colour']]
+            embed_colours={wotv_utils.dict['embed']['default_colour']}
+        # Embed creation and input info so far
         embed = discord.Embed(
             title=row.name,
             description = '\n'.join(description_list),
-            colour=random.choice(embed_colours)
+            colour=random.choice(list(embed_colours))
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/equipment',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
+        # Acquisition and release information
         acq_str = f"{row['Acquisition']}\nRelease: {datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}"
         if row['Release+']:
-            acq_str += f"\n{wotv_utils.dicts['emotes']['heartquartzs']} {datetime.strftime(datetime.strptime(str(row['Release+']), DFDTFORMAT), EMBEDDTFORMAT)}"
+            acq_str += f"\n{wotv_utils.dict['emotes']['heartquartzs']} Release: {datetime.strftime(datetime.strptime(str(row['Release+']), DFDTFORMAT), EMBEDDTFORMAT)}"
         embed.add_field(name='Acquisition', value=acq_str, inline=False)
         # Craft materials (legacy)
         material_list = []
@@ -873,6 +904,7 @@ class EmbedWotv():
                 value='\n'.join(material_list),
                 inline=False
             )
+        # Thumbnail and URL
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         if row['English']:
@@ -885,7 +917,6 @@ class EmbedWotv():
     @classmethod
     def eqsearch(cls, arg):
         """Generates equipment search embeds."""
-        df = dfwotv.eq
         # Process keywords
         if len(arg) == 1:
             args = wotv_utils.shortcut_convert(arg[0])
@@ -897,25 +928,26 @@ class EmbedWotv():
         # Initialise
         eqstr_list = []
         # Search df
-        for _, row in df.sort_values(
+        for _, row in dfwotv.eq.sort_values(
                 ['Rarity', 'Release'], ascending=[False, False]).iterrows():
             if args in row['Passive'].lower() or args in row['Extra'].lower():
                 eqstr_list.append(wotv_utils.eq_str(row))
         if not eqstr_list: # No match
             return 1, eqstr_list
+        # Process into embeds
         tuple_list = cls.split_field(BLANK, eqstr_list)
         embed = discord.Embed(
             title=args.title(),
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
-        for colour, colour_code in wotv_utils.dicts['colours'].items():
+        for colour, colour_code in wotv_utils.dict['colours'].items():
             if colour in args:
                 embed.colour = colour_code
                 break
         embed.set_author(
-            name = wotv_utils.dicts['embed']['author_name'],
+            name = wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/equipment',
-            icon_url = wotv_utils.dicts['embed']['author_icon_url']
+            icon_url = wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list, embed_limit=3)
         if not embed_list:
@@ -926,21 +958,24 @@ class EmbedWotv():
     @classmethod
     def eqlist(cls, arg):
         """Generates equipment list embeds."""
-        df = dfwotv.eq
         # Process keywords
         args = ' '.join(arg).lower()
         col = ''
         match_str = ''
-        for dict_col, dict_set in wotv_utils.dicts['eq_sets'].items():
+        for dict_col, dict_set in wotv_utils.dict['eq_sets'].items():
             col_args = args
             if dict_col == 'Type':
                 for index, row in dfwotv.eq_type.iterrows():
                     col_args = col_args.replace(index, row['VC'])
+            col_candidates = []
             for set_item in dict_set:
-                if col_args in set_item.lower():
-                    col = dict_col
-                    match_str = set_item
-                    break
+                set_str = set_item.split(' - ')[-1]
+                if col_args in set_str.lower():
+                    col_candidates.append(set_item)
+            if len(col_candidates) == 1:
+                col = dict_col
+                match_str = col_candidates[0]
+                break
         if not col: # No match
             return 1, []
         eqstr_list = []
@@ -952,12 +987,12 @@ class EmbedWotv():
         tuple_list = cls.split_field(BLANK, eqstr_list)
         embed = discord.Embed(
             title=f"List of {col} - {match_str}",
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/equipment',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list)
         return 0, embed_list
@@ -965,39 +1000,41 @@ class EmbedWotv():
     @classmethod
     def tminfo(cls, arg):
         """Generates trust master information embed."""
-        df = dfwotv.tm
-        row_error, row = wotv_utils.find_row(df, ' '.join(arg))
+        row_error, row = wotv_utils.find_row(dfwotv.tm, ' '.join(arg))
         if row_error:
             return row_error, row
-        # Process equipment info
+        # Process basic info and initialise embed
         description_list = [wotv_utils.name_str(row, type=0)]
         if row['Restriction']:
             description_list.append(f"*Restriction: {row['Restriction']}*")
         embed = discord.Embed(
             title=wotv_utils.name_str(row, name='TM Name', element=0, group=0),
             description='\n'.join(description_list),
-            colour=wotv_utils.dicts['colours'][row['Element'].lower()]
+            colour=wotv_utils.dict['colours'][row['Element'].lower()]
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/units',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
+        # Main stats
         stat_list = []
-        for stat_name in wotv_utils.dicts['tm_stats']:
+        for stat_name in wotv_utils.dict['tm_stats']:
             if row[stat_name]:
                 stat_list.append(f"**{stat_name}** {row[stat_name]}")
         embed.add_field(
             name='Stats', value='\n'.join(stat_list), inline=False
         )
+        # Passive effects if the TM has them (mostly non-UR)
         eff_list = []
-        if row['Passive']: # If the TM has a passive
+        if row['Passive']:
             embed.add_field(
                 name='Passive',
                 value='\n'.join(row['Passive'].split(' / ')),
                 inline=False
             )
-        if row['Skill']: # If the TM has a skill
+        # Skill effects if the TM has them (mostly UR)
+        if row['Skill']:
             if row['S Uses'] == 1:
                 skill_name = f"TM Skill (1 Use)"
             else:
@@ -1012,6 +1049,7 @@ class EmbedWotv():
                 name=skill_name,
                 value='\n'.join([skill_range] + row['Skill'].split(' / '))
             )
+        # Thumbnail and URLs
         if row['TM Url']:
             embed.set_thumbnail(url=row['TM Url'])
         if row['TM English']:
@@ -1028,22 +1066,23 @@ class EmbedWotv():
     def tmsearch(cls, arg):
         """Generates trust master search embeds."""
         df = dfwotv.tm
-        # Process keywords
+        # EQ Type filter
         type_args = []
-        eqtype_filter = ''
-        if len(arg) > 1:
+        if len(arg) > 1: # In case first two words are used for eq type
             type_args.append(' '.join(arg[:2]).lower())
         type_args.append(arg[0].lower())
+        eqtype_candidates = []
         for i, type_arg in enumerate(type_args):
             for index, row in dfwotv.eq_type.iterrows():
                 type_arg = type_arg.replace(index, row['VC'])
-            for eqtype in wotv_utils.dicts['eq_sets']['Type']:
-                if type_arg in eqtype.lower():
-                    eqtype_filter = eqtype
-                    arg = arg[2-i:]
-                    break
-            if eqtype_filter:
-                break
+            for eqtype in wotv_utils.dict['eq_sets']['Type']:
+                eqtype_str = eqtype.split(' - ')[-1].lower()
+                if type_arg in eqtype_str:
+                    eqtype_candidates.append((i, eqtype))
+        if len(eqtype_candidates) == 1:
+            arg = arg[2-eqtype_candidates[0][0]:]
+            eqtype_filter = eqtype_candidates[0][1]
+        # Target filter
         target = ''
         if arg:
             for skill_range in (
@@ -1072,13 +1111,13 @@ class EmbedWotv():
             df = df[df['S Area'] == target]
         # STAT AND PASSIVES
         statstr_list = []
-        if args.upper() in wotv_utils.dicts['tm_stats']: # STAT
+        if args.upper() in wotv_utils.dict['tm_stats']: # STAT
             df_filtered = df[df[args.upper()].replace('', 0).astype('int') > 0]\
                 .copy(deep=True)
             df_filtered[args.upper()] = pd.to_numeric(df_filtered[args.upper()])
             if len(df_filtered):
-                row_df = df_filtered.nlargest(50, args.upper())
-            for _, row in row_df.iterrows():
+                df_ranked = df_filtered.nlargest(50, args.upper())
+            for _, row in df_ranked.iterrows():
                 statstr_list.append(wotv_utils.tm_str(row, 'stat'))
         elif args or target == 'NONE': # PASSIVE
             # Search each tm
@@ -1099,20 +1138,21 @@ class EmbedWotv():
                      cls.split_field('TM by Skills', skillstr_list)
         if not tuple_list:
             return 1, tuple_list
+        # Embed creation and decorations
         embed = discord.Embed(
             title=args.title(),
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         if target != 'NONE':
             embed.description = f"Target Filter: {target}"
-        for colour, colour_code in wotv_utils.dicts['colours'].items():
+        for colour, colour_code in wotv_utils.dict['colours'].items():
             if colour in args:
                 embed.colour = colour_code
                 break
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
+            name=wotv_utils.dict['embed']['author_name'],
             url='https://wotv-calc.com/JP/units',
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list, embed_limit=3)
         if not embed_list:
@@ -1123,17 +1163,18 @@ class EmbedWotv():
     @classmethod
     def passivelist(cls, arg):
         """Generates list of passives embed."""
-        # Esper specially processed
+        # Generate passive list
         if arg[0].lower() == 'esper':
+            # Separate processing for espers due to column separations
             args = 'esper'
             passivestr_list = []
-            for col, suffix in wotv_utils.dicts['esper_colsuffix'].items():
+            for col, suffix in wotv_utils.dict['esper_colsuffix'].items():
                 if not suffix:
                     passivestr_list.extend(
-                        list(sorted(wotv_utils.dicts['esper_sets'][col]))
+                        list(sorted(wotv_utils.dict['esper_sets'][col]))
                     )
                     continue
-                for eff in sorted(wotv_utils.dicts['esper_sets'][col]):
+                for eff in sorted(wotv_utils.dict['esper_sets'][col]):
                     passivestr_list.append(f"{eff} {suffix}")
         else:
             if arg[0].lower() == 'vc':
@@ -1144,15 +1185,16 @@ class EmbedWotv():
                 args = 'tm'
             else:
                 return 1, []
-            passivestr_list = list(sorted(wotv_utils.dicts[f"{args}_set"]))
+            passivestr_list = list(sorted(wotv_utils.dict[f"{args}_set"]))
+        # Process into embeds
         tuple_list = cls.split_field(BLANK, passivestr_list, max_lines=15)
         embed = discord.Embed(
             title=f"List of Passives - {args}",
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dict['embed']['author_name'],
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(
             embed, tuple_list, inline_num=1, embed_limit=3
@@ -1162,19 +1204,21 @@ class EmbedWotv():
     @classmethod
     def history(cls, arg):
         """Generates embeds of release history."""
+        # Default duration
         end = datetime.now(tz=timezone(timedelta(hours=9)))\
                           .replace(tzinfo=None)
         period = 3
         start = end - timedelta(days=period * 30)
+        # Initialise eq, vc, unit columns
         cols = (['Release'], ['Release'], ['Release'])
-        # eq, vc, unit
+        # Process args
         for args in arg:
             for args_match, args_cols, args_period in \
-                    wotv_utils.dicts['history_tuples']:
+                    wotv_utils.dict['history_tuples']:
                 if args.lower() in args_match:
                     cols = args_cols
                     pediod = args_period
-            for history_format in wotv_utils.dicts['history_formats']:
+            for history_format in wotv_utils.dict['history_formats']:
                 try:
                     args_start = datetime.strptime(args, history_format)
                     if args_start < end + timedelta(days=30):
@@ -1184,12 +1228,13 @@ class EmbedWotv():
                     args_start = None
         end = start + timedelta(days=period * 30)
         date_dict = dict()
-        history_replace = wotv_utils.dicts['history_replace']
+        history_replace = wotv_utils.dict['history_replace'] # Default
+        # Search each df
         for i, (df_name, df) in enumerate(
             [('EQ', dfwotv.eq), ('VC', dfwotv.vc), ('Unit', dfwotv.tm)]
                 ):
             if not cols[i]:
-                continue
+                continue # No need to process the df if not asked for
             history_replace['Release'] = df_name
             for _, row in df.iterrows():
                 for col in cols[i]:
@@ -1214,14 +1259,15 @@ class EmbedWotv():
                             date_dict[row[col]][heading] = [name_str]
                         else:
                             date_dict[row[col]][heading].append(name_str)
+        # Process into embeds
         tuple_list = []
         for release_date in sorted(list(date_dict.keys())):
             date_list = []
-            for heading in wotv_utils.dicts['history_headings']:
+            for heading in wotv_utils.dict['history_headings']:
                 if heading not in date_dict[release_date].keys():
                     continue
                 if heading.split()[0] == 'TR':
-                    rarity = wotv_utils.dicts['emotes'][heading.split()[1].lower()]
+                    rarity = wotv_utils.dict['emotes'][heading.split()[1].lower()]
                     heading_str = f"**Transcendence** {rarity}"
                 else:
                     heading_str = f"**{heading}**"
@@ -1233,11 +1279,11 @@ class EmbedWotv():
             ))
         embed = discord.Embed(
             title='WOTV History',
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dict['embed']['author_name'],
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed_list = cls.split_embed(embed, tuple_list, inline_num=0)
         return 0, embed_list
@@ -1252,11 +1298,11 @@ class EmbedWotv():
             embed = discord.Embed(
                 title='Guild Raid',
                 description=df[df['Title'] == 'Embed']['Body'].tolist()[0],
-                colour=wotv_utils.dicts['embed']['default_colour']
+                colour=wotv_utils.dict['embed']['default_colour']
             )
             embed.set_author(
-                name=wotv_utils.dicts['embed']['author_name'],
-                icon_url=wotv_utils.dicts['embed']['author_icon_url']
+                name=wotv_utils.dict['embed']['author_name'],
+                icon_url=wotv_utils.dict['embed']['author_icon_url']
             )
             df = df[df['Title'] != 'Embed']
             for _, row in df.iterrows():
@@ -1267,17 +1313,14 @@ class EmbedWotv():
                 )
             return 0, [embed]
         ele = arg[0].lower().replace('lightning', 'thunder')
-        args = ' '.join(arg).lower()
-        for index, row in dfwotv.w_type.iterrows():
-            args = args.replace(index, row['VC'])
-        if ele in wotv_utils.dicts['colours'].keys() and ele != 'neutral':
-            args = ele
+        element = ele.title()
+        if ele in wotv_utils.dict['colours'].keys() and ele != 'neutral':
             embed = discord.Embed(
-                title=f"{wotv_utils.dicts['emotes'][ele]} {arg[0].title()}",
-                colour=wotv_utils.dicts['colours'][ele]
+                title=f"{wotv_utils.dict['emotes'][ele]} {element}",
+                colour=wotv_utils.dict['colours'][ele]
             )
         else:
-            return cls.guildraid([])
+            return cls.guildraid([]) # Return basic info if not found
         # Boss info if designated at latest GR
         df = dfwotv.text[dfwotv.text['Key'] == 'gr_ele']
         df = df[df['Title'] == ele.title()]
@@ -1291,12 +1334,12 @@ class EmbedWotv():
         for _, row in df.iterrows():
             vc_dict[row['Title']] = row['Body']
         # Initialise
-        embed.set_author(name=wotv_utils.dicts['embed']['author_name'],
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                      url='https://wotv-calc.com/JP/cards',
-                     icon_url=wotv_utils.dicts['embed']['author_icon_url'])
-        df = dfwotv.tm[dfwotv.tm['Element'] == args.title()]
-        debuff_main = {key: [] for key in wotv_utils.dicts['gr_debuffs']} # Proper order
-        debuff_sub = {key: [] for key in wotv_utils.dicts['gr_debuffs']} # Proper order
+                     icon_url=wotv_utils.dict['embed']['author_icon_url'])
+        df = dfwotv.tm[dfwotv.tm['Element'] == element]
+        debuff_main = {key: [] for key in wotv_utils.dict['gr_debuffs']} # Proper order
+        debuff_sub = {key: [] for key in wotv_utils.dict['gr_debuffs']} # Proper order
         list_dps = [] # DPS without debuffs
         # Loop all eligible units
         for _, row in df.iterrows():
@@ -1304,7 +1347,7 @@ class EmbedWotv():
             multihit_strs = []
             multihit_innate = 0
             unit_dict = defaultdict(list)
-            # Each debuff
+            # Process each column and add to respective lists
             # TBD: only either Slow or AGI depending on boss?
             if row['DB Slow']:
                 for eff in row['DB Slow'].split(' / '):
@@ -1329,7 +1372,7 @@ class EmbedWotv():
                     if eff[:3] == 'All':
                         unit_dict['All Type RES'].append(wotv_utils.gr_parse(eff[4:]))
                     else:
-                        unit_dict[f"{wotv_utils.dicts['gr_types'][eff[:2]]} RES"]\
+                        unit_dict[f"{wotv_utils.dict['gr_types'][eff[:2]]} RES"]\
                             .append(wotv_utils.gr_parse(eff[3:]))
             if row['DB DEF']:
                 for eff in row['DB DEF'].split(' / '):
@@ -1340,7 +1383,7 @@ class EmbedWotv():
             if row['DB Special']:
                 for eff in row['DB Special'].split(' / '):
                     prefix, suffix = eff.split(' ', 1)
-                    unit_dict['Special'].append(f"{prefix.replace('_', ' ')} {wotv_utils.gr_parse(suffix)}")
+                    unit_dict['Special'].append(f"{prefix.replace('_', ' ').strip()} {wotv_utils.gr_parse(suffix)}")
             # Check for DPS capabilities
             if row['Multihit']:
                 for eff in row['Multihit'].split(' / '):
@@ -1354,7 +1397,7 @@ class EmbedWotv():
                     pmh, vc_str = vc_dict[weapon].split()
                     if row['PMH'] == 'H' or row['PMH'] == pmh:
                         multihit_strs.append(vc_str)
-            # Add to result dict
+            # Add to result dicts
             if multihit_strs:
                 row_dict = debuff_main
                 suffix_str = f" ({', '.join(multihit_strs)})"
@@ -1368,27 +1411,48 @@ class EmbedWotv():
                     unit_str += f" [{value_str}]"
                 unit_str += suffix_str
                 row_dict[key].append(unit_str)
-                suffix_str = ''
             if multihit_innate and not unit_dict:
                 list_dps.append(f"{unit_name}{suffix_str}")
+        # Evoke espers
+        esper_lists = [[], [], []]
+        df = dfwotv.esper[dfwotv.esper['Evoke Field'].str.contains(element)]
+        for _, row in df.iterrows():
+            if f"{element} Imperil / {element} ATK&MAG" in row['Evoke Field']:
+                if element in row['Evoke']:
+                    esper_tier = 0
+                else:
+                    esper_tier = 1
+            elif element in row['Evoke'] and ('ATK' in row['Evoke Field'] or 'MAG' in row['Evoke Field']):
+                esper_tier = 1
+            else:
+                esper_tier = 2
+            esper_lists[esper_tier].append(wotv_utils.name_str(row, element=0))
+        list_espers = []
+        for i, tier_name in enumerate(['Recommended', 'Alternative', 'Last Resort']):
+            if not esper_lists[i]:
+                continue
+            list_espers.append(f"{tier_name}: {' '.join(esper_lists[i])}")
         # Rearrange dict of lists into lists of strs
-        debuff_main_strs = []
         tuple_list = []
+        # Main debuffers
         for key, value_list in debuff_main.items():
             if not value_list:
                 continue
             if key == 'ELE RES':
-                heading = f"{args.title()} RES"
+                heading = f"{element} RES"
             else:
                 heading = key
             tuple_list.extend(cls.split_field(heading, value_list))
-        tuple_list.extend(cls.split_field('Other DPS', list_dps))
+        # DPS and evokes
+        tuple_list.extend(cls.split_field('Other DPS', list_dps) +
+                          cls.split_field('Recommended Evoke', list_espers))
+        # Debuffer alternatives
         debuff_sub_strs = []
         for key, value_list in debuff_sub.items():
             if not value_list:
                 continue
             if key == 'ELE RES':
-                heading = f"{args.title()} RES"
+                heading = f"{element} RES"
             else:
                 heading = key
             debuff_sub_strs.append(f"**{heading}**: {', '.join(value_list)}")
@@ -1425,11 +1489,11 @@ class EmbedWotv():
                     break
         embed = discord.Embed(
             title='Ildyra Bot Help',
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dict['embed']['author_name'],
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         for f_name, f_value in help_tuples:
             embed.add_field(name=f_name, value=f_value, inline=False)
@@ -1525,7 +1589,7 @@ class WotvGeneral(commands.Cog):
             if not arg:
                 # Synchronise WOTV sheets
                 dfwotv.sync()
-                wotv_utils.dicts_sets_init()
+                wotv_utils.dict_sets_init()
                 wotv_utils.update_text()
                 await ctx.send('Google sheet synced for WOTV data.')
             elif arg[0] == 'events':
@@ -1570,11 +1634,11 @@ class WotvGeneral(commands.Cog):
         await self.log.log(ctx.message)
         embed = discord.Embed(
             title='Materia Main Stats',
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dict['embed']['author_name'],
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         materia_tuples = wotv_utils.materia_set
         if arg:
@@ -1648,11 +1712,11 @@ class WotvGeneral(commands.Cog):
                 # Search keyword to decide on the emote prefix.
                 eventprefix = ':calendar:'
                 for event_keywords, event_emote in \
-                        wotv_utils.dicts['event_tuples']:
+                        wotv_utils.dict['event_tuples']:
                     for event_keyword in event_keywords:
                         if event_keyword in row['Event'].lower():
                             eventprefix = \
-                                wotv_utils.dicts['emotes'][event_emote]
+                                wotv_utils.dict['emotes'][event_emote]
                             break
                     if eventprefix != ':calendar:':
                         break
@@ -1677,7 +1741,7 @@ class WotvGeneral(commands.Cog):
         if dt_bool == 2:
             # Generate reply embed.
             embed = discord.Embed(
-                colour = wotv_utils.dicts['embed']['default_colour']
+                colour = wotv_utils.dict['embed']['default_colour']
             )
             embed.title = 'WOTV JP Calendar'
             for k, v in events.items():
@@ -1767,7 +1831,7 @@ class WotvGeneral(commands.Cog):
             ffbe = 0
         npctup = wotv_utils.rand(ffbe, *arg)
         embed.title = f"Random {npctup[1]}"
-        embed.colour = wotv_utils.dicts['colours'][npctup[2]]
+        embed.colour = wotv_utils.dict['colours'][npctup[2]]
         embed.set_thumbnail(url=npctup[3])
         if npctup[0]:
             embed.description = '\n'.join((
@@ -1785,7 +1849,7 @@ class WotvGeneral(commands.Cog):
         # Check if Moore or Ramada is specified.
         reader = ctx.message.content.lstrip('=+').split()[0]
         embed = discord.Embed(
-            colour = wotv_utils.dicts['embed']['default_colour']
+            colour = wotv_utils.dict['embed']['default_colour']
         )
         fortunestr, fortunetitle, fortuneurl = wotv_utils.ramada(reader)
         embed.title = fortunetitle
@@ -1798,11 +1862,11 @@ class WotvGeneral(commands.Cog):
         """Return recent changelogs."""
         await self.log.log(ctx.message)
         embed = discord.Embed(
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
-            name=wotv_utils.dicts['embed']['author_name'],
-            icon_url=wotv_utils.dicts['embed']['author_icon_url']
+            name=wotv_utils.dict['embed']['author_name'],
+            icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
         embed.title = 'Ildyra Bot Changelog'
         try:
@@ -1852,11 +1916,11 @@ class WotvGeneral(commands.Cog):
                 embeds=embeds
             )
             return
-        params = {k: v[0] for k, v in wotv_utils.dicts['paramcalc'].items()}
+        params = {k: v[0] for k, v in wotv_utils.dict['paramcalc'].items()}
         args = ' '.join(arg)
         embed = discord.Embed(
             title = args,
-            colour = wotv_utils.dicts['embed']['default_colour']
+            colour = wotv_utils.dict['embed']['default_colour']
         )
         # Convert arg list to split with | instead.
         arg = [a.lower().strip() for a in args.split('|')]
@@ -1867,7 +1931,7 @@ class WotvGeneral(commands.Cog):
                 continue
             paramval = int(re_match.group())
             paramstr = argstr[0:re_match.start()].strip()
-            for k, v in wotv_utils.dicts['paramcalc'].items():
+            for k, v in wotv_utils.dict['paramcalc'].items():
                 if paramstr in v[1]:
                     if k not in ('agi', 'dex', 'luck') or paramval >= 0:
                         # Disallow negative values for the three stats.
@@ -1994,11 +2058,11 @@ class WotvEquipment(commands.Cog):
                     description='List of arguments for equipment list command `=eql`'
                 )
                 embed.set_author(
-                    name=wotv_utils.dicts['embed']['author_name'],
+                    name=wotv_utils.dict['embed']['author_name'],
                     url='https://wotv-calc.com/JP/equipment',
-                    icon_url=wotv_utils.dicts['embed']['author_icon_url']
+                    icon_url=wotv_utils.dict['embed']['author_icon_url']
                 )
-                for col, eq_set in wotv_utils.dicts['eq_sets'].items():
+                for col, eq_set in wotv_utils.dict['eq_sets'].items():
                     embed.add_field(
                         name=f"List by {col}",
                         value=' / '.join(eq_set),
@@ -2116,14 +2180,14 @@ class WotvEsper(commands.Cog):
                 embeds=embeds
             )
             return
-        magicites = {k: 0 for k in wotv_utils.dicts['magicites'].keys()}
+        magicites = {k: 0 for k in wotv_utils.dict['magicites'].keys()}
         esper_start = 1
         bonus = 100
         neutral = 0
         args = ' '.join(arg)
         embed = discord.Embed(
             title=args,
-            colour=wotv_utils.dicts['embed']['default_colour']
+            colour=wotv_utils.dict['embed']['default_colour']
         )
         # Convert arg list to split with | instead
         arg = [a.lower().strip() for a in args.split('|')]
@@ -2142,26 +2206,26 @@ class WotvEsper(commands.Cog):
             elif paramstr in ('bonus',) and 0 <= paramval <= 100:
                 bonus = paramval
             else:
-                for k in wotv_utils.dicts['magicites'].keys():
+                for k in wotv_utils.dict['magicites'].keys():
                     if paramstr == k.lower():
                         magicites[k] = max(paramval, 0)
                         break
         # Actual calculations
-        req_exp = sum([wotv_utils.dicts['esper_exp'][a] for a in \
+        req_exp = sum([wotv_utils.dict['esper_exp'][a] for a in \
             range(esper_start, 4, 1)])
         total_exp = 0
         for k, v in magicites.items():
             if neutral:
-                total_exp += int(v * wotv_utils.dicts['magicites'][k]
+                total_exp += int(v * wotv_utils.dict['magicites'][k]
                                  * (100+bonus) / 100 * 0.75)
             else:
-                total_exp += (v * wotv_utils.dicts['magicites'][k]
+                total_exp += (v * wotv_utils.dict['magicites'][k]
                               * int((100+bonus) / 100))
         if neutral:
-            xl_exp = (wotv_utils.dicts['magicites']['XL'] * (100+bonus) / 100
+            xl_exp = (wotv_utils.dict['magicites']['XL'] * (100+bonus) / 100
                       * 0.75)
         else:
-            xl_exp = wotv_utils.dicts['magicites']['XL'] * (100+bonus) / 100
+            xl_exp = wotv_utils.dict['magicites']['XL'] * (100+bonus) / 100
         # Present results
         field_list = [
             f"Starting from `{esper_start}-star`",

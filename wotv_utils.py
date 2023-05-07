@@ -18,7 +18,7 @@ class WotvUtils:
         self.revalues = re.compile(r'-?\d+$')
         # Regex for symbols to be omitted for url generation.
         self.resymbols = re.compile(r'[^\w ]')
-        self.dicts = { # Dictionary to store various constants.
+        self.dict = { # Dictionary to store various constants.
             'eq_lists': {
                 'Type': ('t',),
                 'Acquisition': ('a',),
@@ -151,7 +151,7 @@ class WotvUtils:
                 'TL': 'Typeless'
             }
         }
-        self.dicts_sets_init()
+        self.dict_sets_init()
         self.update_text()
         msg_list = []
         # Generate the weekly command string.
@@ -167,7 +167,7 @@ class WotvUtils:
         for day, daylist, booklist in weekly_tuples:
             msg_line = day + ': '
             for ele in daylist:
-                msg_line += self.dicts['emotes'][ele]
+                msg_line += self.dict['emotes'][ele]
             msg_line += f" (Books: {', '.join(booklist)})"
             msg_list.append(msg_line)
         self.weekly = '\n'.join(msg_list)
@@ -193,7 +193,7 @@ class WotvUtils:
             if row['Title'] == 'Default Values':
                 body = row['Body'].replace('[PLACEHOLDER]',
                     ', '.join([k + ' ' + str(v[0]) for k, v in \
-                    self.dicts['paramcalc'].items()]))
+                    self.dict['paramcalc'].items()]))
             else:
                 body = row['Body']
             self.help_param.append((row['Title'], body))
@@ -202,9 +202,9 @@ class WotvUtils:
         for _, row in df.iterrows():
             if row['Title'] == 'Equipment Help':
                 body = row['Body'].replace('[PLACEHOLDER1]',
-                    self.dicts['emotes']['limited'])
+                    self.dict['emotes']['limited'])
                 body = body.replace('[PLACEHOLDER2]',
-                    self.dicts['emotes']['heartquartzs'])
+                    self.dict['emotes']['heartquartzs'])
             else:
                 body = row['Body']
             self.help_eq.append((row['Title'], body))
@@ -217,13 +217,13 @@ class WotvUtils:
         for _, row in df.iterrows():
             if row['Title'] == 'Vision Card Help':
                 body = row['Body'].replace('[PLACEHOLDER1]',
-                    self.dicts['emotes']['elements'])
+                    self.dict['emotes']['elements'])
                 body = body.replace('[PLACEHOLDER2]',
-                    self.dicts['emotes']['allele'])
+                    self.dict['emotes']['allele'])
                 body = body.replace('[PLACEHOLDER3]',
-                    self.dicts['emotes']['vcmax'])
+                    self.dict['emotes']['vcmax'])
                 body = body.replace('[PLACEHOLDER4]',
-                    self.dicts['emotes']['limited'])
+                    self.dict['emotes']['limited'])
             else:
                 body = row['Body']
             self.help_vc.append((row['Title'], body))
@@ -232,7 +232,7 @@ class WotvUtils:
         for _, row in df.iterrows():
             if row['Title'] == 'Esper Help':
                 body = row['Body'].replace('[PLACEHOLDER]',
-                    self.dicts['emotes']['limited'])
+                    self.dict['emotes']['limited'])
             else:
                 body = row['Body']
             self.help_esper.append((row['Title'], body))
@@ -242,16 +242,16 @@ class WotvUtils:
             self.help_materia.append((row['Title'], row['Body']))
         row = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_ramada'].iloc[0]
         rate_lists = []
-        for rarity in self.dicts['ramada_rarity']:
+        for rarity in self.dict['ramada_rarity']:
             df_row1 = self.dfwotv.stars[self.dfwotv.stars['Rarity'] == rarity]
-            rarity_str = ''.join((f"{self.dicts['emotes'][rarity.lower()]}: ",
+            rarity_str = ''.join((f"{self.dict['emotes'][rarity.lower()]}: ",
                                   f"{df_row1['Weight'].sum()}%"))
             implication_lists = []
-            for implication in self.dicts['ramada_implication']:
+            for implication in self.dict['ramada_implication']:
                 df_row2 = df_row1[df_row1['Emote'] == implication]
                 if len(df_row2) > 0:
                     implication_str = ''.join((
-                        f"{self.dicts['emotes'][implication]} ",
+                        f"{self.dict['emotes'][implication]} ",
                         f"{df_row2['Weight'].sum()}%"))
                     implication_lists.append(implication_str)
             rarity_str += f" ({' '.join(implication_lists)})"
@@ -268,10 +268,10 @@ class WotvUtils:
         self.materia_passive = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
 
-    def dicts_sets_init(self):
+    def dict_sets_init(self):
         """Generate the certain dictonary entries of sets."""
         # EQ
-        self.dicts['eq_sets'] = {
+        self.dict['eq_sets'] = {
             'Type': set(),
             'Acquisition': set(),
             'Regular': set(),
@@ -280,7 +280,7 @@ class WotvUtils:
             'Ore': set()
         }
         for _, row in self.dfwotv.eq.iterrows():
-            for k, v in self.dicts['eq_sets'].items():
+            for k, v in self.dict['eq_sets'].items():
                 if row[k]:
                     if k == 'Cryst' and len(row[k]) > 1:
                         v = v.union(set(row[k]))
@@ -288,21 +288,21 @@ class WotvUtils:
                         v.add(row[k])
 
         # Esper
-        self.dicts['esper_sets'] = {
+        self.dict['esper_sets'] = {
             'ATK Up': set(),
             'Killer': set(),
             'Stat Up': set(),
             'RES Up': set(),
         }
-        self.dicts['esper_sets_lower'] = self.dicts['esper_sets'].copy()
+        self.dict['esper_sets_lower'] = self.dict['esper_sets'].copy()
         for _, row in self.dfwotv.esper.iterrows():
-            for k in self.dicts['esper_sets'].keys():
+            for k in self.dict['esper_sets'].keys():
                 if row[k]:
                     for eff in row[k].split(' / '):
                         re_match = self.revalues.search(eff)
-                        self.dicts['esper_sets'][k]\
+                        self.dict['esper_sets'][k]\
                             .add(eff[:re_match.start()].strip())
-                        self.dicts['esper_sets_lower'][k]\
+                        self.dict['esper_sets_lower'][k]\
                             .add(eff[:re_match.start()].strip().lower())
 
         # VC and EQ/TM
@@ -313,8 +313,8 @@ class WotvUtils:
             ('tm_set', ('Skill',), self.dfwotv.tm),
         )
         for dict_entry, dict_cols, dict_df in passive_tuples:
-            if dict_entry not in self.dicts:
-                self.dicts[dict_entry] = set()
+            if dict_entry not in self.dict:
+                self.dict[dict_entry] = set()
             for _, row in dict_df.iterrows():
                 for col in dict_cols:
                     for eff in row[col].split(' / '):
@@ -325,8 +325,8 @@ class WotvUtils:
                         re_match = self.revalues.search(effstr)
                         if re_match:
                             effstr = effstr[:re_match.start()].strip()
-                        self.dicts[dict_entry].add(effstr)
-            self.dicts[dict_entry].remove('')
+                        self.dict[dict_entry].add(effstr)
+            self.dict[dict_entry].remove('')
 
     def emotes_init(self):
         """Only runs once to generate the dictonary entry."""
@@ -435,17 +435,17 @@ class WotvUtils:
         prefix_str = ''
         name_str = ''
         if 'Element' in row.index and element:
-            prefix_str += self.dicts['emotes'][row['Element'].lower()]
+            prefix_str += self.dict['emotes'][row['Element'].lower()]
         if 'Group' in row.index and group:
-            if row['Group'] in self.dicts['Weapons']: # In case of Hope
-                prefix_str += self.dicts['emotes'][f"w_{row['Group'].lower()}"]
+            if row['Group'] in self.dict['Weapons']: # In case of Hope
+                prefix_str += self.dict['emotes'][f"w_{row['Group'].lower()}"]
         if 'Rarity' in row.index and rarity:
-            prefix_str += self.dicts['emotes'][row['Rarity'].lower()]
+            prefix_str += self.dict['emotes'][row['Rarity'].lower()]
         if 'Type' in row.index and type: # EQ
-            prefix_str += self.dicts['emotes'][self.eqt_convert(row['Type'])]
+            prefix_str += self.dict['emotes'][self.eqt_convert(row['Type'])]
         if 'Limited' in row.index and limited:
             if row['Limited'] != '':
-                prefix_str += self.dicts['emotes']['limited']
+                prefix_str += self.dict['emotes']['limited']
         if name == 'NAME':
             name_str = row.name
         elif name in row.index:
@@ -469,7 +469,7 @@ class WotvUtils:
         if row['Passive']:
             row_str += f" - {row['Passive']}"
         if row['Extra']:
-            row_str += f" {self.dicts['emotes']['heartquartzs']} {row['Extra']}"
+            row_str += f" {self.dict['emotes']['heartquartzs']} {row['Extra']}"
         return row_str
 
     def tm_str(self, row, mode='stat'):
@@ -479,7 +479,7 @@ class WotvUtils:
             row_str += f" [*{row['Restriction']}*]"
         stat_value = []
         if mode == 'stat':
-            for stat_name in self.dicts['tm_stats']:
+            for stat_name in self.dict['tm_stats']:
                 if row[stat_name] != '':
                     stat_value.append(f"**{stat_name}** {row[stat_name]}")
             row_str += f" - {' '.join(stat_value)}"
@@ -496,14 +496,14 @@ class WotvUtils:
             row_str += f"__{row['S Uses']}__*)"
         return row_str
 
-    def calc_url(self, category, namestr):
+    def calc_url(self, category, name_str):
         """Generate urls for Bismark's WOTC-CALC given raw name string."""
         calc_url = f"https://wotv-calc.com/JP/{category}/"
-        urlstr = namestr.lower().replace('-', ' ')
+        urlstr = name_str.lower().replace('-', ' ')
         urlstr = self.resymbols.sub('', urlstr)
-        for a, b in self.dicts['calcurl']:
+        for a, b in self.dict['calcurl']:
             urlstr = urlstr.replace(a, b)
-        return f"[{namestr}]({calc_url + urlstr})"
+        return f"[{name_str}]({calc_url + urlstr})"
 
     def find_row(self, df, args, col_list='DEFAULT'):
         """Tolerance processing for query to find the correct entry.
@@ -580,21 +580,21 @@ class WotvUtils:
             return args[4:], 'ALL'
         if args in ['collab', 'limited']:
             return 'Limited', 'y'
-        if args.upper() in self.dicts['esper_stats']:
+        if args.upper() in self.dict['esper_stats']:
             return args.upper(), 'STAT'
         col = 'NOTFOUND'
         arg = args.split()
-        if arg[-1] in self.dicts['esper_suffix'].keys():
-            col = self.dicts['esper_suffix'][arg[-1]]
+        if arg[-1] in self.dict['esper_suffix'].keys():
+            col = self.dict['esper_suffix'][arg[-1]]
             args = ' '.join(arg[:-1])
         else:
-            for k, v in self.dicts['esper_sets_lower'].items():
+            for k, v in self.dict['esper_sets_lower'].items():
                 if args in v:
                     col = k
                     break
             else:
                 col_list = []
-                for k, v in self.dicts['esper_sets_lower'].items():
+                for k, v in self.dict['esper_sets_lower'].items():
                     for v_item in v:
                         if args in v_item:
                             col_list.append(k)
@@ -607,6 +607,7 @@ class WotvUtils:
         and multihits for guild raid functionality.
         """
         parsed_str = ''
+        # Prefixes
         while effstr:
             try:
                 prefix, suffix = effstr.split(' ', 1)
@@ -623,6 +624,7 @@ class WotvUtils:
         if effstr[0] == 'A':
             parsed_str += 'AoE '
             effstr = effstr[1:]
+        # Hits
         if effstr[0] == '0':
             parsed_str += 'Non-Attack'
             effstr = effstr[2:]
@@ -630,9 +632,11 @@ class WotvUtils:
             if not omit_1H or effstr[0] != '1':
                 parsed_str += f"{effstr[0]}-Hit"
             if include_type:
-                parsed_str += f" {self.dicts['gr_types'][effstr[2:4]]}"
+                parsed_str += f" {self.dict['gr_types'][effstr[2:4]]}"
             effstr = effstr[4:]
-        parsed_str += effstr
+        # Values
+        if effstr:
+            parsed_str += f" `{effstr.strip()}`"
         return parsed_str.strip()
 
     def rand(self, ffbe, *arg):
@@ -684,11 +688,11 @@ class WotvUtils:
         if reader == 'moore':
             row_url = row['MUrl']
             row_title = ''.join((f"Moore Star Reading ",
-                                 self.dicts['emotes'][row['Rarity'].lower()],
-                                 self.dicts['emotes'][row['Emote']]))
+                                 self.dict['emotes'][row['Rarity'].lower()],
+                                 self.dict['emotes'][row['Emote']]))
         elif reader == 'ramada':
             row_url = row['Url']
             row_title = ''.join((f"Ramada Star Reading ",
-                                 self.dicts['emotes'][row['Rarity'].lower()],
-                                 self.dicts['emotes'][row['Emote']]))
+                                 self.dict['emotes'][row['Rarity'].lower()],
+                                 self.dict['emotes'][row['Emote']]))
         return row['Fortune'], row_title, row_url
