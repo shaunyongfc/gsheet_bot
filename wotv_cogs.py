@@ -113,7 +113,7 @@ class EmbedWotv():
         if row['Group'].lower() in wotv_utils.dict['weapon_dict'].keys():
             description += f" ({wotv_utils.dict['weapon_dict'][row['Group'].lower()]})"
         embed = discord.Embed(
-            title=wotv_utils.name_str(row, type=0),
+            title=wotv_utils.name_str(row),
             description=description,
             colour=wotv_utils.dict['colours'][row['Element'].lower()]
         )
@@ -125,7 +125,7 @@ class EmbedWotv():
         # TM information
         embed.add_field(
             name='Trust Master',
-            value=f"{wotv_utils.name_str(row, name='TM English', backup_name='TM Name', element=0, group=0)}\nRefer to `=tm {row['English']}`",
+            value=f"{wotv_utils.tm_str(row, mode='en')}\nRefer to `=tm {row['English']}`",
             inline=False
         )
         # Release information
@@ -282,7 +282,7 @@ class EmbedWotv():
             embed.add_field(name=col, value=f_value)
         # Suggest command for conditional VC
         if condition_flag:
-            embed.description = f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units.",
+            embed.description = f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units."
         # Release information
         release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
         if row['Pool'] != 'Regular':
@@ -1004,11 +1004,11 @@ class EmbedWotv():
         if row_error:
             return row_error, row
         # Process basic info and initialise embed
-        description_list = [wotv_utils.name_str(row, type=0)]
+        description_list = [wotv_utils.name_str(row)]
         if row['Restriction']:
             description_list.append(f"*Restriction: {row['Restriction']}*")
         embed = discord.Embed(
-            title=wotv_utils.name_str(row, name='TM Name', element=0, group=0),
+            title=wotv_utils.tm_str(row, mode='jp'),
             description='\n'.join(description_list),
             colour=wotv_utils.dict['colours'][row['Element'].lower()]
         )
@@ -1246,10 +1246,10 @@ class EmbedWotv():
                     if start <= history_date <= end:
                         if col == 'TR':
                             heading = f"TR {row['Rarity']}"
-                            name_str = wotv_utils.name_str(row, rarity=0, type=0)
+                            name_str = wotv_utils.name_str(row, rarity=0)
                         elif df_name == 'Unit':
                             heading = col
-                            name_str = wotv_utils.name_str(row, type=0)
+                            name_str = wotv_utils.name_str(row)
                         else:
                             heading = col
                             name_str = wotv_utils.name_str(row)
@@ -1345,7 +1345,7 @@ class EmbedWotv():
         list_dps = [] # DPS without debuffs
         # Loop all eligible units
         for _, row in df.iterrows():
-            unit_name = wotv_utils.name_str(row, type=0, element=0)
+            unit_name = wotv_utils.name_str(row, element=0)
             multihit_strs = []
             multihit_innate = 0
             unit_dict = defaultdict(list)

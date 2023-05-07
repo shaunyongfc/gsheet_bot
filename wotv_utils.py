@@ -18,7 +18,8 @@ class WotvUtils:
         self.revalues = re.compile(r'-?\d+$')
         # Regex for symbols to be omitted for url generation.
         self.resymbols = re.compile(r'[^\w ]')
-        self.dict = { # Dictionary to store various constants.
+        # Dictionary to store various contents
+        self.dict = {
             'eq_lists': {
                 'Type': ('t',),
                 'Acquisition': ('a',),
@@ -56,7 +57,6 @@ class WotvUtils:
                 'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEF', 'SPR', 'ACC', 'EVA',
                 'AGI', 'DEX', 'CRIT', 'CEVA', 'LUCK'
             ),
-            'emotes': self.emotes_init(),
             'colours': { # Embed colour hex codes.
                 'fire': 0xE47051,
                 'ice': 0xA4B3F0,
@@ -151,10 +151,10 @@ class WotvUtils:
                 'TL': 'Typeless'
             }
         }
-        self.dict_sets_init()
+        self.emotes_init()
         self.update_text()
-        msg_list = []
         # Generate the weekly command string.
+        msg_list = []
         weekly_tuples = [
             ('`Monday   `', ('kame', 'pot', 'materias'), ('All',)),
             ('`Tuesday  `', ('fire', 'wind', 'materia_i'), ('Sword', 'Greatsword', 'Axe')),
@@ -181,12 +181,16 @@ class WotvUtils:
         """
         Initialise or update various help text from sheet data.
         """
+        # Help strings
+        ## General help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_general']
         self.help_general = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
+        ## Event help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_events']
         self.help_events = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
+        ## Param help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_param']
         self.help_param = []
         for _, row in df.iterrows():
@@ -197,6 +201,7 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_param.append((row['Title'], body))
+        ## EQ Help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_eq']
         self.help_eq = []
         for _, row in df.iterrows():
@@ -208,10 +213,12 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_eq.append((row['Title'], body))
+        ## Unit Help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_unit']
         self.help_unit = []
         for _, row in df.iterrows():
             self.help_unit.append((row['Title'], row['Body']))
+        ## VC Help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_vc']
         self.help_vc = []
         for _, row in df.iterrows():
@@ -227,6 +234,7 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_vc.append((row['Title'], body))
+        ## Esper Help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_esper']
         self.help_esper = []
         for _, row in df.iterrows():
@@ -236,10 +244,12 @@ class WotvUtils:
             else:
                 body = row['Body']
             self.help_esper.append((row['Title'], body))
+        ## Materia Help
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_materia']
         self.help_materia = []
         for _, row in df.iterrows():
             self.help_materia.append((row['Title'], row['Body']))
+        ## Ramada Help
         row = self.dfwotv.text[self.dfwotv.text['Key'] == 'help_ramada'].iloc[0]
         rate_lists = []
         for rarity in self.dict['ramada_rarity']:
@@ -258,6 +268,7 @@ class WotvUtils:
             rate_lists.append(rarity_str)
         self.help_ramada = ((row['Title'], row['Body']),
                             ('Current rate:', '\n'.join(rate_lists)))
+        # Materia information
         df = self.dfwotv.text[self.dfwotv.text['Key'] == 'materia_set']
         self.materia_set = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
@@ -268,9 +279,8 @@ class WotvUtils:
         self.materia_passive = [
             (row['Title'], row['Body']) for _, row in df.iterrows()]
 
-    def dict_sets_init(self):
-        """Generate the certain dictonary entries of sets."""
-        # EQ
+        # Various sets
+        ## EQ sets
         self.dict['eq_sets'] = {
             'Type': set(),
             'Acquisition': set(),
@@ -287,7 +297,7 @@ class WotvUtils:
                     else:
                         v.add(row[k])
 
-        # Esper
+        ## Esper sets
         self.dict['esper_sets'] = {
             'ATK Up': set(),
             'Killer': set(),
@@ -305,7 +315,7 @@ class WotvUtils:
                         self.dict['esper_sets_lower'][k]\
                             .add(eff[:re_match.start()].strip().lower())
 
-        # VC and EQ/TM
+        ## VC and EQ/TM sets
         passive_tuples = (
             ('vc_set', ('Unit', 'Party', 'Party Max'), self.dfwotv.vc),
             ('eq_set', ('Passive', 'Extra'), self.dfwotv.eq),
@@ -329,7 +339,7 @@ class WotvUtils:
             self.dict[dict_entry].remove('')
 
     def emotes_init(self):
-        """Only runs once to generate the dictonary entry."""
+        """Only run once to generate the dictonary entry."""
         # Raw numbers of emotes uploaded into Discord copied manually.
         wotv_emotes_raw = (
             ('weapon', '799182037348909077'),
@@ -399,7 +409,7 @@ class WotvUtils:
             wotv_emotes[k] = f"<:wotv_{k}:{v}>"
         for k, v in wotv_aemotes_raw:
             wotv_emotes[k] = f"<a:wotv_{k}:{v}>"
-        return wotv_emotes
+        self.dict['emotes'] = wotv_emotes
 
     def get_news(self):
         """Called periodically to fetch news site."""
@@ -417,7 +427,7 @@ class WotvUtils:
         except KeyError:
             return args
 
-    def name_str(self, row, element=1, group=1, rarity=1, type=1, limited=1,
+    def name_str(self, row, element=1, group=1, rarity=1, type=0, limited=1,
                  name='English', backup_name='Aliases'):
         """Process an entry to return the name string decorated with
         emotes.
@@ -434,6 +444,7 @@ class WotvUtils:
         # Esper: Esper (JP), English, Aliases
         prefix_str = ''
         name_str = ''
+        # Prefix icons
         if 'Element' in row.index and element:
             prefix_str += self.dict['emotes'][row['Element'].lower()]
         if 'Group' in row.index and group:
@@ -446,14 +457,15 @@ class WotvUtils:
         if 'Limited' in row.index and limited:
             if row['Limited'] != '':
                 prefix_str += self.dict['emotes']['limited']
-        if name == 'NAME':
+        # Entry name
+        if name == 'NAME': # Used if available
             name_str = row.name
         elif name in row.index:
             name_str = row[name].split(' / ')[0]
         else:
             name_str = name
         if not name_str:
-            if name == 'NAME':
+            if backup_name == 'NAME': # Backup
                 name_str = row.name
             elif backup_name in row.index:
                 name_str = row[backup_name].split(' / ')[0]
@@ -474,7 +486,14 @@ class WotvUtils:
 
     def tm_str(self, row, mode='stat'):
         """Return appropriate string for trust master search command."""
-        row_str = self.name_str(row, element=0, group=0)
+        if mode == 'en':
+            # Proper TM name only, for use of titles
+            return self.name_str(row, name='TM English', backup_name='TM Name',
+                                 element=0, group=0, type=1)
+        elif mode == 'jp':
+            return self.name_str(row, name='TM Name',
+                                 element=0, group=0, type=1)
+        row_str = self.name_str(row, element=0, group=0, type=1)
         if row['Restriction']:
             row_str += f" [*{row['Restriction']}*]"
         stat_value = []
@@ -497,7 +516,7 @@ class WotvUtils:
         return row_str
 
     def calc_url(self, category, name_str):
-        """Generate urls for Bismark's WOTC-CALC given raw name string."""
+        """Generate URLs for Bismark's WOTC-CALC given raw name string."""
         calc_url = f"https://wotv-calc.com/JP/{category}/"
         urlstr = name_str.lower().replace('-', ' ')
         urlstr = self.resymbols.sub('', urlstr)
