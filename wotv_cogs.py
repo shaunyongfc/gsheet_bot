@@ -193,11 +193,15 @@ class EmbedWotv():
         else: # For weapon group argument
             for element in wotv_utils.dict['colours'].keys():
                 list_dict[element.title()] = dict()
+        list_dict['nope'] = dict()
         for unit_dict in list_dict.values():
             for rarity in wotv_utils.dict['rarity']:
                 unit_dict[rarity] = []
         # Add unit entry with respect to element/group and rarity
         for _, row in df.iterrows():
+            if row[split_col] not in list_dict:
+                list_dict['nope'][row['Rarity']].append(row['English'])
+                continue
             list_dict[row[split_col]][row['Rarity']].append(row['English'])
         # Generate embed fields
         if split_col == 'Group':
@@ -209,6 +213,9 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
+                    if group == 'nope':
+                        line_list.append(f":joy: {' '.join(rarity_list)}")
+                        continue
                     line_list.append(wotv_utils.dict['emotes'][f"w_{group.lower()}"] + f" {' '.join(rarity_list)}")
             tuple_list = cls.split_field(BLANK, line_list)
             for _, field_value in tuple_list:
@@ -221,6 +228,12 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
+                    if group == 'nope':
+                        embed.add_field(
+                            name=':thinking:',
+                            value='\n'.join(rarity_list),
+                            inline=False
+                        )
                     embed.add_field(
                         name=f"{wotv_utils.dict['emotes'][element.lower()]} {element}",
                         value='\n'.join(rarity_list),
@@ -343,14 +356,20 @@ class EmbedWotv():
         else: # Splitting by element
             for element in wotv_utils.dict['colours'].keys():
                 list_dict[element] = []
+        list_dict['nope'] = []
         df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
         for _, u_row in df.iterrows():
             if u_row[condition_col] in conditions:
+                if u_row[split_col].lower() not in list_dict:
+                    list_dict['nope'].append(u_row['English'])
                 list_dict[u_row[split_col].lower()].append(u_row['English'])
         if split_col == 'Group':
             line_list = []
             for group, unit_list in list_dict.items():
                 if not unit_list:
+                    continue
+                if group == 'nope':
+                    line_list.append(f":joy: {' / '.join(unit_list)}")
                     continue
                 line_list.append(
                     wotv_utils.dict['emotes'][f"w_{group}"] + ' ' + ' / '.join(unit_list),
@@ -361,6 +380,13 @@ class EmbedWotv():
         else:
             for element, unit_list in list_dict.items():
                 if not unit_list:
+                    continue
+                if element == 'nope':
+                    embed.add_field(
+                        name=':thinking:',
+                        value=' / '.join(unit_list),
+                        inline=False
+                    )
                     continue
                 embed.add_field(
                     name=f"{wotv_utils.dict['emotes'][element]} {element.title()}",
