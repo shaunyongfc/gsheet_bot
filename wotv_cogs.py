@@ -228,7 +228,7 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
-                    if group == 'nope':
+                    if element == 'nope':
                         embed.add_field(
                             name=':thinking:',
                             value='\n'.join(rarity_list),
