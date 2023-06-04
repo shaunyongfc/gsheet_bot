@@ -200,6 +200,9 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
+                    if group == 'ALL':
+                        line_list.append(f":star: {' '.join(rarity_list)}")
+                        continue
                     if group == 'nope':
                         line_list.append(f":joy: {' '.join(rarity_list)}")
                         continue
@@ -215,12 +218,20 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
+                    if element == 'all':
+                        embed.add_field(
+                            name=':star:',
+                            value='\n'.join(rarity_list),
+                            inline=False
+                        )
+                        continue
                     if element == 'nope':
                         embed.add_field(
                             name=':thinking:',
                             value='\n'.join(rarity_list),
                             inline=False
                         )
+                        continue
                     embed.add_field(
                         name=f"{wotv_utils.dict['emotes'][element.lower()]} {element}",
                         value='\n'.join(rarity_list),
