@@ -304,7 +304,12 @@ class WotvUtils:
             'Stat Up': set(),
             'RES Up': set(),
         }
-        self.dict['esper_sets_lower'] = self.dict['esper_sets'].copy()
+        self.dict['esper_sets_lower'] = {
+            'ATK Up': set(),
+            'Killer': set(),
+            'Stat Up': set(),
+            'RES Up': set(),
+        }
         for _, row in self.dfwotv.esper.iterrows():
             for k in self.dict['esper_sets'].keys():
                 if row[k]:
