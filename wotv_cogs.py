@@ -1240,15 +1240,15 @@ class EmbedWotv():
                           .replace(tzinfo=None)
         period = 3
         start = end - timedelta(days=period * 30)
-        # Initialise eq, vc, unit columns
-        cols = (['Release'], ['Release'], ['Release'])
+        # Initialise eq, vc, unit, esper columns
+        cols = (['Release'], ['Release'], ['Release'], ['Release3'])
         # Process args
         for args in arg:
             for args_match, args_cols, args_period in \
                     wotv_utils.dict['history_tuples']:
                 if args.lower() in args_match:
                     cols = args_cols
-                    pediod = args_period
+                    period = args_period
             for history_format in wotv_utils.dict['history_formats']:
                 try:
                     args_start = datetime.strptime(args, history_format)
@@ -1262,8 +1262,8 @@ class EmbedWotv():
         history_replace = wotv_utils.dict['history_replace'] # Default
         # Search each df
         for i, (df_name, df) in enumerate(
-            [('EQ', dfwotv.eq), ('VC', dfwotv.vc), ('Unit', dfwotv.tm)]
-                ):
+            [('EQ', dfwotv.eq), ('VC', dfwotv.vc),
+                ('Unit', dfwotv.tm), ('Esper', dfwotv.esper)]):
             if not cols[i]:
                 continue # No need to process the df if not asked for
             history_replace['Release'] = df_name
@@ -1291,6 +1291,7 @@ class EmbedWotv():
                         else:
                             date_dict[row[col]][heading].append(name_str)
         # Process into embeds
+        # WIP: Launch month field lengths
         tuple_list = []
         for release_date in sorted(list(date_dict.keys())):
             date_list = []

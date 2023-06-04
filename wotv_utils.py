@@ -114,16 +114,17 @@ class WotvUtils:
             },
             'rarity': ('UR', 'SSR', 'SR', 'R', 'N'),
             'history_tuples': ( # process args
-                (('eq', 'equip'), (['Release', 'Release+'], [], []), 3),
-                (('hq',), (['Release+'], [], []), 6),
-                (('vc', 'vcs'), ([], ['Release'], []), 6),
-                (('unit', 'units'), ([], [], ['Release', 'EX', 'TR', 'MA2']), 3),
-                (('ex',), ([], [], ['EX']), 6),
-                (('tr', 'rein', '140'), ([], [], ['TR']), 3),
-                (('ma2',), ([], [], ['MA2']), 6)
+                (('eq', 'equip'), (['Release', 'Release+'], [], [], []), 3),
+                (('hq',), (['Release+'], [], [], []), 6),
+                (('vc', 'vcs'), ([], ['Release'], [], ['Release', 'Release3']), 6),
+                (('unit', 'units'), ([], [], ['Release', 'EX', 'TR', 'MA2'], []), 3),
+                (('ex',), ([], [], ['EX'], []), 6),
+                (('tr', 'rein', '140'), ([], [], ['TR'], []), 3),
+                (('ma2',), ([], [], ['MA2'], []), 6)
             ),
             'history_replace': { # column name to heading
-                'Release+': 'Heartquartz'
+                'Release+': 'Heartquartz',
+                'Release3': '3-Star',
             },
             'history_formats': ( # tolerance processing for date
                 '%Y%m',
@@ -135,7 +136,7 @@ class WotvUtils:
             ),
             'history_headings': ( # to order properly
                 'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N',
-                'MA2', 'VC', 'EQ', 'Heartquartz'
+                'MA2', 'VC', 'EQ', 'Heartquartz', 'Esper', '3-Star'
             ),
             'gr_debuffs': (
                 'Slow', 'AGI', 'Single RES', 'Area RES', 'ELE RES', 'All Elemental RES',
@@ -594,7 +595,6 @@ class WotvUtils:
         for unit_dict in list_dict.values():
             for rarity in self.dict['rarity']:
                 unit_dict[rarity] = []
-        # WIP: 1 more for slime
         # Add unit entry with respect to element/group and rarity
         for _, row in df.iterrows():
             if row[split_col] not in list_dict:
