@@ -564,6 +564,40 @@ class WotvUtils:
             suggestion_list.extend(col_df[col].tolist())
         return 1, suggestion_list
 
+    def unit_list(self, filter_list):
+        """Given a list of filter args, return units belonging to the filters
+        separated by element/group and rarity.
+        """
+        list_dict = dict()
+        filter_list.append('all')
+        # For element argument
+        if filter_list[0] in self.dict['colours'].keys():
+            df = self.dfwotv.tm[self.dfwotv.tm['Element'].str.lower().isin(filter_list)]
+            split_col = 'Group'
+            for group in self.dict['Weapons']:
+                list_dict[group] = dict()
+        # For weapon group argument
+        elif filter_list[0] in self.dict['weapons']:
+            df = self.dfwotv.tm[self.dfwotv.tm['Group'].str.lower().isin(filter_list)]
+            split_col = 'Element'
+            for element in self.dict['colours'].keys():
+                list_dict[element.title()] = dict()
+        else:
+            return 1, None
+        list_dict['nope'] = dict()
+        list_dict['ALL'] = dict()
+        for unit_dict in list_dict.values():
+            for rarity in self.dict['rarity']:
+                unit_dict[rarity] = []
+        # WIP: 1 more for slime
+        # Add unit entry with respect to element/group and rarity
+        for _, row in df.iterrows():
+            if row[split_col] not in list_dict:
+                list_dict['nope'][row['Rarity']].append(row['English'])
+                continue
+            list_dict[row[split_col]][row['Rarity']].append(row['English'])
+        return 0, list_dict
+
     def get_cryst(self, row):
         """Given DataFrame row of equipment, return text string for the
         corresponding cryst.

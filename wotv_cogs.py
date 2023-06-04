@@ -159,7 +159,7 @@ class EmbedWotv():
             args = args.replace(index, row['VC'])
         if ele in wotv_utils.dict['colours'].keys() and ele != 'neutral':
             # Argument is an element and units are split by groups
-            df = dfwotv.tm[dfwotv.tm['Element'].str.lower() == ele]
+            filter_arg = ele
             split_col = 'Group'
             embed = discord.Embed(
                 title=f"{wotv_utils.dict['emotes'][ele]} {arg[0].title()}",
@@ -167,11 +167,11 @@ class EmbedWotv():
             )
         elif args in wotv_utils.dict['weapons']:
             # Argument is a group and units are split by elements
-            df = dfwotv.tm[dfwotv.tm['Group'].str.lower() == args]
+            filter_arg = args
             split_col = 'Element'
             embed_title = wotv_utils.dict['emotes'][f"w_{args}"] + \
                           f" {args.title()}"
-            if args in wotv_utils.dict['weapon_dict'].keys():
+            if args in wotv_utils.dict['weapon_dict'].keys(): # Swords and Staves
                 embed_title = embed_title[:-1] + embed_title[-1].upper() + \
                               f" ({wotv_utils.dict['weapon_dict'][args]})"
             embed = discord.Embed(
@@ -186,23 +186,10 @@ class EmbedWotv():
         embed.set_author(name=wotv_utils.dict['embed']['author_name'],
                          url='https://wotv-calc.com/JP/units',
                          icon_url=wotv_utils.dict['embed']['author_icon_url'])
-        list_dict = dict()
-        if split_col == 'Group':# For element argument
-            for group in wotv_utils.dict['Weapons']:
-                list_dict[group] = dict()
-        else: # For weapon group argument
-            for element in wotv_utils.dict['colours'].keys():
-                list_dict[element.title()] = dict()
-        list_dict['nope'] = dict()
-        for unit_dict in list_dict.values():
-            for rarity in wotv_utils.dict['rarity']:
-                unit_dict[rarity] = []
-        # Add unit entry with respect to element/group and rarity
-        for _, row in df.iterrows():
-            if row[split_col] not in list_dict:
-                list_dict['nope'][row['Rarity']].append(row['English'])
-                continue
-            list_dict[row[split_col]][row['Rarity']].append(row['English'])
+        # Filter and grouping
+        arg_error, list_dict = wotv_utils.unit_list([filter_arg])
+        if arg_error:
+            return 1, []
         # Generate embed fields
         if split_col == 'Group':
             line_list = []
