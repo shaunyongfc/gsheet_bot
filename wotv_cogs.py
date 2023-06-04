@@ -1621,7 +1621,6 @@ class WotvGeneral(commands.Cog):
             if not arg:
                 # Synchronise WOTV sheets
                 dfwotv.sync()
-                wotv_utils.dict_sets_init()
                 wotv_utils.update_text()
                 await ctx.send('Google sheet synced for WOTV data.')
             elif arg[0] == 'events':
