@@ -668,6 +668,11 @@ class EmbedWotv():
         if row['Evoke Field']:
             evoke_str += f"\n**Field**: {row['Evoke Field']}"
         embed.add_field(name='Evoke', value=evoke_str, inline=False)
+        # Release information
+        release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        if row['Release3']:
+            release_str += f"\n**3-star**: {datetime.strftime(datetime.strptime(str(row['Release3']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        embed.add_field(name='Release', value=release_str, inline=False)
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
         embed.add_field(name='WOTV-CALC',
