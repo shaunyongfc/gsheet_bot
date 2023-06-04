@@ -134,8 +134,11 @@ bot_images
 unit_images
 wotv_esper_chart
 
-# Sensitive info
-credentials.json
+# Sensitive info (legacy in archive)
 token.txt
 id_dict.py
 wotv_png_paths.py
+
+# Sensitive info
+credentials.json
+upload.py
