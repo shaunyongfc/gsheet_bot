@@ -2025,7 +2025,8 @@ class WotvUnit(commands.Cog):
         _, msg_content, msg_embeds = EmbedWotv.redirect(
             arg, EmbedWotv.unitlist, 'unit',
             (
-                (EmbedWotv.unitinfo, 'Unit Information (`=unit`)'),
+                (EmbedWotv.vcunits, 'Vision Card Units (`=vu`)'),
+                (EmbedWotv.unitinfo, 'Unit Information (`=unit`)')
             )
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
@@ -2168,6 +2169,7 @@ class WotvVc(commands.Cog):
         _, msg_content, msg_embeds = EmbedWotv.redirect(
             arg, EmbedWotv.vcunits, 'vc',
             (
+                (EmbedWotv.unitlist, 'Unit List (`=ul`)'),
                 (EmbedWotv.vcinfo, 'Vision Card Information (`=vc`)'),
                 (EmbedWotv.vclist, 'Vision Card List (`=vcl`)'),
                 (EmbedWotv.vcsearch, 'Vision Card Search (`=vcs`)'),
