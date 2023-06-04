@@ -438,6 +438,19 @@ class EmbedWotv():
            ('Party', 'p', ''),
            ('Unit', 'u', '')
         )
+        s_list = [args]
+        if args == 'agi%':
+            s_list.append('agi+')
+        if args == 'agi+':
+            s_list.append('agi%')
+        if args == 'def up':
+            s_list.append('def+')
+        if args == 'def+':
+            s_list.append('def up')
+        if args == 'spr up':
+            s_list.append('spr+')
+        if args == 'spr+':
+            s_list.append('spr up')
         # Search df
         for _, row in dfwotv.vc.sort_values(
                 ['Rarity', 'Release'], ascending=[False, False]).iterrows():
@@ -478,27 +491,20 @@ class EmbedWotv():
                         if not eff_prefixes: # Special condition
                             eff_prefixes = [re_match.group()]
                             break
-                    # Add to unit effects for related stat ups
-                    if args not in effstr.lower():
-                        if args == 'agi%':
-                            if 'agi+' not in eff.lower():
-                                continue
-                        elif args == 'def up':
-                            if 'def+' not in eff.lower():
-                                continue
-                        elif args == 'spr up':
-                            if 'spr+' not in eff.lower():
-                                continue
-                        else:
-                            continue
-                    if args in effstr.lower(): # Match Found
-                        additional_icon = ''
-                        if not eff_prefixes: # Add max effect element icon if universal
-                            additional_icon = f" {''.join(suffix_icons)}"
-                            eff_prefixes = [wotv_utils.dict['emotes']['allele']]
-                        vcdict[key_prefix].append(
-                            f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='Aliases')} - {max_icon}{effstr}{additional_icon}"
-                        )
+                    # Find match
+                    for s in s_list:
+                        if s in effstr.lower():
+                            break
+                    else:
+                        continue
+                    # Match found
+                    additional_icon = ''
+                    if not eff_prefixes: # Add max effect element icon if universal
+                        additional_icon = f" {''.join(suffix_icons)}"
+                        eff_prefixes = [wotv_utils.dict['emotes']['allele']]
+                    vcdict[key_prefix].append(
+                        f"{''.join(eff_prefixes)}{wotv_utils.name_str(row, name='Aliases')} - {max_icon}{effstr}{additional_icon}"
+                    )
                 if eff_prefixes:
                     suffix_icons = eff_prefixes
             # Add entries to corresponding element and rarity
@@ -972,13 +978,22 @@ class EmbedWotv():
         args = args.lower()
         for index, row in dfwotv.replace.iterrows():
             args = args.replace(index, row['VC'])
-        # Initialise
+        # Initialise and additional arguments
         eqstr_list = []
+        s_list = [args]
+        if args.split()[-1] == 'res':
+            s_list.append(f"nullify {' '.join(args.split()[:-1])}")
+        if args == 'agi%':
+            s_list.append('agi+')
+        if args == 'agi+':
+            s_list.append('agi%')
         # Search df
         for _, row in dfwotv.eq.sort_values(
                 ['Rarity', 'Release'], ascending=[False, False]).iterrows():
-            if args in row['Passive'].lower() or args in row['Extra'].lower():
-                eqstr_list.append(wotv_utils.eq_str(row))
+            for s in s_list:
+                if s in row['Passive'].lower() or s in row['Extra'].lower():
+                    eqstr_list.append(wotv_utils.eq_str(row))
+                    break
         if not eqstr_list: # No match
             return 1, eqstr_list
         # Process into embeds
