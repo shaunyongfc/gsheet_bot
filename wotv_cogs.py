@@ -33,6 +33,25 @@ class EmbedWotv():
         f_value = '\n'.join(entry_list)
         if len(f_value) < 1020 and not max_lines: # Short enough to fit into 1
             return [(f_name, f_value)]
+        # Check length of each entry and split entry if too long
+        temp_list = []
+        for entry in entry_list:
+            if len(entry) < 1000:
+                temp_list.append(entry)
+                continue
+            checkpoint = 0
+            char_count = -1
+            word_list = entry.split()
+            for i, word in enumerate(word_list):
+                char_count += len(word) + 1
+                if char_count > 800:
+                    temp_list.append(' '.join(word_list[checkpoint:i]))
+                    char_count = len(word)
+                    checkpoint = i
+            temp_list.append(' '.join(word_list[checkpoint:]))
+        if len(temp_list) > len(entry_list):
+            entry_list = temp_list
+        # Initialise
         checkpoint = 0
         char_count = -2
         line_count = 0
@@ -319,14 +338,12 @@ class EmbedWotv():
         re_match = wotv_utils.reconditions.search(row['Party Max'].split(' / ')[0])
         if not re_match: # No condition, like job crystal
             return 1, []
-        conditions = re_match.group().strip('[]').split('/')
-        if conditions[0].lower() in wotv_utils.dict['colours'].keys():
+        conditions = re_match.group().strip('[]').lower().split('/')
+        if conditions[0] in wotv_utils.dict['colours'].keys():
             # Conditions are elements and units are split by groups
-            condition_col = 'Element'
             split_col = 'Group'
-        elif conditions[0] in wotv_utils.dict['Weapons']:
+        elif conditions[0] in wotv_utils.dict['weapons']:
             # Conditions are groups and units are split by elements
-            condition_col = 'Group'
             split_col = 'Element'
         else:
             return 1, [] # Not general condition, in case of future release
@@ -341,56 +358,57 @@ class EmbedWotv():
             url='https://wotv-calc.com/JP/cards',
             icon_url=wotv_utils.dict['embed']['author_icon_url']
         )
-        list_dict = dict()
-        if split_col == 'Group': # Splitting by weapon group
-            for group in wotv_utils.dict['Weapons']:
-                list_dict[group.lower()] = []
-            embed_colours = []
-            for condition in conditions:
-                embed_colours.append(
-                    wotv_utils.dict['colours'][condition.lower()]
-                )
-            embed.colour = random.choice(embed_colours)
-        else: # Splitting by element
-            for element in wotv_utils.dict['colours'].keys():
-                list_dict[element] = []
-        list_dict['nope'] = []
-        df = dfwotv.tm[dfwotv.tm['Rarity'] == 'UR']
-        for _, u_row in df.iterrows():
-            if u_row[condition_col] in conditions:
-                if u_row[split_col].lower() not in list_dict:
-                    list_dict['nope'].append(u_row['English'])
-                list_dict[u_row[split_col].lower()].append(u_row['English'])
+        # Filter and grouping
+        arg_error, list_dict = wotv_utils.unit_list(conditions)
+        if arg_error:
+            return 1, []
+        # Generate embed fields
         if split_col == 'Group':
             line_list = []
-            for group, unit_list in list_dict.items():
-                if not unit_list:
-                    continue
-                if group == 'nope':
-                    line_list.append(f":joy: {' / '.join(unit_list)}")
-                    continue
-                line_list.append(
-                    wotv_utils.dict['emotes'][f"w_{group}"] + ' ' + ' / '.join(unit_list),
-                )
+            for group, unit_dict in list_dict.items():
+                rarity_list = []
+                for rarity, unit_list in unit_dict.items():
+                    if not unit_list:
+                        continue
+                    rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                if rarity_list:
+                    if group == 'ALL':
+                        line_list.append(f":star: {' '.join(rarity_list)}")
+                        continue
+                    if group == 'nope':
+                        line_list.append(f":joy: {' '.join(rarity_list)}")
+                        continue
+                    line_list.append(wotv_utils.dict['emotes'][f"w_{group.lower()}"] + f" {' '.join(rarity_list)}")
             tuple_list = cls.split_field(BLANK, line_list)
             for _, field_value in tuple_list:
                 embed.add_field(name=BLANK, value=field_value, inline=False)
         else:
-            for element, unit_list in list_dict.items():
-                if not unit_list:
-                    continue
-                if element == 'nope':
+            for element, unit_dict in list_dict.items():
+                rarity_list = []
+                for rarity, unit_list in unit_dict.items():
+                    if not unit_list:
+                        continue
+                    rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
+                if rarity_list:
+                    if element == 'all':
+                        embed.add_field(
+                            name=':star:',
+                            value='\n'.join(rarity_list),
+                            inline=False
+                        )
+                        continue
+                    if element == 'nope':
+                        embed.add_field(
+                            name=':thinking:',
+                            value='\n'.join(rarity_list),
+                            inline=False
+                        )
+                        continue
                     embed.add_field(
-                        name=':thinking:',
-                        value=' / '.join(unit_list),
+                        name=f"{wotv_utils.dict['emotes'][element.lower()]} {element}",
+                        value='\n'.join(rarity_list),
                         inline=False
                     )
-                    continue
-                embed.add_field(
-                    name=f"{wotv_utils.dict['emotes'][element]} {element.title()}",
-                    value=' / '.join(unit_list),
-                    inline=False
-                )
         # Add thumbnail and URL
         if row['Url']:
             embed.set_thumbnail(url=row['Url'])
@@ -1291,7 +1309,6 @@ class EmbedWotv():
                         else:
                             date_dict[row[col]][heading].append(name_str)
         # Process into embeds
-        # WIP: Launch month field lengths
         tuple_list = []
         for release_date in sorted(list(date_dict.keys())):
             date_list = []
