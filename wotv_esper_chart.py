@@ -1,11 +1,17 @@
 import pandas as pd
 import os
 import re
+import requests
 from PIL import Image, ImageDraw, ImageFont
+from dotenv import load_dotenv
+from base64 import b64encode
+
+from gsheet_handler import DfHandlerWotv, ramadaspreadsheet
 
 # Get data from google sheet
 
 FOLDER = "wotv_esper_chart"
+CHART_NAME = "wotv_esper_chart.png"
 E_LIST = ["Neutral", "Fire", "Ice", "Wind", "Earth", "Thunder", "Water",
     "Light", "Dark", "Tank"]
 A_LIST = ["None", "Slash", "Pierce", "Strike", "Missile", "Magic"]
@@ -67,7 +73,6 @@ FULL_HEIGHT = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * len(ROWS)
 
 my_font = ImageFont.truetype('Arial.ttf', ICON_AGI_FONT)
 revalues = re.compile(r'-?\d+$')
-df = pd.read_excel(os.path.join(FOLDER, "esper.xlsx"))
 
 
 def process_esper(df_row):
@@ -248,11 +253,56 @@ def make_chart():
                     break
 
     # Save and report
-    chart.save(os.path.join(FOLDER, "wotv_esper_chart.png"))
-    print("wotv_esper_chart.png saved.")
+    chart.save(os.path.join(FOLDER, CHART_NAME))
+    print(f"{CHART_NAME} saved.")
+
+
+def upload():
+    """
+    Upload generated chart to imgur and return the image url.
+    """
+    load_dotenv()
+    client_id = os.getenv('IMGUR_ID')
+    client_secret = os.getenv('IMGUR_SECRET')
+    url = "https://api.imgur.com/3/upload.json"
+    image_name = 'wotv_esper_chart.png'
+    image_b64 = b64encode(open(os.path.join(FOLDER, image_name), 'rb').read())
+    headers = {
+        "Authorization": f"Client-ID {client_id}"
+    }
+    data = {
+        'key': client_secret,
+        'image': image_b64,
+        'name': image_name,
+        'title': 'WOTV Esper Chart'
+    }
+    r = requests.post(
+        url,
+        headers=headers,
+        data=data,
+    )
+    if not r.json()['success']:
+        print(f"Uploading to Imgur failed. Response: {str(j.json())}")
+        return None
+    print('Uploaded to Imgur.')
+    return r.json()['data']['link']
+
+
+def update_sheet(url):
+    """
+    Update Google Sheet with link.
+    """
+    sheet = ramadaspreadsheet.worksheet('WOTV_text')
+    sheet.update('C2', url)
+    print('Google Sheet updated')
 
 
 if __name__ == "__main__":
+    df = DfHandlerWotv().esper.copy()
+    print('DataFrame loaded.')
+    # df = pd.read_excel(os.path.join(FOLDER, "esper.xlsx"))
     for _, df_row in df.iterrows():
         process_esper(df_row)
     make_chart()
+    url = upload()
+    update_sheet(url)
