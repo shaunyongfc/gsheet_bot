@@ -8,7 +8,7 @@ scope = ['https://spreadsheets.google.com/feeds',
 creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json',
                                                          scope)
 client = gspread.authorize(creds)
-wotvspreadsheet = client.open('My Gacharchive')
+wotvspreadsheet = client.open('Ildyra Bot')
 ramadaspreadsheet = client.open('Ramada Bot')
 
 
