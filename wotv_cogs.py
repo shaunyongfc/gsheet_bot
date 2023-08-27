@@ -1317,6 +1317,9 @@ class EmbedWotv():
                         if col == 'TR':
                             heading = f"TR {row['Rarity']}"
                             name_str = wotv_utils.name_str(row, rarity=0)
+                        elif col == 'LB2':
+                            heading = f"LB Upgrade"
+                            name_str = wotv_utils.name_str(row, rarity=0)
                         elif df_name == 'Unit':
                             heading = col
                             name_str = wotv_utils.name_str(row)

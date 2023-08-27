@@ -124,10 +124,9 @@ class WotvUtils:
                 (('eq', 'equip'), (['Release', 'Release+'], [], [], []), 3),
                 (('hq',), (['Release+'], [], [], []), 6),
                 (('vc', 'vcs'), ([], ['Release'], [], ['Release', 'Release3']), 6),
-                (('unit', 'units'), ([], [], ['Release', 'EX', 'TR', 'MA2'], []), 3),
-                (('ex',), ([], [], ['EX'], []), 6),
-                (('tr', 'rein', '140'), ([], [], ['TR'], []), 3),
-                (('ma2',), ([], [], ['MA2'], []), 6)
+                (('unit', 'units'), ([], [], ['Release', 'EX', 'TR', 'MA2', 'LB2'], []), 3),
+                (('ex', 'tr', 'rein', '140'), ([], [], ['EX', 'TR'], []), 3),
+                (('ma2', 'lb2'), ([], [], ['MA2', 'LB2'], []), 6)
             ),
             'history_replace': { # column name to heading
                 'Release+': 'Heartquartz',
@@ -143,7 +142,7 @@ class WotvUtils:
             ),
             'history_headings': ( # to order properly
                 'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N',
-                'MA2', 'VC', 'EQ', 'Heartquartz', 'Esper', '3-Star'
+                'MA2', 'LB2','VC', 'EQ', 'Heartquartz', 'Esper', '3-Star'
             ),
             'gr_debuffs': (
                 'Slow', 'AGI', 'Single RES', 'Area RES', 'ELE RES', 'All Elemental RES',
