@@ -743,10 +743,14 @@ class WotvUtils:
         # Check if 1 or 2 numbers are input.
         if len(arg) == 1:
             if arg[0].isnumeric():
-                randstr = str(random.randint(0, int(arg[0])))
+                arg_min = min(int(arg[0]), 0)
+                arg_max = max(int(arg[0]), 0)
+                randstr = str(random.randint(arg_min, arg_max))
         elif len(arg) == 2:
             if arg[0].isnumeric() and arg[1].isnumeric():
-                randstr = str(random.randint(int(arg[0]), int(arg[1])))
+                arg_min = min(int(arg[0]), int(arg[1]))
+                arg_max = max(int(arg[0]), int(arg[1]))
+                randstr = str(random.randint(arg_min, arg_max))
         # If not numbers.
         if randstr == '':
             if len(arg) > 1:
