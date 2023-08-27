@@ -664,8 +664,15 @@ class EmbedWotv():
         )
         # Basic stats
         esstr_list = []
-        for col in wotv_utils.dict['esper_stats']:
-            esstr_list.append(f"`{col}{' ' * (4 - len(col))}` `{row[col]}`")
+        row_est = wotv_utils.esper_est(row)
+        for col, row_tuple in row_est.items():
+            col_str = str(row[col])
+            if row_tuple[0]:
+                col_value = str(row_tuple[1])
+                if row_tuple[1] != row_tuple[2]:
+                    col_value += f"~{row_tuple[2]}"
+                col_str = f"{col_value} ({col_str}{''.join(row_tuple[0])})"
+            esstr_list.append(f"`{col}{' ' * (4 - len(col))}` `{col_str}`")
         embed.add_field(name='Stat',
                         value='\n'.join(esstr_list),
                         inline=False)
@@ -733,7 +740,7 @@ class EmbedWotv():
         heading_list = []
         arg_tuples = []
         for argstr in arg: # Skip if arg is empty
-            if argstr.upper() in wotv_utils.dict['esper_stats']:
+            if argstr.upper() in wotv_utils.dict['esper_stats'].keys():
                 arg_tuples.append((argstr.upper(), 'STAT'))
                 heading_list.append(argstr.upper())
             else:
@@ -826,13 +833,14 @@ class EmbedWotv():
         if len(esper_list) < 2: # Need 2 or more espers to compare
             return 1, esper_list
         # Initialise
-        stat_dict = {stat: [] for stat in wotv_utils.dict['esper_stats']}
+        stat_dict = {stat: [] for stat in wotv_utils.dict['esper_stats'].keys()}
         effdict_dict = {col: dict() for col in #effs_dict[col][effstr][esper id]
             wotv_utils.dict['esper_colsuffix'].keys()}
         # Process each esper
         for i, row in enumerate(row_list):
+            row_average = wotv_utils.esper_est(row, 0)
             for stat in stat_dict.keys():
-                stat_dict[stat].append(str(row[stat]))
+                stat_dict[stat].append(str(row_average[stat]))
             for col, suffix in wotv_utils.dict['esper_colsuffix'].items():
                 eff_list = row[col].split(' / ')
                 for eff in eff_list:

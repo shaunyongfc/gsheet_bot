@@ -33,9 +33,16 @@ class WotvUtils:
                 'killer': 'Killer',
                 'res': 'RES Up'
             },
-            'esper_stats': (
-                'HP', 'TP', 'AP', 'ATK', 'MAG', 'DEX', 'AGI', 'LUCK'
-            ),
+            'esper_stats': {
+                'HP': (2500, 4500),
+                'TP': (120, 200), # Unused as of 20230826
+                'AP': (100, 200),  # Unused as of 20230826
+                'ATK': (350, 430),
+                'MAG': (350, 430),
+                'DEX': (160, 260),  # Unused as of 20230826
+                'AGI': (45, 65),  # Unused as of 20230826
+                'LUCK': (160, 200),  # Unused as of 20230826
+            },
             'esper_colsuffix': {
                 'ATK Up': 'ATK',
                 'Killer': 'Killer',
@@ -629,6 +636,35 @@ class WotvUtils:
         else:
             return 'weapon'
 
+    def esper_est(self, row, return_tuple=1):
+        """
+        Add board stats to esper base stats for total stat estimation.
+        """
+        row_est = dict()
+        for stat in self.dict['esper_stats'].keys():
+            row_est[stat] = [[], row[stat], row[stat]]
+            # list of description strs, low estimate, high estimate
+        for eff in row['Stat Up'].split(' / '):
+            eff_str = ' '.join(eff.split()[:-1])
+            eff_value = int(eff.split()[-1])
+            for stat in row_est.keys():
+                if eff_str == f"{stat}%":
+                    row_est[stat][0].append(f"+{eff_value}%")
+                    row_est[stat][1] += (self.dict['esper_stats'][stat][0] \
+                                        * eff_value) // 100
+                    row_est[stat][2] += (self.dict['esper_stats'][stat][1] \
+                                        * eff_value) // 100
+                elif eff_str == stat:
+                    row_est[stat][0].append(f"+{eff_value}")
+                    row_est[stat][1] += eff_value
+                    row_est[stat][2] += eff_value
+        if return_tuple:
+            return row_est
+        row_average = dict()
+        for col, row_tuple in row_est.items():
+            row_average[col] = (row_tuple[1] + row_tuple[2]) // 2
+        return row_average
+
     def esper_findcol(self, args):
         """
         Find the correct column to search for an effect from an argument
@@ -638,7 +674,7 @@ class WotvUtils:
             return args[4:], 'ALL'
         if args in ['collab', 'limited']:
             return 'Limited', 'y'
-        if args.upper() in self.dict['esper_stats']:
+        if args.upper() in self.dict['esper_stats'].keys():
             return args.upper(), 'STAT'
         col = 'NOTFOUND'
         arg = args.split()
