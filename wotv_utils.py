@@ -142,7 +142,7 @@ class WotvUtils:
             ),
             'history_headings': ( # to order properly
                 'Unit', 'EX', 'TR UR', 'TR SSR', 'TR SR', 'TR R', 'TR N',
-                'MA2', 'LB2','VC', 'EQ', 'Heartquartz', 'Esper', '3-Star'
+                'MA2', 'LB Upgrade','VC', 'EQ', 'Heartquartz', 'Esper', '3-Star'
             ),
             'gr_debuffs': (
                 'Slow', 'AGI', 'Single RES', 'Area RES', 'ELE RES', 'All Elemental RES',
