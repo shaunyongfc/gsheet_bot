@@ -142,3 +142,4 @@ wotv_png_paths.py
 # Sensitive info
 credentials.json
 upload.py
+restart.py
