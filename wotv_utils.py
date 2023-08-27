@@ -394,28 +394,29 @@ class WotvUtils:
             ('materia_o', '914818426126626837'),
             ('materia_w', '914818426147602442'),
             ('materia_s', '914818426097254440'),
+            ('w_all', '1141893887829479424'),
+            ('w_axe', '1141893891147182131'),
+            ('w_book', '1141893894863335464'),
+            ('w_bow', '1141893898185216070'),
+            ('w_dagger', '1141893901712633956'),
+            ('w_fist', '1141893904489255052'),
+            ('w_glove', '1141893907735662613'),
+            ('w_gs', '1141893912068362240'),
+            ('w_gun', '1141893914232639498'),
+            ('w_katana', '1141893917483221112'),
+            ('w_mace', '1141893920612159568'),
+            ('w_nb', '1141893978204164216'),
+            ('w_spear', '1141893980297109524'),
+            ('w_staffa', '1141893983535104000'),
+            ('w_staffb', '1141893986726973450'),
+            ('w_sworda', '1141894239513477131'),
+            ('w_swordb', '1141894242197844040'),
+            ('w_swordc', '1141894245830119543'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
             ('materias', '913749364810338315'),
             ('heartquartzs', '972379294682734602'),
-            ('w_axe', '1060023590956838922'),
-            ('w_book', '1060023595058872370'),
-            ('w_bow', '1060024865425465444'),
-            ('w_dagger', '1060024873595981924'),
-            ('w_fist', '1060024878662684712'),
-            ('w_glove', '1060025022871248936'),
-            ('w_gs', '1060025025333301268'),
-            ('w_gun', '1060025029364039711'),
-            ('w_katana', '1060023459855470663'),
-            ('w_mace', '1060023461780652102'),
-            ('w_nb', '1060023465215803513'),
-            ('w_spear', '1060023468680286299'),
-            ('w_staffa', '1060023475189854238'),
-            ('w_staffb', '1060023473197568000'),
-            ('w_sworda', '1060023478843088976'),
-            ('w_swordb', '1060023482236289164'),
-            ('w_swordc', '1060023484689961007'),
         )
         wotv_emotes = dict()
         for k, v in wotv_emotes_raw:
@@ -461,7 +462,7 @@ class WotvUtils:
         if 'Element' in row.index and element:
             prefix_str += self.dict['emotes'][row['Element'].lower()]
         if 'Group' in row.index and group:
-            if row['Group'] in self.dict['Weapons']: # In case of Hope
+            if row['Group'] in self.dict['Weapons'] or row['Group'] == 'ALL': # In case of Hope
                 prefix_str += self.dict['emotes'][f"w_{row['Group'].lower()}"]
         if 'Rarity' in row.index and rarity:
             prefix_str += self.dict['emotes'][row['Rarity'].lower()]

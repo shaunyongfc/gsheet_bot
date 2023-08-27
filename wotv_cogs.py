@@ -157,6 +157,8 @@ class EmbedWotv():
             release_str += f"\n**Transcendence**: {datetime.strftime(datetime.strptime(str(row['TR']), DFDTFORMAT), EMBEDDTFORMAT)}"
         if row['MA2']:
             release_str += f"\n**MA2**: {datetime.strftime(datetime.strptime(str(row['MA2']), DFDTFORMAT), EMBEDDTFORMAT)}"
+        if row['LB2']:
+            release_str += f"\n**LB Upgrade**: {datetime.strftime(datetime.strptime(str(row['LB2']), DFDTFORMAT), EMBEDDTFORMAT)}"
         embed.add_field(name='Release', value=release_str, inline=False)
         # Thumbnail and URL
         if row['Url']:
@@ -219,9 +221,6 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
-                    if group == 'ALL':
-                        line_list.append(f":star: {' '.join(rarity_list)}")
-                        continue
                     if group == 'nope':
                         line_list.append(f":joy: {' '.join(rarity_list)}")
                         continue
@@ -372,9 +371,6 @@ class EmbedWotv():
                         continue
                     rarity_list.append(f"{wotv_utils.dict['emotes'][rarity.lower()]} {' / '.join(unit_list)}")
                 if rarity_list:
-                    if group == 'ALL':
-                        line_list.append(f":star: {' '.join(rarity_list)}")
-                        continue
                     if group == 'nope':
                         line_list.append(f":joy: {' '.join(rarity_list)}")
                         continue
