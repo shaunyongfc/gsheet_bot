@@ -1672,7 +1672,7 @@ class WotvGeneral(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['help', 'about', 'info', 'aboutme', 'readme', 'Help'])
+    @commands.command(aliases=['help', 'about', 'info', 'aboutme', 'readme'])
     async def wotvhelp(self, ctx, *arg):
         """Customised help command."""
         await self.log.log(ctx.message)
@@ -1693,9 +1693,8 @@ class WotvGeneral(commands.Cog):
         _, embed_list = EmbedWotv.guildraid(arg)
         await self.log.send(ctx, embeds=embed_list)
 
-    @commands.command(aliases=['materia', 'materias', 'Materia', 'Materias',
-                               'rune', 'runes', 'truststone', 'Truststone',
-                               'truststones', 'Truststones'])
+    @commands.command(aliases=['materia', 'materias', 'rune', 'runes',
+                               'truststone', 'truststones'])
     async def wotvmaterias(self, ctx, *arg):
         """Command to call info regarding materias."""
         await self.log.log(ctx.message)
@@ -1924,7 +1923,7 @@ class WotvGeneral(commands.Cog):
         embed.set_thumbnail(url=fortuneurl)
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['changelog', 'version', 'Changelog'])
+    @commands.command(aliases=['changelog', 'version'])
     async def wotvchangelog(self, ctx, *arg):
         """Return recent changelogs."""
         await self.log.log(ctx.message)
@@ -1948,7 +1947,7 @@ class WotvGeneral(commands.Cog):
             num += 1
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['weekly', 'weekday', 'daily', 'Weekly'])
+    @commands.command(aliases=['weekly', 'weekday', 'daily'])
     async def wotvweekly(self, ctx, *arg):
         """Reply pre-set message of day of the week bonuses."""
         await self.log.log(ctx.message)
@@ -1969,7 +1968,7 @@ class WotvGeneral(commands.Cog):
                                 '<https://players.wotvffbe.com/>'))
         await self.log.send(ctx, news_str)
 
-    @commands.command(aliases=['param', 'acc', 'eva', 'crit', 'params', 'Param'])
+    @commands.command(aliases=['param', 'acc', 'eva', 'crit', 'params'])
     async def wotvparam(self, ctx, *arg):
         """Calculate acc, eva, crit and crit avoid from
         dex, agi, luck and equipment stats.
@@ -2074,7 +2073,7 @@ class WotvEquipment(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['tm', 'Tm', 'trust', 'Trust', 'tmr', 'Tmr', 'TM'])
+    @commands.command(aliases=['tm', 'trust', 'tmr'])
     async def wotvtm(self, ctx, *arg):
         """Trust master information command."""
         await self.log.log(ctx.message)
@@ -2086,7 +2085,7 @@ class WotvEquipment(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['tms', 'ts', 'Tms', 'Ts'])
+    @commands.command(aliases=['tms', 'ts'])
     async def wotvtmsearch(self, ctx, *arg):
         """Trust master search command."""
         await self.log.log(ctx.message)
@@ -2098,7 +2097,7 @@ class WotvEquipment(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['eq', 'equip', 'Eq', 'Equip'])
+    @commands.command(aliases=['eq', 'equip'])
     async def wotveq(self, ctx, *arg):
         """Equipment information command."""
         await self.log.log(ctx.message)
@@ -2113,7 +2112,7 @@ class WotvEquipment(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['eql', 'el', 'Eql', 'El'])
+    @commands.command(aliases=['eql', 'el'])
     async def wotveqlist(self, ctx, *arg):
         """List equipment by type, acquisition, material."""
         await self.log.log(ctx.message)
@@ -2149,7 +2148,7 @@ class WotvEquipment(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['eqs', 'es', 'Eqs', 'Es'])
+    @commands.command(aliases=['eqs', 'es'])
     async def wotveqsearch(self, ctx, *arg):
         """Search equipment by effect."""
         await self.log.log(ctx.message)
@@ -2172,7 +2171,7 @@ class WotvVc(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['vc', 'VC', 'Vc'])
+    @commands.command(aliases=['vc'])
     async def wotvvc(self, ctx, *arg):
         """Search vision card by name."""
         await self.log.log(ctx.message)
@@ -2185,7 +2184,7 @@ class WotvVc(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['vcs', 'vs', 'Vcs', 'Vs'])
+    @commands.command(aliases=['vcs', 'vs'])
     async def wotvvcsearch(self, ctx, *arg):
         """Search vision cards by effect."""
         await self.log.log(ctx.message)
@@ -2198,7 +2197,7 @@ class WotvVc(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['vcu', 'vu', 'Vcu', 'Vu'])
+    @commands.command(aliases=['vcu', 'vu'])
     async def wotvvcunits(self, ctx, *arg):
         """Search relevant units by vc."""
         await self.log.log(ctx.message)
@@ -2213,10 +2212,8 @@ class WotvVc(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['vce', 've', 'Vce', 'Ve',
-                               'vcj', 'vj', 'Vcj', 'Vj',
-                               'vcw', 'vw', 'Vcw', 'Vw',
-                               'vcl', 'vl', 'Vcl', 'Vl'])
+    @commands.command(aliases=['vce', 've', 'vcj', 'vj',
+                               'vcw', 'vw', 'vcl', 'vl'])
     async def wotvvclist(self, ctx, *arg):
         """Search vision cards by element or weapon type / job."""
         await self.log.log(ctx.message)
@@ -2237,7 +2234,7 @@ class WotvEsper(commands.Cog):
         self.bot = bot
         self.log = bot_log
 
-    @commands.command(aliases=['magicite', 'magicites', 'Magicite', 'Magicites'])
+    @commands.command(aliases=['magicite', 'magicites'])
     async def wotvmagicite(self, ctx, *arg):
         """Calculate required amount of magicites from inputs."""
         await self.log.log(ctx.message)
@@ -2318,14 +2315,14 @@ class WotvEsper(commands.Cog):
                         inline=True)
         await self.log.send(ctx, embed=embed)
 
-    @commands.command(aliases=['esperchart', 'Esperchart'])
+    @commands.command(aliases=['esperchart'])
     async def wotvesperchart(self, ctx, *arg):
         """Return a chart image of espers."""
         await self.log.log(ctx.message)
         df = dfwotv.text[dfwotv.text['Key'] == 'chart']
         await self.log.send(ctx, df[df['Title'] == 'esper']['Body'].tolist()[0])
 
-    @commands.command(aliases=['esper', 'Esper', 'esp', 'Esp'])
+    @commands.command(aliases=['esper', 'esp'])
     async def wotvesper(self, ctx, *arg):
         """Search esper by name."""
         await self.log.log(ctx.message)
@@ -2374,7 +2371,7 @@ class WotvEsper(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['esr', 'esperr', 'er', 'Esr', 'Er', 'ess', 'Ess'])
+    @commands.command(aliases=['esr', 'esperr', 'er', 'ess'])
     async def wotvespersearch(self, ctx, *arg):
         """Search esper by effect or stat."""
         await self.log.log(ctx.message)
@@ -2387,7 +2384,7 @@ class WotvEsper(commands.Cog):
         )
         await self.log.send(ctx, msg_content, embeds=msg_embeds)
 
-    @commands.command(aliases=['esc', 'esperc', 'ec', 'Esc', 'Ec'])
+    @commands.command(aliases=['esc', 'esperc', 'ec'])
     async def wotvespercompare(self, ctx, *arg):
         """Search esper by effect or stat."""
         await self.log.log(ctx.message)
