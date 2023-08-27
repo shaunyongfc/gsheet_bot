@@ -109,6 +109,7 @@ class DfHandlerGen():
         # Sheet for ids.
         self.ids = pd.DataFrame(
             ramadaspreadsheet.worksheet('my_ids').get_all_records())
+        self.ids['ID'] = self.ids['ID'].astype('int64')
 
     def add_shortcut(self, *arg):
         """Used for when adding shortcuts via discord command."""
@@ -122,6 +123,7 @@ class DfHandlerGen():
         try:
             if clean:
                 ramadaspreadsheet.values_clear(f"my_tags!A2:E{self.tags_last}")
+            self.tags_last = len(self.tags) + 1
             set_with_dataframe(
                 ramadaspreadsheet.worksheet('my_tags'),
                 df,

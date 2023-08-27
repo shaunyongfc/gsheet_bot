@@ -185,203 +185,240 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def tag(self, ctx, *arg):
         """Tag command to record tags with contents freely added by users."""
+        length_error = 0
+        try:
+            await self.log.log(ctx.message)
+            # If single tag is too long
+        except discord.HTTPException:
+            length_error = 1
+        group = general_utils.get_group(ctx)
+        if not group:
+            return
+        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            await self.log.send(ctx,
+                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group:
-            try:
-                await self.log.log(ctx.message)
-                # If single tag is too long
-            except discord.HTTPException:
+        if length_error:
+            await self.log.send(ctx,
+                'Content is too long. Try to shorten it or separate into smaller tags.')
+            return
+        if len(arg) == 0:
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        elif len(arg) == 1:
+            keyword = arg[0].lower()
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            df = df[df['Tag'] == keyword]
+            if len(df) == 0:
                 await self.log.send(ctx,
-                    'Content is too long. Try to shorten it or separate into smaller tags.')
-                return
-            if len(arg) == 0:
-                await self.log.send(ctx, general_utils.tag_help)
-                return
-            elif len(arg) == 1:
-                keyword = arg[0].lower()
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                df = df[df['Tag'] == keyword]
-                if len(df) == 0:
-                    await self.log.send(ctx,
-                        '`=tag keyword contents` to add contents first')
-                else:
-                    results = []
-                    for _, row in df.iterrows():
-                        results.append(f"`{row['Serial']}`: {row['Content']}")
-                    # Check if total length exceeds limit
-                    try:
-                        await self.log.send(ctx, '\n'.join(results))
-                    except discord.HTTPException:
-                        # Prompt user to remove content and provide suggestions
-                        await self.log.send(ctx,
-                            f"Too much content. Try removing from {', '.join(df['Serial'].astype(str))}.")
+                    '`=tag keyword contents` to add contents first')
             else:
-                keyword = arg[0].lower()
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                # Find the new serial number
-                if len(df):
-                    serial = df['Serial'].max() + 1
-                else:
-                    serial = 1
-                df_new = pd.DataFrame([{
-                    'Tag': keyword,
-                    'Content': ' '.join(arg[1:]),
-                    'User': str(ctx.message.author.id),
-                    'Serial': serial,
-                    'Group': group,
-                }])
-                dfgen.tags = pd.concat([dfgen.tags, df_new])
-                self.syncpend = True
-                await self.log.send(ctx, f"Content added to tag {keyword}.")
+                if len(df) == 1:
+                    result_str = df.iloc[0]['Content']
+                    if result_str.split('.')[-1].lower() in ('jpg', 'jpeg', 'webp', 'png'):
+                        await self.log.send(ctx, result_str)
+                        return
+                results = []
+                for _, row in df.iterrows():
+                    results.append(f"`{row['Serial']}`: {row['Content']}")
+                # Check if total length exceeds limit
+                try:
+                    await self.log.send(ctx, '\n'.join(results))
+                except discord.HTTPException:
+                    # Prompt user to remove content and provide suggestions
+                    await self.log.send(ctx,
+                        f"Too much content. Try removing from {', '.join(df['Serial'].astype(str))}.")
+        else:
+            keyword = arg[0].lower()
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            # Find the new serial number
+            if len(df):
+                serial = df['Serial'].max() + 1
+            else:
+                serial = 1
+            df_new = pd.DataFrame([{
+                'Tag': keyword,
+                'Content': ' '.join(arg[1:]),
+                'User': str(ctx.message.author.id),
+                'Serial': serial,
+                'Group': group,
+            }])
+            dfgen.tags = pd.concat([dfgen.tags, df_new])
+            self.syncpend = True
+            await self.log.send(ctx, f"Content added to tag {keyword}.")
 
     @commands.command(aliases=['tags'])
     async def tagserial(self, ctx, *arg):
         """Tag command to retrieve content from a particular serial number."""
+        await self.log.log(ctx.message)
+        group = general_utils.get_group(ctx)
+        if not group:
+            return
+        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            await self.log.send(ctx,
+                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group:
-            await self.log.log(ctx.message)
-            if len(arg) == 0:
-                await self.log.send(ctx, general_utils.tag_help)
-                return
-            elif not arg[0].isnumeric():
-                await self.log.send(ctx, general_utils.tag_help)
-                return
+        if len(arg) == 0:
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        elif not arg[0].isnumeric():
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        else:
+            serial = int(arg[0])
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            df_boolean = (df['Serial'] == serial) # Retrieve the tag
+            if sum(df_boolean) == 0:
+                await self.log.send(ctx,
+                    f"Tag {serial} does not exist.")
             else:
-                serial = int(arg[0])
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                df_boolean = (df['Serial'] == serial) # Retrieve the tag
-                if sum(df_boolean) == 0:
-                    await self.log.send(ctx,
-                        f"Tag {serial} does not exist.")
-                else:
-                    content = list(df[df_boolean]['Content'])[0]
-                    await self.log.send(ctx, f"`{serial}`: {content}.")
+                content = list(df[df_boolean]['Content'])[0]
+                await self.log.send(ctx, f"`{serial}`: {content}")
 
     @commands.command(aliases=['newtags', 'newtag', 'tagrecent', 'recenttags'])
     async def tagnew(self, ctx, *arg):
         """Tag command to return tags recently used."""
+        await self.log.log(ctx.message)
+        group = general_utils.get_group(ctx)
+        if not group:
+            return
+        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            await self.log.send(ctx,
+                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group:
-            await self.log.log(ctx.message)
-            df = dfgen.tags[dfgen.tags['Group'] == group]
-            tags = df['Tag'].unique()
-            end_num = 0
+        df = dfgen.tags[dfgen.tags['Group'] == group]
+        tags = df['Tag'].unique()
+        end_num = 0
+        try:
+            start_num = int(arg[0])
             try:
-                start_num = int(arg[0])
-                try:
-                    int(arg[1]) # To check if there is a second number
-                    end_num = start_num - 1
-                    start_num = int(arg[1])
-                except (IndexError, ValueError):
-                    pass
+                int(arg[1]) # To check if there is a second number
+                end_num = start_num - 1
+                start_num = int(arg[1])
             except (IndexError, ValueError):
-                start_num = 10
-            start_num = min(start_num, end_num + 50)
-            if end_num == 0:
-                heading = f"**Recent {start_num} tags:**"
-                tags_line = ', '.join(tags[-start_num:])
-            else:
-                heading = f"**Recent {end_num + 1} ~ {start_num} tags:**"
-                tags_line = ', '.join(tags[-start_num:-end_num])
-            await self.log.send(ctx, '\n'.join((heading, tags_line)))
+                pass
+        except (IndexError, ValueError):
+            start_num = 10
+        start_num = min(start_num, end_num + 50)
+        if end_num == 0:
+            heading = f"**Recent {start_num} tags:**"
+            tags_line = ', '.join(tags[-start_num:])
+        else:
+            heading = f"**Recent {end_num + 1} ~ {start_num} tags:**"
+            tags_line = ', '.join(tags[-start_num:-end_num])
+        await self.log.send(ctx, '\n'.join((heading, tags_line)))
 
     @commands.command(aliases=['edittag'])
     async def tagedit(self, ctx, *arg):
         """
         Tag command to edit a tag content by serial number.
         """
+        await self.log.log(ctx.message)
+        group = general_utils.get_group(ctx)
+        if not group:
+            return
+        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            await self.log.send(ctx,
+                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group:
-            await self.log.log(ctx.message)
-            if len(arg) < 2:
-                await self.log.send(ctx, general_utils.tag_help)
-                return
-            elif not arg[0].isnumeric():
-                await self.log.send(ctx, general_utils.tag_help)
-                return
+        if len(arg) < 2:
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        elif not arg[0].isnumeric():
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        else:
+            serial = int(arg[0])
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            df_boolean = (df['Serial'] == serial) # Retrieve tag
+            if sum(df_boolean) == 0:
+                await self.log.send(ctx,
+                    f"Tag {serial} does not exist.")
             else:
-                serial = int(arg[0])
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                df_boolean = (df['Serial'] == serial) # Retrieve tag
-                if sum(df_boolean) == 0:
-                    await self.log.send(ctx,
-                        f"Tag {serial} does not exist.")
-                else:
-                    dfgen.tags.loc[df_boolean[df_boolean].index, 'Content'] = ' '.join(arg[1:])
-                    self.syncpend = True
-                    await self.log.send(ctx,
-                                        f"Content in tag `{serial}` edited.")
+                dfgen.tags.loc[df_boolean[df_boolean].index, 'Content'] = ' '.join(arg[1:])
+                self.syncpend = True
+                await self.log.send(ctx, f"Content in tag `{serial}` edited.")
 
     @commands.command(aliases=['removetag', 'tagdelete'])
     async def tagremove(self, ctx, *arg):
         """
         Tag command to remove a tag content by serial number.
         """
+        await self.log.log(ctx.message)
+        group = general_utils.get_group(ctx)
+        if not group:
+            return
+        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            await self.log.send(ctx,
+                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group:
-            await self.log.log(ctx.message)
-            if len(arg) == 0:
-                await self.log.send(ctx, general_utils.tag_help)
-                return
-            elif not arg[0].isnumeric():
-                await self.log.send(ctx, general_utils.tag_help)
-                return
+        if len(arg) == 0:
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        elif not arg[0].isnumeric():
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        else:
+            serial = int(arg[0])
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            df_boolean = (df['Serial'] == serial)
+            if sum(df_boolean) == 0:
+                await self.log.send(ctx,
+                    f"Tag {serial} does not exist.")
             else:
-                serial = int(arg[0])
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                df_boolean = (df['Serial'] == serial)
-                if sum(df_boolean) == 0:
-                    await self.log.send(ctx,
-                        f"Tag {serial} does not exist.")
-                else:
-                    dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
-                    self.cleanpend = True
-                    self.syncpend = True
-                    await self.log.send(ctx,
-                                        f"Content removed from tag `{serial}`.")
+                dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
+                self.cleanpend = True
+                self.syncpend = True
+                await self.log.send(ctx, f"Content removed from tag `{serial}`.")
 
     @commands.command(aliases=['resettag'])
     async def tagreset(self, ctx, *arg):
         """
         (Owner only) Tag command to remove contents from a tag.
         """
+        await self.log.log(ctx.message)
+        group = general_utils.get_group(ctx)
+        if not (group and ctx.message.author.id == general_utils.owner):
+            return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
             return
-        group = general_utils.get_group(ctx)
-        if group and ctx.message.author.id == general_utils.owner:
-            await self.log.log(ctx.message)
-            if len(arg) == 0:
-                await self.log.send(ctx, general_utils.tag_help)
-                return
+        await self.log.log(ctx.message)
+        if len(arg) == 0:
+            await self.log.send(ctx, general_utils.tag_help)
+            return
+        else:
+            keyword = ' '.join(arg).lower()
+            df = dfgen.tags[dfgen.tags['Group'] == group]
+            df_boolean = (dfgen.tags['Tag'] == keyword)
+            if sum(df_boolean) == 0:
+                await self.log.send(ctx,
+                    f"Tag {keyword} has no contents.")
             else:
-                keyword = ' '.join(arg).lower()
-                df = dfgen.tags[dfgen.tags['Group'] == group]
-                df_boolean = (dfgen.tags['Tag'] == keyword)
-                if sum(df_boolean) == 0:
-                    await self.log.send(ctx,
-                        f"Tag {keyword} has no contents.")
-                else:
-                    dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
-                    self.cleanpend = True
-                    self.syncpend = True
-                    await self.log.send(ctx,
-                                        f"Contents removed from tag {keyword}.")
+                dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
+                self.cleanpend = True
+                self.syncpend = True
+                await self.log.send(ctx, f"Contents removed from tag {keyword}.")
 
     @commands.command()
     async def checkservers(self, ctx, *arg):

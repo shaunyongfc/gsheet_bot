@@ -31,7 +31,7 @@ class GeneralUtils():
             'However be discreet while using them and do not abuse. I keep logs of my bot calls.',
             'Do NOT add mentions/pings to tags.',
             '`=tag keyword` to call contents of a keyword.',
-            '`=tag keyword contents` to add contents to a keyword.',
+            '`=tag keyword content` to add content to a keyword.',
             '`=tagrecent` to view list of recently-added keywords.',
             '`=tagedit serial contents` to change the contents of a tag with  aserial number.',
             '`=tagremove serial` to remove a tag with a serial number.',
