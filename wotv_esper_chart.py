@@ -24,6 +24,7 @@ SPECIAL_BUFFS = (
     ("Stat Up", "LUCK%", 0, "luck"),
     ("Stat Up", "Accuracy", 15, "accuracy"),
     ("Stat Up", "Evasion", 15, "evasion"),
+    ("Stat Up", "Debuff Mitigation", 0, "debuff_miti"),
     ("Stat Up", "Reaction Block", 0, "reaction"),
     ("Stat Up", "Cast Time", 0, "cast"),
     ("Stat Up", "Evoke", 0, "evoke"),
@@ -31,6 +32,8 @@ SPECIAL_BUFFS = (
     ("Stat Up", "Crit Rate", 20, "crit"),
     ("Stat Up", "Crit Damage", 15, "crit_damage"),
     ("Stat Up", "Crit Evade", 15, "crit_evade"),
+    ("Stat Up", "P Damage", 0, "p_damage"),
+    ("Stat Up", "M Damage", 0, "m_damage"),
     ("Stat Up", "ATK%", 15, "atk"),
     ("Stat Up", "MAG%", 15, "mag"),
     ("Stat Up", "DEF", 0, "def"),
@@ -72,6 +75,7 @@ FULL_WIDTH = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * len(COLUMNS)
 FULL_HEIGHT = HEADER_SIZE + BORDER_SIZE + PANEL_SIZE * len(ROWS)
 
 my_font = ImageFont.truetype('Arial.ttf', ICON_AGI_FONT)
+my_fonti = ImageFont.truetype('Arial Italic.ttf', ICON_AGI_FONT)
 revalues = re.compile(r'-?\d+$')
 
 
@@ -105,10 +109,23 @@ def process_esper(df_row):
     square = Image.new("RGBA", (ICON_AGI_SIZE, ICON_AGI_SIZE), (0, 0, 0))
     mask = Image.eval(square.getchannel('A'), lambda a: 144)
     image.paste(square, (ICON_SIZE - ICON_AGI_SIZE, 0), mask)
+    # Agility value
+    agi_value = df_row['AGI']
+    added_check = 0
+    for eff in df_row['Stat Up'].split(' / '):
+        eff_str = ' '.join(eff.split()[:-1])
+        eff_value = int(eff.split()[-1])
+        if eff_str == 'AGI':
+            agi_value += eff_value
+            added_check = 1
+            break
     # Agility text
     image_draw = ImageDraw.Draw(image)
-    image_draw.text((ICON_SIZE - ICON_AGI_SIZE + 1, 1), str(df_row['AGI']),
-        fill=(255, 255, 255), font=my_font
+    font = my_font
+    if added_check:
+        font = my_fonti
+    image_draw.text((ICON_SIZE - ICON_AGI_SIZE + 1, 1), str(agi_value),
+        fill=(255, 255, 255), font=font
     )
     # Special icons
     icon_x = 0
