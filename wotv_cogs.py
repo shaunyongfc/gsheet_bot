@@ -727,7 +727,11 @@ class EmbedWotv():
                 arg = arg[1:]
             else:
                 break
-        df = dfwotv.esper
+        df = dfwotv.esper.copy()
+        for index, row in df.iterrows():
+            row_est = wotv_utils.esper_est(row, return_tuple=False)
+            for col, col_value in row_est.items():
+                df.loc[index, col] = col_value
         if first_col == 'NOTFOUND':
             return 1, []
         if first_arg == 'STAT': # If stat, find 20 largest values
