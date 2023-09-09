@@ -149,13 +149,19 @@ class WotvUtils:
                 'Slash RES', 'Pierce RES', 'Strike RES', 'Missile RES', 'Magic RES', 'All Type RES',
                 'DEF', 'SPR', 'Special'
             ),
-            'gr_types': {
+            'atk_types': {
                 'SL': 'Slash',
                 'PI': 'Pierce',
                 'ST': 'Strike',
                 'MS': 'Missile',
                 'MG': 'Magic',
                 'TL': 'Typeless'
+            },
+            'target_types': {
+                'S': 'ST',
+                'P': 'Piercing ST',
+                'M': 'Multiple ST',
+                'A': 'AoE'
             }
         }
         self.emotes_init()
@@ -333,6 +339,7 @@ class WotvUtils:
             ('eq_set', ('Passive', 'Extra'), self.dfwotv.eq),
             ('eq_set', ('Passive',), self.dfwotv.tm),
             ('tm_set', ('Skill',), self.dfwotv.tm),
+            ('removal_set', ('Removal',), self.dfwotv.tm),
         )
         for dict_entry, dict_cols, dict_df in passive_tuples:
             if dict_entry not in self.dict:
@@ -577,6 +584,11 @@ class WotvUtils:
             suggestion_list.extend(col_df[col].tolist())
         return 1, suggestion_list
 
+    def unit_atk(self, atkstr):
+        """Given an atkstr of surehit column, parse into proper description.
+        """
+        return f"{self.dict['target_types'][atkstr[0]]} {self.dict['atk_types'][atkstr[1:]]}"
+
     def unit_list(self, filter_list):
         """Given a list of filter args, return units belonging to the filters
         separated by element/group and rarity.
@@ -726,7 +738,7 @@ class WotvUtils:
             if not omit_1H or effstr[0] != '1':
                 parsed_str += f"{effstr[0]}-Hit"
             if include_type:
-                parsed_str += f" {self.dict['gr_types'][effstr[2:4]]}"
+                parsed_str += f" {self.dict['atk_types'][effstr[2:4]]}"
             effstr = effstr[4:]
         # Values
         if effstr:

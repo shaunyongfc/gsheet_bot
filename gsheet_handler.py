@@ -60,6 +60,8 @@ class DfHandlerWotv():
                             .drop('Type', axis=1).set_index('Shortcut')
         self.w_type = df[df['Type'] == 'w_type']\
                             .drop('Type', axis=1).set_index('Shortcut')
+        self.removal = df[df['Type'] == 'removal']\
+                            .drop('Type', axis=1).set_index('Shortcut')
         # Text table.
         self.text = pd.DataFrame(
             ramadaspreadsheet.worksheet('WOTV_text').get_all_records())

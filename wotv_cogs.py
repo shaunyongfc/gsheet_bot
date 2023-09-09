@@ -147,6 +147,21 @@ class EmbedWotv():
             value=f"{wotv_utils.tm_str(row, mode='en')}\nRefer to `=tm {row['English']}`",
             inline=False
         )
+        # Surehits & Removals
+        surehit_removals = []
+        if row['Surehit']:
+            atkstrs = []
+            for atkstr in row['Surehit'].split(' / '):
+                atkstrs.append(wotv_utils.unit_atk(atkstr))
+            surehit_removals.append(f"Surehits: {', '.join(atkstrs)}")
+        if row['Removal']:
+            surehit_removals.append(f"Removals: {row['Removal']}")
+        if surehit_removals:
+            embed.add_field(
+                name='Surehits & Removals',
+                value='\n'.join(surehit_removals),
+                inline=False
+            )
         # Release information
         release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
         if row['Pool'] != 'Regular':
@@ -169,6 +184,54 @@ class EmbedWotv():
             inline=False
         )
         return 0, [embed]
+
+    @classmethod
+    def unitsearch(cls, arg):
+        """Search for units that have surehits or specific removal."""
+        args = ' '.join(arg).lower().replace('-', ' ')
+        for index, row in dfwotv.removal.iterrows():
+            args = args.replace(index, row['VC'])
+        # Check if valid argument
+        filter_arg = ''
+        if args.replace(' ', '') in ('surehit', 'surehits'):
+            filter_arg = 'surehit'
+        elif args in ' '.join(wotv_utils.dict['removal_set']).lower():
+            filter_arg = args
+        else:
+            return 1, []
+        embed = discord.Embed(
+            title=args.title(),
+            colour=wotv_utils.dict['colours']['neutral']
+        )
+        embed.set_author(name=wotv_utils.dict['embed']['author_name'],
+                         url='https://wotv-calc.com/JP/units',
+                         icon_url=wotv_utils.dict['embed']['author_icon_url'])
+        unit_dict = dict()
+        for element in wotv_utils.dict['colours'].keys():
+            if element == 'neutral':
+                continue
+            unit_dict[element.title()] = []
+        for _, row in dfwotv.tm.iterrows():
+            if filter_arg == 'surehit':
+                if not row['Surehit']:
+                    continue
+            else:
+                if args in row['Removal'].lower():
+                    pass
+                elif args == 'haste' and 'dispel' in row['Removal'].lower():
+                    pass
+                else:
+                    continue
+            unit_dict[row['Element']].append(
+                wotv_utils.name_str(row, element=0)
+            )
+        tuple_list = []
+        for element, element_list in unit_dict.items():
+            tuple_list.extend(cls.split_field(
+                f"{wotv_utils.dict['emotes'][element.lower()]} {element}", [' '.join(element_list)]
+            ))
+        embed_list = cls.split_embed(embed, tuple_list)
+        return 0, embed_list
 
     @classmethod
     def unitlist(cls, arg):
@@ -1447,7 +1510,7 @@ class EmbedWotv():
                     if eff[:3] == 'All':
                         unit_dict['All Type RES'].append(wotv_utils.gr_parse(eff[4:]))
                     else:
-                        unit_dict[f"{wotv_utils.dict['gr_types'][eff[:2]]} RES"]\
+                        unit_dict[f"{wotv_utils.dict['atk_types'][eff[:2]]} RES"]\
                             .append(wotv_utils.gr_parse(eff[3:]))
             if row['DB DEF']:
                 for eff in row['DB DEF'].split(' / '):
@@ -2083,6 +2146,19 @@ class WotvUnit(commands.Cog):
             arg, EmbedWotv.unitlist, 'unit',
             (
                 (EmbedWotv.vcunits, 'Vision Card Units (`=vu`)'),
+                (EmbedWotv.unitinfo, 'Unit Information (`=unit`)')
+            )
+        )
+        await self.log.send(ctx, msg_content, embeds=msg_embeds)
+
+    @commands.command(aliases=['us'])
+    async def wotvunitsearch(self, ctx, *arg):
+        """Unit list command."""
+        await self.log.log(ctx.message)
+        _, msg_content, msg_embeds = EmbedWotv.redirect(
+            arg, EmbedWotv.unitsearch, 'unit',
+            (
+                (EmbedWotv.unitlist, 'Unit List (`=ul`)'),
                 (EmbedWotv.unitinfo, 'Unit Information (`=unit`)')
             )
         )
