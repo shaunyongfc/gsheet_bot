@@ -1660,6 +1660,17 @@ class WotvGeneral(commands.Cog):
                     f":newspaper: {news[1]} - {news[2]} - <https://players.wotvffbe.com/{news[0]}/>" for news in news_list
                 ]))
 
+    @tasks.loop(minutes=10.0)
+    async def arenareminder(self):
+        """Reminds about arena every Sunday 2 hours before reset."""
+        now_jst = datetime.now(tz=timezone(timedelta(hours=9)))\
+                          .replace(tzinfo=None)
+        if now_jst.weekday() == 6 and now_jst.hour == 22:
+            for channel_id in dfwotv.ids['WOTV Newsfeed']:
+                await self.bot.get_channel(channel_id).send(
+                    ':alarm_clock: REMINDER: Arena resetting in <2 hours.'
+                )
+
     @commands.command()
     async def wotvsync(self, ctx, *arg):
         """(Owner only) Synchronise WOTV sheets."""
