@@ -195,12 +195,17 @@ class EmbedWotv():
         filter_arg = ''
         if args.replace(' ', '') in ('surehit', 'surehits'):
             filter_arg = 'surehit'
+            embed_title = 'Surehit'
         elif args in ' '.join(wotv_utils.dict['removal_set']).lower():
             filter_arg = args
+            if filter_arg == 'dispel':
+                embed_title = 'Dispel'
+            else:
+                embed_title = f"{args.title()} Removal"
         else:
             return 1, []
         embed = discord.Embed(
-            title=args.title(),
+            title=embed_title,
             colour=wotv_utils.dict['colours']['neutral']
         )
         embed.set_author(name=wotv_utils.dict['embed']['author_name'],
