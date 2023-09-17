@@ -27,8 +27,7 @@ class GeneralUtils():
         self.math_errors = ('Zero Division Error', 'Overflow Error',
                             '... Excuse me?')
         self.tag_help = '\n'.join((
-            'Since this function is only available privately, there are not many limitations.',
-            'However be discreet while using them and do not abuse. I keep logs of my bot calls.',
+            'Be discreet while using these commands and do not abuse. I keep logs of my bot calls.',
             'Do NOT add mentions/pings to tags.',
             '`=tag keyword` to call contents of a keyword.',
             '`=tag keyword content` to add content to a keyword.',
@@ -82,8 +81,10 @@ class GeneralUtils():
                 pass
         return argstr
 
-    def get_group(self, ctx):
-        """Given message context get tag group."""
+    def tag_group(self, ctx):
+        """Given context information return tag group if the user is allowed to
+        use tag commands in the channel.
+        """
         group = 0
         channel_ids = self.dfgen.ids[
                             self.dfgen.ids['Type'].str.contains('TagC')]['ID']
@@ -98,7 +99,14 @@ class GeneralUtils():
         elif ctx.message.author.id == self.owner:
             group = list(self.dfgen.ids[self.dfgen.ids['Type'] \
                                                     == 'TagDefault']['ID'])[0]
-        return group
+        if not group:
+            return 0, 'Tag commands are not enabled in this channel.'
+        ban_list = list(self.dfgen.ids[self.dfgen.ids['Type'] == 'Ban']['ID'])
+        if ctx.message.author.id in ban_list:
+            return 0, f"<@{ctx.author.id}>, you are banned from certain bot functions."
+        if self.tag_disabled:
+            return 0, 'Tag commands are currently temporarily disabled.'
+        return group, ''
 
     def math(self, mathstr):
         """Custom recursive math command."""

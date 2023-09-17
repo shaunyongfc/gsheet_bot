@@ -191,16 +191,9 @@ class GeneralCommands(commands.Cog):
             # If single tag is too long
         except discord.HTTPException:
             length_error = 1
-        group = general_utils.get_group(ctx)
+        group, error_msg = general_utils.tag_group(ctx)
         if not group:
-            return
-        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
-        if ctx.message.author.id in ban_list:
-            await self.log.send(ctx,
-                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
-            return
-        if general_utils.tag_disabled:
-            await ctx.send('Tag commands are currently temporarily disabled.')
+            await self.log.send(ctx, error_msg)
             return
         if length_error:
             await self.log.send(ctx,
@@ -255,16 +248,9 @@ class GeneralCommands(commands.Cog):
     async def tagserial(self, ctx, *arg):
         """Tag command to retrieve content from a particular serial number."""
         await self.log.log(ctx.message)
-        group = general_utils.get_group(ctx)
+        group, error_msg = general_utils.tag_group(ctx)
         if not group:
-            return
-        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
-        if ctx.message.author.id in ban_list:
-            await self.log.send(ctx,
-                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
-            return
-        if general_utils.tag_disabled:
-            await ctx.send('Tag commands are currently temporarily disabled.')
+            await self.log.send(ctx, error_msg)
             return
         if len(arg) == 0:
             await self.log.send(ctx, general_utils.tag_help)
@@ -287,16 +273,9 @@ class GeneralCommands(commands.Cog):
     async def tagnew(self, ctx, *arg):
         """Tag command to return tags recently used."""
         await self.log.log(ctx.message)
-        group = general_utils.get_group(ctx)
+        group, error_msg = general_utils.tag_group(ctx)
         if not group:
-            return
-        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
-        if ctx.message.author.id in ban_list:
-            await self.log.send(ctx,
-                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
-            return
-        if general_utils.tag_disabled:
-            await ctx.send('Tag commands are currently temporarily disabled.')
+            await self.log.send(ctx, error_msg)
             return
         df = dfgen.tags[dfgen.tags['Group'] == group]
         tags = df['Tag'].unique()
@@ -326,16 +305,9 @@ class GeneralCommands(commands.Cog):
         Tag command to edit a tag content by serial number.
         """
         await self.log.log(ctx.message)
-        group = general_utils.get_group(ctx)
+        group, error_msg = general_utils.tag_group(ctx)
         if not group:
-            return
-        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
-        if ctx.message.author.id in ban_list:
-            await self.log.send(ctx,
-                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
-            return
-        if general_utils.tag_disabled:
-            await ctx.send('Tag commands are currently temporarily disabled.')
+            await self.log.send(ctx, error_msg)
             return
         if len(arg) < 2:
             await self.log.send(ctx, general_utils.tag_help)
@@ -361,18 +333,11 @@ class GeneralCommands(commands.Cog):
         Tag command to remove a tag content by serial number.
         """
         await self.log.log(ctx.message)
-        group = general_utils.get_group(ctx)
+        group, error_msg = general_utils.tag_group(ctx)
         if not group:
+            await self.log.send(ctx, error_msg)
             return
-        ban_list = list(dfgen.ids[dfgen.ids['Type'] == 'Ban']['ID'])
-        if ctx.message.author.id in ban_list:
-            await self.log.send(ctx,
-                f"<@{ctx.author.id}>, you are banned from certain bot functions.")
-            return
-        if general_utils.tag_disabled:
-            await ctx.send('Tag commands are currently temporarily disabled.')
-            return
-        if len(arg) == 0:
+        if not arg:
             await self.log.send(ctx, general_utils.tag_help)
             return
         elif not arg[0].isnumeric():
@@ -399,6 +364,7 @@ class GeneralCommands(commands.Cog):
         await self.log.log(ctx.message)
         group = general_utils.get_group(ctx)
         if not (group and ctx.message.author.id == general_utils.owner):
+            await ctx.send('Tag commands are not enabled in this channel.')
             return
         if general_utils.tag_disabled:
             await ctx.send('Tag commands are currently temporarily disabled.')
