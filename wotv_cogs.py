@@ -1731,7 +1731,7 @@ class WotvGeneral(commands.Cog):
 
     @tasks.loop(minutes=1.0)
     async def arenareminder(self):
-        """Reminds about arena every Sunday 2 hours before reset."""
+        """Reminds about arena every Sunday some hours before reset."""
         now_jst = datetime.now(tz=timezone(timedelta(hours=9)))\
                           .replace(tzinfo=None)
         if now_jst.minute or now_jst.weekday() != 6:
@@ -1740,7 +1740,7 @@ class WotvGeneral(commands.Cog):
             if now_jst.hour == 24 - check_hour:
                 for channel_id in dfwotv.ids['WOTV Newsfeed']:
                     await self.bot.get_channel(channel_id).send(
-                        f":alarm_clock: REMINDER: Arena resetting in <{check_hour} hour(s).'"
+                        f":alarm_clock: REMINDER: Arena resetting in {check_hour} hour(s).'"
                     )
 
     @commands.command()
