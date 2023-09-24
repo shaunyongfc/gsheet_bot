@@ -1740,7 +1740,7 @@ class WotvGeneral(commands.Cog):
             if now_jst.hour == 24 - check_hour:
                 for channel_id in dfwotv.ids['WOTV Newsfeed']:
                     await self.bot.get_channel(channel_id).send(
-                        f":alarm_clock: REMINDER: Arena resetting in {check_hour} hour(s).'"
+                        f":alarm_clock: REMINDER: Arena resetting in {check_hour} hour(s)."
                     )
 
     @commands.command()
