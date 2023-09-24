@@ -11,7 +11,7 @@ from gsheet_handler import DfHandlerWotv, ramadaspreadsheet
 # Get data from google sheet
 
 FOLDER = "wotv_esper_chart"
-CHART_NAME = "wotv_esper_chart.png"
+CHART_NAME = "wotv_esper_chart.jpg"
 E_LIST = ["Neutral", "Fire", "Ice", "Wind", "Earth", "Thunder", "Water",
     "Light", "Dark", "Tank"]
 A_LIST = ["None", "Slash", "Pierce", "Strike", "Missile", "Magic"]
@@ -24,20 +24,22 @@ SPECIAL_BUFFS = (
     ("Stat Up", "LUCK%", 0, "luck"),
     ("Stat Up", "Accuracy", 15, "accuracy"),
     ("Stat Up", "Evasion", 15, "evasion"),
-    ("Stat Up", "Debuff Mitigation", 0, "debuff_miti"),
-    ("Stat Up", "Reaction Block", 0, "reaction"),
+    ("Stat Up", "Debuff Weakening", 0, "debuff_weak"),
+    ("Stat Up", "Reaction Block", 0, "reaction_block"),
     ("Stat Up", "Cast Time", 0, "cast"),
     ("Stat Up", "Evoke", 0, "evoke"),
     ("Stat Up", "Initial AP", 0, "initial_ap"),
     ("Stat Up", "Crit Rate", 20, "crit"),
     ("Stat Up", "Crit Damage", 15, "crit_damage"),
     ("Stat Up", "Crit Evade", 15, "crit_evade"),
+    ("Stat Up", "DEF PEN", 0, "def_pen"),
+    ("Stat Up", "SPR PEN", 0, "spr_pen"),
     ("Stat Up", "P Damage", 0, "p_damage"),
     ("Stat Up", "M Damage", 0, "m_damage"),
     ("Stat Up", "ATK%", 15, "atk"),
     ("Stat Up", "MAG%", 15, "mag"),
-    ("Stat Up", "DEF", 0, "def"),
-    ("Stat Up", "SPR", 0, "spr"),
+    ("Stat Up", "DEF Up", 0, "def"),
+    ("Stat Up", "SPR Up", 0, "spr"),
     ("Stat Up", "HP%", 0, "hp"),
     ("Stat Up", "TP%", 0, "tp"),
     ("Stat Up", "AP%", 0, "ap"),
@@ -133,7 +135,7 @@ def process_esper(df_row):
         c_buffs = str(df_row[column]).split(" / ")
         for c_buff in c_buffs:
             if buff in c_buff and int(revalues.findall(c_buff)[0]) >= threshold:
-                icon = Image.open(os.path.join(FOLDER, f"eff_{fname}.png"))
+                icon = Image.open(os.path.join(FOLDER, f"eff_{fname}.png")).convert('RGBA')
                 icon = icon.resize((ICON_BUFF_SIZE, ICON_BUFF_SIZE))
                 image.paste(icon, (icon_x, ICON_SIZE - ICON_BUFF_SIZE), icon)
                 icon_x += ICON_BUFF_SIZE
@@ -164,8 +166,7 @@ def make_chart():
     """
     Create chart from processed esper icons.
     """
-    chart = Image.new("RGBA", (FULL_WIDTH, FULL_HEIGHT), (255, 255, 255)
-    )
+    chart = Image.new("RGB", (FULL_WIDTH, FULL_HEIGHT), (255, 255, 255))
     chart_draw = ImageDraw.Draw(chart)
     # Draw background and borders and headers
     ## Horizontal - borders
@@ -225,9 +226,9 @@ def make_chart():
         def_up = 0
         spr_up = 0
         for c_buff in c_buffs:
-            if "DEF" in c_buff:
+            if "DEF Up" in c_buff:
                 def_up = int(revalues.findall(c_buff)[0])
-            elif "SPR" in c_buff:
+            elif "SPR Up" in c_buff:
                 spr_up = int(revalues.findall(c_buff)[0])
                 if spr_up >= 10:
                     esper_lists[9][5].append(esper_tuple)
@@ -270,7 +271,7 @@ def make_chart():
                     break
 
     # Save and report
-    chart.save(os.path.join(FOLDER, CHART_NAME))
+    chart.save(os.path.join(FOLDER, CHART_NAME), quality=95)
     print(f"{CHART_NAME} saved.")
 
 
@@ -282,7 +283,7 @@ def upload():
     client_id = os.getenv('IMGUR_ID')
     client_secret = os.getenv('IMGUR_SECRET')
     url = "https://api.imgur.com/3/upload.json"
-    image_name = 'wotv_esper_chart.png'
+    image_name = CHART_NAME
     image_b64 = b64encode(open(os.path.join(FOLDER, image_name), 'rb').read())
     headers = {
         "Authorization": f"Client-ID {client_id}"
