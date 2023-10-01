@@ -131,6 +131,8 @@ class EmbedWotv():
         description = f"Cost: {row['Cost']}\nGroup: {row['Group']}"
         if row['Group'].lower() in wotv_utils.dict['weapon_dict'].keys():
             description += f" ({wotv_utils.dict['weapon_dict'][row['Group'].lower()]})"
+        if row['Sub Weapon']:
+            description += f"\nSub Weapon(s): {row['Sub Weapon']}"
         embed = discord.Embed(
             title=wotv_utils.name_str(row),
             description=description,
@@ -155,11 +157,81 @@ class EmbedWotv():
                 atkstrs.append(wotv_utils.unit_atk(atkstr))
             surehit_removals.append(f"Surehits: {', '.join(atkstrs)}")
         if row['Removal']:
-            surehit_removals.append(f"Removals: {row['Removal']}")
+            surehit_removals.append(f"Removals: {', '.join(row['Removal'].split(' / '))}")
         if surehit_removals:
             embed.add_field(
                 name='Surehits & Removals',
                 value='\n'.join(surehit_removals),
+                inline=False
+            )
+        # GR Debuffs
+        debuffs = set()
+        if row['DB Slow']:
+            debuffs.add('Slow')
+        if row['DB AGI']:
+            debuffs.add('AGI%')
+        if row['DB Target']:
+            for eff in row['DB Target'].split(' / '):
+                suffix = ''
+                if eff[-1] == '%':
+                    suffix = '%'
+                if eff[0] == 'S':
+                    debuffs.add(f"Single RES{suffix}")
+                else:
+                    debuffs.add(f"Area RES{suffix}")
+        if row['DB Element']:
+            for eff in row['DB Element'].split(' / '):
+                suffix = ''
+                if eff[-1] == '%':
+                    suffix = '%'
+                if eff[:3] == 'All':
+                    debuffs.add(f"All Elemental RES{suffix}")
+                else:
+                    debuffs.add(f"{row['Element']} RES{suffix}")
+        if row['DB Type']:
+            for eff in row['DB Type'].split(' / '):
+                suffix = ''
+                if eff[-1] == '%':
+                    suffix = '%'
+                if eff[:3] == 'All':
+                    debuffs.add(f"All Type RES{suffix}")
+                else:
+                    debuffs.add(f"{wotv_utils.dict['atk_types'][eff[:2]]} RES{suffix}")
+        if row['DB DEF']:
+            debuffs.add('DEF')
+            for eff in row['DB DEF'].split(' / '):
+                suffix = ''
+                if eff[-1] == '%':
+                    suffix = '%'
+                debuffs.add(f"DEF{suffix}")
+        if row['DB SPR']:
+            for eff in row['DB SPR'].split(' / '):
+                suffix = ''
+                if eff[-1] == '%':
+                    suffix = '%'
+                debuffs.add(f"SPR{suffix}")
+        if row['DB Special']:
+            for eff in row['DB Special'].split(' / '):
+                prefix, suffix = eff.split(' ', 1)
+                special_str = prefix.replace('_', ' ')
+                special_suffix = wotv_utils.gr_parse(suffix)
+                if special_suffix:
+                    special_str += f" {special_suffix}"
+                debuffs.add(special_str)
+        if debuffs:
+            embed.add_field(
+                name='GR Debuffs',
+                value=', '.join(list(debuffs)),
+                inline=False
+            )
+        # Multihits
+        multihits = []
+        if row['Multihit']:
+            for eff in row['Multihit'].split(' / '):
+                multihits.append(wotv_utils.gr_parse(eff, include_type=True))
+            embed.add_field(
+                name='Multihits',
+                value=', '.join(multihits),
                 inline=False
             )
         # Release information
