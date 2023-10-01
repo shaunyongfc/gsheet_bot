@@ -741,7 +741,7 @@ class WotvUtils:
                 parsed_str += f" {self.dict['atk_types'][effstr[2:4]]}"
             effstr = effstr[4:]
         # Values
-        if effstr:
+        if effstr and include_value:
             parsed_str += f" `{effstr.strip()}`"
         return parsed_str.strip()
 
