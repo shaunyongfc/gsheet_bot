@@ -451,7 +451,7 @@ class EmbedWotv():
             embed.add_field(name=col, value=f_value)
         # Suggest command for conditional VC
         if condition_flag:
-            embed.description = f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant UR units."
+            embed.description = f"`=vu {row['Aliases'].split(' / ')[0]}` for relevant units."
         # Release information
         release_str = f"{datetime.strftime(datetime.strptime(str(row['Release']), DFDTFORMAT), EMBEDDTFORMAT)}\nAcquisition: {row['Acquisition']}"
         if row['Pool'] != 'Regular':
