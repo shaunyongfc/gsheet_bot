@@ -36,6 +36,8 @@ SPECIAL_BUFFS = (
     ("Stat Up", "SPR PEN", 0, "spr_pen"),
     ("Stat Up", "P Damage", 0, "p_damage"),
     ("Stat Up", "M Damage", 0, "m_damage"),
+    ("Stat Up", "P Mitigation", 0, "p_mitigation"),
+    ("Stat Up", "M Mitigation", 0, "m_mitigation"),
     ("Stat Up", "ATK%", 15, "atk"),
     ("Stat Up", "MAG%", 15, "mag"),
     ("Stat Up", "DEF Up", 0, "def"),
@@ -227,23 +229,26 @@ def make_chart():
         spr_up = 0
         for c_buff in c_buffs:
             if "DEF Up" in c_buff:
-                def_up = int(revalues.findall(c_buff)[0])
+                def_up += int(revalues.findall(c_buff)[0])
             elif "SPR Up" in c_buff:
-                spr_up = int(revalues.findall(c_buff)[0])
-                if spr_up >= 10:
-                    esper_lists[9][5].append(esper_tuple)
+                spr_up += int(revalues.findall(c_buff)[0])
+            elif "P Mitigation" in c_buff:
+                def_up += int(revalues.findall(c_buff)[0])
+            elif "M Mitigation" in c_buff:
+                spr_up += int(revalues.findall(c_buff)[0])
         c_buffs = str(df_row["RES Up"]).split(" / ")
         type_assigned = 0
         for c_buff in c_buffs:
             for buff in P_LIST:
                 if buff in c_buff:
-                    if def_up + int(revalues.findall(c_buff)[0]) >= 25:
+                    if def_up + spr_up + int(revalues.findall(c_buff)[0]) >= 25:
                         esper_lists[9][A_LIST.index(buff)].append(esper_tuple)
                         type_assigned = 1
-            if "Magic" in c_buff and spr_up < 10:
-                if int(revalues.findall(c_buff)[0]) >= 20:
+            if "Magic" in c_buff:
+                if spr_up + int(revalues.findall(c_buff)[0]) >= 20:
                     esper_lists[9][5].append(esper_tuple)
-        if def_up >= 10 and not type_assigned:
+                    type_assigned = 1
+        if def_up + spr_up >= 10 and not type_assigned:
             esper_lists[9][0].append(esper_tuple)
     # Sort by AGI and check total espers per panel
     for i in range(10):
