@@ -633,7 +633,7 @@ class WotvUtils:
             else:
                 engstr = self.dfwotv.mat.loc[cryst_ele]['Aliases']\
                     .split(' / ')[0].replace('(Mega)', '')
-            text_list.append(f"- {cryst_ele} ({engstr})")
+            text_list.append(engstr)
         return '\n'.join(text_list)
 
 

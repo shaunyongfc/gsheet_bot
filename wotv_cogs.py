@@ -1098,7 +1098,7 @@ class EmbedWotv():
                     material_list.append(wotv_utils.get_cryst(row))
                 else:
                     engstr = dfwotv.mat.loc[row[col]]['Aliases'].split(' / ')[0]
-                    material_list.append(f"{row[col]} ({engstr})")
+                    material_list.append(engstr)
         if material_list:
             embed.add_field(
                 name='List of materials',
