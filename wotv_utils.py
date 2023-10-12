@@ -303,13 +303,11 @@ class WotvUtils:
             'Ore': set()
         }
         for _, row in self.dfwotv.eq.iterrows():
-            for k, v in self.dict['eq_sets'].items():
-                if row[k]:
-                    if k == 'Cryst' and len(row[k]) > 1:
-                        v = v.union(set(row[k]))
-                    else:
-                        v.add(row[k])
-
+            for col in ('Type', 'Acquisition'):
+                if row[col]:
+                    self.dict['eq_sets'][col].add(row[col])
+        for index, row in self.dfwotv.mat.iterrows():
+            self.dict['eq_sets'][row['Type']].add(index)
         ## Esper sets
         self.dict['esper_sets'] = {
             'ATK Up': set(),

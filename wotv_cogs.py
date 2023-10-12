@@ -1182,12 +1182,20 @@ class EmbedWotv():
                 set_str = set_item.split(' - ')[-1]
                 if col_args in set_str.lower():
                     col_candidates.append(set_item)
+                elif col_args == set_item.lower():
+                    col_candidates.append(set_item)
             if len(col_candidates) == 1:
                 col = dict_col
                 match_str = col_candidates[0]
+                desc_str = match_str.split(' - ')[-1]
                 break
         if not col: # No match
-            return 1, []
+            row_error, row = wotv_utils.find_row(dfwotv.mat, args) # Find from matname df
+            if row_error: # Truly no match
+                return row_error, row
+            col = row['Type']
+            match_str = row.name
+            desc_str = row['Aliases'].split(' / ')[0]
         eqstr_list = []
         # Search df
         for _, row in dfwotv.eq.sort_values(
@@ -1196,7 +1204,7 @@ class EmbedWotv():
                 eqstr_list.append(wotv_utils.eq_str(row))
         tuple_list = cls.split_field(BLANK, eqstr_list)
         embed = discord.Embed(
-            title=f"List of {col} - {match_str}",
+            title=f"List of {col} - {desc_str}",
             colour=wotv_utils.dict['embed']['default_colour']
         )
         embed.set_author(
@@ -2309,9 +2317,22 @@ class WotvEquipment(commands.Cog):
                     icon_url=wotv_utils.dict['embed']['author_icon_url']
                 )
                 for col, eq_set in wotv_utils.dict['eq_sets'].items():
+                    if col == 'Type':
+                        value_list = []
+                        for set_item in eq_set:
+                            if set_item[0] == 'W':
+                                value_list.append(set_item.split(' / ')[-1])
+                            else:
+                                value_list.append(set_item)
+                    elif col == 'Acquisition':
+                        value_list = eq_set
+                    else:
+                        value_list = []
+                        for set_item in eq_set:
+                            value_list.append(dfwotv.mat.loc[set_item]['Aliases'].split(' / ')[0])
                     embed.add_field(
                         name=f"List by {col}",
-                        value=' / '.join(eq_set),
+                        value=' / '.join(value_list),
                         inline=False
                     )
                 await self.log.send(ctx, embed=embed)
