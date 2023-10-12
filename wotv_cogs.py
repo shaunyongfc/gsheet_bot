@@ -221,7 +221,7 @@ class EmbedWotv():
         if debuffs:
             embed.add_field(
                 name='GR Debuffs',
-                value=', '.join(list(debuffs)),
+                value=', '.join(debuffs),
                 inline=False
             )
         # Multihits
