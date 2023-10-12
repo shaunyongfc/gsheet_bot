@@ -318,12 +318,12 @@ class GeneralCommands(commands.Cog):
         else:
             serial = int(arg[0])
             df = dfgen.tags[dfgen.tags['Group'] == group]
-            df_boolean = (df['Serial'] == serial) # Retrieve tag
-            if sum(df_boolean) == 0:
+            df = df[df['Serial'] == serial] # Retrieve tag
+            if not len(df):
                 await self.log.send(ctx,
                     f"Tag {serial} does not exist.")
             else:
-                dfgen.tags.loc[df_boolean[df_boolean].index, 'Content'] = ' '.join(arg[1:])
+                dfgen.tags.loc[df.iloc[0].name, 'Content'] = ' '.join(arg[1:])
                 self.syncpend = True
                 await self.log.send(ctx, f"Content in tag `{serial}` edited.")
 
@@ -346,12 +346,12 @@ class GeneralCommands(commands.Cog):
         else:
             serial = int(arg[0])
             df = dfgen.tags[dfgen.tags['Group'] == group]
-            df_boolean = (df['Serial'] == serial)
-            if sum(df_boolean) == 0:
+            df = df[df['Serial'] == serial] # Retrieve tag
+            if not len(df):
                 await self.log.send(ctx,
                     f"Tag {serial} does not exist.")
             else:
-                dfgen.tags = dfgen.tags.drop(df_boolean[df_boolean].index)
+                dfgen.tags = dfgen.tags.drop(df.iloc[0].name)
                 self.cleanpend = True
                 self.syncpend = True
                 await self.log.send(ctx, f"Content removed from tag `{serial}`.")
@@ -362,7 +362,13 @@ class GeneralCommands(commands.Cog):
         (Owner only) Tag command to remove contents from a tag.
         """
         await self.log.log(ctx.message)
-        group = general_utils.get_group(ctx)
+        if ctx.message.author.id != general_utils.owner:
+            await ctx.send('This command is for bot owner only.')
+            return
+        group, error_msg = general_utils.tag_group(ctx)
+        if not group:
+            await self.log.send(ctx, error_msg)
+            return
         if not (group and ctx.message.author.id == general_utils.owner):
             await ctx.send('Tag commands are not enabled in this channel.')
             return
