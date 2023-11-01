@@ -415,7 +415,7 @@ class EmbedWotv():
         embed_colours = set() # Set to prevent duplicates
         condition_flag = 0
         # Generate field per column
-        for col in ('Unit', 'Party', 'Party Max', 'Skill'):
+        for col in ('Unit', 'Party', 'Party Max', 'Mastery', 'Skill'):
             if not row[col]: # Empty column
                 continue
             effstr_list = []
@@ -442,6 +442,10 @@ class EmbedWotv():
                     if condition in wotv_utils.dict['weapons']:
                         eff_prefixes.append(
                             wotv_utils.dict['emotes'][f"w_{condition}"]
+                        )
+                    if condition in wotv_utils.dict['holo']:
+                        eff_prefixes.append(
+                            wotv_utils.dict['emotes'][condition]
                         )
                     if not eff_prefixes: # Special condition
                         eff_prefixes = [re_match[0]] # Whole bracket
@@ -624,6 +628,10 @@ class EmbedWotv():
                             eff_prefixes.append(
                                 wotv_utils.dict['emotes'][f"w_{condition}"]
                             )
+                        if condition in wotv_utils.dict['holo']:
+                            eff_prefixes.append(
+                                wotv_utils.dict['emotes'][condition]
+                            )
                         if not eff_prefixes: # Special condition
                             eff_prefixes = [re_match.group()]
                             break
@@ -694,6 +702,7 @@ class EmbedWotv():
         args = ' '.join(arg).lower()
         for index, row in dfwotv.w_type.iterrows():
             args = args.replace(index, row['VC'])
+        holo = 0
         if ele in wotv_utils.dict['colours'].keys() and ele != 'neutral':
             args = ele
             embed = discord.Embed(
@@ -712,6 +721,12 @@ class EmbedWotv():
                 description=f"Refer to `=ul {args}` for list of relevant units.",
                 colour=wotv_utils.dict['colours']['neutral']
             )
+        elif args in wotv_utils.dict['holo']:
+            holo = 1
+            embed = discord.Embed(
+                title=f"{wotv_utils.dict['emotes'][args]} {arg[0].title()}",
+                colour=wotv_utils.dict['colours']['neutral']
+            )
         else: # Return empty list if match fail, otherwise there has to be some results
             return 1, []
         # Initialise
@@ -722,6 +737,12 @@ class EmbedWotv():
             ('Party Max', wotv_utils.dict['emotes']['vcmax']),
             ('Party', '')
         )
+        if holo:
+            col_tuples = (
+                ('Mastery', wotv_utils.dict['emotes']['party']),
+                ('Party Max', wotv_utils.dict['emotes']['vcmax']),
+                ('Party', '')
+            )
         vctuples_list = []
         # Search df
         for index, row in dfwotv.vc.sort_values(
@@ -754,6 +775,10 @@ class EmbedWotv():
                         elif condition in wotv_utils.dict['weapons']:
                             eff_prefixes.append(
                                 wotv_utils.dict['emotes'][f"w_{condition}"]
+                            )
+                        elif condition in wotv_utils.dict['holo']:
+                            eff_prefixes.append(
+                                wotv_utils.dict['emotes'][condition]
                             )
                         else:
                             eff_prefixes.append(

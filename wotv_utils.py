@@ -162,7 +162,12 @@ class WotvUtils:
                 'P': 'Piercing ST',
                 'M': 'Multiple ST',
                 'A': 'AoE'
-            }
+            },
+            'holo': (
+                'quest',
+                'duel',
+                'guild'
+            )
         }
         self.emotes_init()
         self.update_text()
@@ -416,6 +421,9 @@ class WotvUtils:
             ('w_sworda', '1141894239513477131'),
             ('w_swordb', '1141894242197844040'),
             ('w_swordc', '1141894245830119543'),
+            ('quest', '1169146264546447360'),
+            ('duel', '1169146256963153950'),
+            ('guild', '1169146260897415190'),
         )
         wotv_aemotes_raw = (
             ('elements', '796963642418790451'),
